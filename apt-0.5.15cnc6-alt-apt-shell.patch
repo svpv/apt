@@ -54,3 +54,14 @@
  	 GoodSolutionNames.push_back(GoodPkg.Name());
        }
  #ifdef WITH_LUA
+@@ -4511,8 +4514,8 @@
+       largv[largc] = 0;
+       
+       // Make our own copy of the configuration.
+-      delete _config;
+-      _config = new Configuration(GlobalConfig);
++      //delete _config;
++      //_config = new Configuration(GlobalConfig);
+ 
+       // Prepare the command line
+       CommandLine CmdL(CommandArgs(largv[1]),_config);
