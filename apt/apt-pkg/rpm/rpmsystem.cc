@@ -170,10 +170,7 @@ bool rpmSystem::Initialize(Configuration &Cnf)
    {
       _error->Warning("RPM::NoDeps is obsoleted. Add \"--nodeps\" to RPM::Options and RPM::Erase-Options instead.");
       if (Cnf.FindB("RPM::NoDeps",false))
-      {
 	 Cnf.Set("RPM::Options::", "--nodeps");
-	 Cnf.Set("RPM::Erase-Options::", "--nodeps");
-      }
    }
 
    return true;
@@ -429,6 +426,16 @@ bool rpmSystem::IgnoreDep(pkgVersioningSystem &VS,pkgCache::DepIterator &Dep)
 {
    RPMPackageData *rpmdata = RPMPackageData::Singleton();
    return rpmdata->IgnoreDep(VS,Dep);
+}
+									/*}}}*/
+
+// System::CacheBuilt - free caches used during cache build		/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+void rpmSystem::CacheBuilt()
+{
+   RPMPackageData *rpmdata = RPMPackageData::Singleton();
+   rpmdata->CacheBuilt();
 }
 									/*}}}*/
 #endif /* HAVE_RPM */

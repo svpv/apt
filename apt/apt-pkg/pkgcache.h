@@ -108,8 +108,9 @@ class pkgCache
    string CacheFile;
    MMap &Map;
 
-   unsigned long sHash(string S) const;
-   unsigned long sHash(const char *S) const;
+   // CNC:2003-02-16 - Inlined here.
+   inline unsigned long sHash(const char *S) const;
+   inline unsigned long sHash(string S) const {return sHash(S.c_str());};
    
    public:
    
@@ -138,6 +139,8 @@ class pkgCache
    
    // Accessors
    PkgIterator FindPkg(string Name);
+   // CNC:2003-02-17 - A slightly changed FindPkg(), hacked for performance.
+   Package *FindPackage(const char *Name);
    Header &Head() {return *HeaderP;};
    inline PkgIterator PkgBegin();
    inline PkgIterator PkgEnd();
@@ -194,7 +197,7 @@ struct pkgCache::Header
    DynamicMMap::Pool Pools[7];
    
    // Rapid package name lookup
-   map_ptrloc HashTable[2*1048];
+   map_ptrloc HashTable[8*1048];
 
    bool CheckSizes(Header &Against) const;
    Header();
@@ -302,6 +305,19 @@ struct pkgCache::StringItem
 
 #include <apt-pkg/cacheiterators.h>
 
+// CNC:2003-02-16 - Inlined here.
+#include <ctype.h>
+#define hash_count(a) (sizeof(a)/sizeof(a[0]))
+inline unsigned long pkgCache::sHash(const char *Str) const
+{
+   unsigned long Hash = 0;
+   for (const char *I = Str; *I != 0; I++)
+      //Hash = 5*Hash + tolower(*I);
+      Hash = 5*Hash + *I;
+   return Hash % hash_count(HeaderP->HashTable);
+}
+#undef hash_count
+
 inline pkgCache::PkgIterator pkgCache::PkgBegin() 
        {return PkgIterator(*this);};
 inline pkgCache::PkgIterator pkgCache::PkgEnd() 
@@ -330,3 +346,5 @@ class pkgCache::Namespace
 };
 
 #endif
+
+// vim:sts=3:sw=3

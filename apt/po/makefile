@@ -41,14 +41,14 @@ $(POTFILES) : $(PO)/%.pot :
 	rm -f $(PO)/POTFILES_$*.in
 	$(MSGCOMM) --more-than=0 $(PO)/domains/$*/c.pot $(PO)/domains/$*/sh.pot --output=$@
 
-$(PO)/$(PACKAGE)-all.pot: $(POTFILES)
+$(PACKAGE)-all.pot: $(POTFILES)
 	$(MSGCOMM) --more-than=0 $(POTFILES) --output=$@
 
 # Filter the complete translation with the domain specific file to produce
 # only the subtext needed for this domain
 # We cannot express the dependencies required for this directly with a pattern
 # rule, so we use the .d hack.
-$(LANG_POFILES) : $(PO_DOMAINS)/%.po : $(PO)/$(PACKAGE)-all.pot
+$(LANG_POFILES) : $(PO_DOMAINS)/%.po : $(PACKAGE)-all.pot
 	printf "%s " "Generating $@"
 	echo $@ : $(notdir $@) $(PO)/$(call GETDOMAIN,$*).pot > $(PO)/$(call GETDOMAIN,$*)_$(notdir $@).d
 	$(MSGMERGE) $(notdir $@) $(PO)/$(call GETDOMAIN,$*).pot -o $@
@@ -59,7 +59,10 @@ $(MOFILES) : $(PO_DOMAINS)/%.mo : $(PO_DOMAINS)/%.po
 	mkdir -p $(LOCALE)/$(notdir $*)/LC_MESSAGES/
 	cp $@ $(LOCALE)/$(notdir $*)/LC_MESSAGES/$(call GETDOMAIN,$*).mo
 
-binary: $(POTFILES) $(PO)/$(PACKAGE)-all.pot $(MOFILES)
+stats:
+	for i in *.pot *.po; do echo -n "$$i: "; msgfmt --statistics $$i; done
+
+binary: $(POTFILES) $(PACKAGE)-all.pot $(MOFILES)
 
 clean: clean/local
 clean/local:
@@ -71,4 +74,13 @@ ifneq ($(words $(The_DFiles)),0)
 include $(The_DFiles)
 endif
 
+update-po: $(PACKAGE)-all.pot
+	for lang in $(LINGUAS); do \
+		echo "Updating $$lang.po"; \
+		$(MSGMERGE) $$lang.po $(PACKAGE)-all.pot -o $$lang.new.po; \
+		cmp $$lang.new.po $$lang.po || cp $$lang.new.po $$lang.po; \
+		rm -f $$lang.new.po; \
+	done
+
+.PHONY: update-po
 .NOTPARALLEL:

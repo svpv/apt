@@ -24,6 +24,9 @@ RANLIB:=@RANLIB@
 # RPM stuff
 RPMLIBS:= @RPMLIBS@
 
+# CNC:2003-03-05
+COMPILE_APTSHELL = @COMPILE_APTSHELL@
+
 # Dep generation - this only works for gnu stuff
 GCC3DEP = @GCC3DEP@
 INLINEDEPFLAG = -MD
@@ -33,15 +36,15 @@ DEBIANDOC_HTML = @DEBIANDOC_HTML@
 DEBIANDOC_TEXT = @DEBIANDOC_TEXT@
 
 # SGML for the man pages
-NSGMLS = @NSGMLS@
-SGMLSPL = @SGMLSPL@
-DOCBOOK2MAN := $(wildcard /usr/lib/perl5/sgmlspl-specs/docbook2man-spec.pl)
+DOCBOOK2MAN := @DOCBOOK2MAN@
 
 # Gettext settings
 GMSGFMT = @GMSGFMT@
 XGETTEXT = @XGETTEXT@
 MSGCOMM:=$(dir $(XGETTEXT))/msgcomm
-MSGMERGE:=$(dir $(XGETTEXT))/msgmerge
+# CNC:2002-02-19
+#MSGMERGE:=$(dir $(XGETTEXT))/msgmerge
+MSGMERGE = @MSGMERGE@
 BASH = @BASH@
 
 # Various library checks
@@ -52,6 +55,7 @@ PYTHONPREFIX = @PYTHONPREFIX@
 PYTHONEXECPREFIX = @PYTHONEXECPREFIX@
 PYTHONINCLUDE = @PYTHONINCLUDE@
 DB2LIB = @DB2LIB@
+INTLLIBS = @INTLLIBS@
 
 # Shim Headerfile control
 HAVE_C9X = @HAVE_C9X@

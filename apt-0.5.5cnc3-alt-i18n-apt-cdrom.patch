@@ -1,0 +1,20 @@
+--- apt-0.5.5cnc3.orig/cmdline/apt-cdrom.cc	2003-02-28 04:19:12 +1200
++++ apt-0.5.5cnc3/cmdline/apt-cdrom.cc	2003-03-04 11:34:11 +1200
+@@ -853,7 +853,7 @@ int ShowHelp()
+       return 0;
+    
+    cout << 
+-      "Usage: apt-cdrom [options] command\n"
++      _("Usage: apt-cdrom [options] command\n"
+       "\n"
+       "apt-cdrom is a tool to add CDROM's to APT's source list. The\n"
+       "CDROM mount point and device information is taken from apt.conf\n"
+@@ -872,7 +872,7 @@ int ShowHelp()
+       "  -a   Thorough scan mode\n"
+       "  -c=? Read this configuration file\n"
+       "  -o=? Set an arbitary configuration option, eg -o dir::cache=/tmp\n"
+-      "See fstab(5)\n";
++      "See fstab(5)\n");
+    return 0;
+ }
+ 									/*}}}*/

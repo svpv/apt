@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: apt-get.cc,v 1.14 2003/01/29 18:43:48 niemeyer Exp $
+// $Id: apt-get.cc,v 1.126 2003/02/12 16:14:08 doogie Exp $
 /* ######################################################################
    
    apt-get - Cover for dpkg
@@ -45,7 +45,9 @@
 
 #include "acqprogress.h"
 
-#include <locale.h>
+// CNC:2003-02-14 - apti18n.h includes libintl.h which includes locale.h,
+// 		    as reported by Radu Greab.
+//#include <locale.h>
 #include <fstream>
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -154,6 +156,14 @@ bool ShowList(ostream &out,string Title,string List)
 {
    if (List.empty() == true)
       return true;
+   // trim trailing space
+   int NonSpace = List.find_last_not_of(' ');
+   if (NonSpace != -1)
+   {
+      List = List.erase(NonSpace + 1);
+      if (List.empty() == true)
+	 return true;
+   }
 
    // Acount for the leading space
    int ScreenWidth = ::ScreenWidth - 3;
@@ -230,8 +240,16 @@ void ShowBroken(ostream &out,CacheFile &Cache,bool Now)
 	 pkgCache::DepIterator End;
 	 D.GlobOr(Start,End);
 
+         // CNC:2003-02-22 - IsImportantDep() currently calls IsCritical(), so
+         //		     these two are currently doing the same thing. Check
+         //		     comments in IsImportantDep() definition.
+#if 0
 	 if (Cache->IsImportantDep(End) == false)
 	    continue;
+#else
+	 if (End.IsCritical() == false)
+	    continue;
+#endif
 	 
 	 if (Now == true)
 	 {
@@ -581,6 +599,31 @@ void Stats(ostream &out,pkgDepCache &Dep)
 	       Dep.BadCount());
 }
 									/*}}}*/
+// CNC:2003-03-06
+// CheckOnly - Check if the cache has any changes to be applied		/*{{{*/
+// ---------------------------------------------------------------------
+/* Returns true if CheckOnly is active. */
+bool CheckOnly(CacheFile &Cache)
+{
+   if (_config->FindB("APT::Get::Check-Only", false) == false)
+      return false;
+   if (Cache->InstCount() != 0 || Cache->DelCount() != 0) {
+      if (_config->FindB("APT::Get::Show-Upgraded",true) == true)
+	 ShowUpgraded(c1out,Cache);
+      ShowDel(c1out,Cache);
+      ShowNew(c1out,Cache);
+      //ShowKept(c1out,Cache);
+      ShowHold(c1out,Cache);
+      ShowDowngraded(c1out,Cache);
+      ShowEssential(c1out,Cache);
+      Stats(c1out,Cache);
+      _error->Error(_("There are changes to be made"));
+   }
+
+   return true;
+}
+									/*}}}*/
+
 
 // CacheFile::NameComp - QSort compare by name				/*{{{*/
 // ---------------------------------------------------------------------
@@ -686,8 +729,8 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
    bool Essential = false;
    
    // Show all the various warning indicators
-   // CNC:2002-07-06
-   if (_config->FindB("APT::Get::Show-Upgraded",false) == true)
+   // CNC:2002-03-06 - Change Show-Upgraded default to true, and move upwards.
+   if (_config->FindB("apt::get::show-upgraded",true) == true)
       ShowUpgraded(c1out,Cache);
    ShowDel(c1out,Cache);
    ShowNew(c1out,Cache);
@@ -797,7 +840,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
 			      OutputDir.c_str());
       // CNC:2002-07-11
       if (unsigned(Buf.f_bavail) < (FetchBytes - FetchPBytes)/Buf.f_bsize)
-	 return _error->Error(_("Sorry, you don't have enough free space in %s to hold all packages."),
+	 return _error->Error(_("You don't have enough free space in %s."),
 			      OutputDir.c_str());
    }
    
@@ -862,6 +905,9 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
       after. */
    if (_config->FindB("APT::Get::Download-Only",false) == true)
       _system->UnLock();
+
+   // CNC:2003-02-24
+   bool Ret = true;
    
    // Run it
    while (1)
@@ -890,6 +936,9 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
       
       if (Fetcher.Run() == pkgAcquire::Failed)
 	 return false;
+
+      // CNC:2003-02-24
+      _error->PopState();
       
       // Print out errors
       bool Failed = false;
@@ -953,21 +1002,28 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
 	 _system->UnLock();
 	 pkgPackageManager::OrderResult Res = PM->DoInstall();
 	 if (Res == pkgPackageManager::Failed || _error->PendingError() == true)
-	    return false;
+	 {
+	    if (Transient == false)
+	       return false;
+	    Ret = false;
+	 }
 
 	 // CNC:2002-07-06
 	 if (Res == pkgPackageManager::Completed)
 	 {
 	    CommandLine *CmdL = NULL; // Watch out! If used will blow up!
-	    bool ret = true;
 	    if (_config->FindB("APT::Post-Install::Clean",false) == true) 
-	       ret = DoClean(*CmdL);
+	       Ret &= DoClean(*CmdL);
 	    else if (_config->FindB("APT::Post-Install::AutoClean",false) == true) 
-	       ret = DoAutoClean(*CmdL);
-	    return ret;
+	       Ret &= DoAutoClean(*CmdL);
+	    return Ret;
 	 }
+	 
 	 _system->Lock();
       }
+
+      // CNC:2003-02-24
+      _error->PushState();
       
       // Reload the fetcher object and loop again for media swapping
       Fetcher.Shutdown();
@@ -1351,6 +1407,10 @@ bool DoUpgrade(CommandLine &CmdL)
       ShowBroken(c1out,Cache,false);
       return _error->Error(_("Internal Error, AllUpgrade broke stuff"));
    }
+
+   // CNC:2003-03-06
+   if (CheckOnly(Cache) == true)
+      return true;
    
    return InstallPackages(Cache,true);
 }
@@ -1553,6 +1613,10 @@ bool DoInstall(CommandLine &CmdL)
       ShowList(c1out,_("The following extra packages will be installed:"),List);
    }
 
+   // CNC:2003-03-06
+   if (CheckOnly(Cache) == true)
+      return true;
+
    // See if we need to prompt
    if (Cache->InstCount() == ExpectedInst && Cache->DelCount() == 0)
       return InstallPackages(Cache,false,false);
@@ -1576,6 +1640,10 @@ bool DoDistUpgrade(CommandLine &CmdL)
       ShowBroken(c1out,Cache,false);
       return false;
    }
+   
+   // CNC:2003-03-06
+   if (CheckOnly(Cache) == true)
+      return true;
    
    c0out << _("Done") << endl;
    
@@ -1652,6 +1720,10 @@ bool DoDSelectUpgrade(CommandLine &CmdL)
       ShowBroken(c1out,Cache,false);
       return _error->Error("Internal Error, problem resolver broke stuff");
    }
+
+   // CNC:2003-03-06
+   if (CheckOnly(Cache) == true)
+      return true;
    
    return InstallPackages(Cache,false);
 }
@@ -1826,7 +1898,7 @@ bool DoSource(CommandLine &CmdL)
 			   OutputDir.c_str());
    // CNC:2002-07-12
    if (unsigned(Buf.f_bavail) < (FetchBytes - FetchPBytes)/Buf.f_bsize)
-      return _error->Error(_("Sorry, you don't have enough free space in %s"),
+      return _error->Error(_("You don't have enough free space in %s"),
 			   OutputDir.c_str());
    
    // Number of bytes
@@ -2049,32 +2121,53 @@ bool DoBuildDep(CommandLine &CmdL)
       pkgProblemResolver Fix(Cache);
       for (D = BuildDeps.begin(); D != BuildDeps.end(); D++)
       {
-	 pkgCache::PkgIterator Pkg = Cache->FindPkg((*D).Package);
-	 if (Pkg.end() == true)
-         {
-	    /* for a build-conflict; ignore unknown packages */
-	    if ((*D).Type == pkgSrcRecords::Parser::BuildConflict || 
-	        (*D).Type == pkgSrcRecords::Parser::BuildConflictIndep)
-		continue;
-
-	    return _error->Error(_("%s dependency on %s cannot be satisfied because the package %s cannot be found"),
-				 Last->BuildDepType((*D).Type),Src.c_str(),(*D).Package.c_str());
-         }
-	 pkgCache::VerIterator IV = (*Cache)[Pkg].InstVerIter(*Cache);
-	 
-	 if ((*D).Type == pkgSrcRecords::Parser::BuildConflict || 
+         if ((*D).Type == pkgSrcRecords::Parser::BuildConflict ||
 	     (*D).Type == pkgSrcRecords::Parser::BuildConflictIndep)
-	 {
-	    /* 
-	     * conflict; need to remove if we have an installed version 
-	     * that satisfies the version criterial 
-	     */
-	    if (IV.end() == false && 
-		Cache->VS().CheckDep(IV.VerStr(),(*D).Op,(*D).Version.c_str()) == true)
-	       TryToInstall(Pkg,Cache,Fix,true,false,ExpectedInst);
-	 } 
-	 else 
-	 {
+         {
+            pkgCache::PkgIterator Pkg = Cache->FindPkg((*D).Package);
+            // Build-conflicts on unknown packages are silently ignored
+            if (Pkg.end() == true)
+               continue;
+
+            pkgCache::VerIterator IV = (*Cache)[Pkg].InstVerIter(*Cache);
+
+            /* 
+             * Remove if we have an installed version that satisfies the 
+             * version criteria
+             */
+            if (IV.end() == false && 
+                Cache->VS().CheckDep(IV.VerStr(),(*D).Op,(*D).Version.c_str()) == true)
+               TryToInstall(Pkg,Cache,Fix,true,false,ExpectedInst);
+         }
+	 else // BuildDep || BuildDepIndep
+         {
+	    pkgCache::PkgIterator Pkg = Cache->FindPkg((*D).Package);
+	    if (Pkg.end() == true)
+            {
+               // Check if there are any alternatives
+               if (((*D).Op & pkgCache::Dep::Or) != pkgCache::Dep::Or)
+	          return _error->Error(_("%s dependency for %s cannot be satisfied "
+                                         "because the package %s cannot be found"),
+				         Last->BuildDepType((*D).Type),Src.c_str(),
+                                         (*D).Package.c_str());
+               // Try the next alternative
+               continue;
+            }
+
+            /*
+             * if there are alternatives, we've already picked one, so skip
+             * the rest
+             *
+             * TODO: this means that if there's a build-dep on A|B and B is
+             * installed, we'll still try to install A; more importantly,
+             * if A is currently broken, we cannot go back and try B. To fix 
+             * this would require we do a Resolve cycle for each package we 
+             * add to the install list. Ugh
+             */
+            while (D != BuildDeps.end() && 
+                   (((*D).Op & pkgCache::Dep::Or) == pkgCache::Dep::Or))
+               D++;
+                       
 	    /* 
 	     * If this is a virtual package, we need to check the list of
 	     * packages that provide it and see if any of those are
@@ -2084,22 +2177,35 @@ bool DoBuildDep(CommandLine &CmdL)
             for (; Prv.end() != true; Prv++)
 	       if ((*Cache)[Prv.OwnerPkg()].InstVerIter(*Cache).end() == false)
 	          break;
+            
+            // Get installed version and version we are going to install
+	    pkgCache::VerIterator IV = (*Cache)[Pkg].InstVerIter(*Cache);
+	    pkgCache::VerIterator CV = (*Cache)[Pkg].CandidateVerIter(*Cache);
 
-	    if (Prv.end() == true)
-	    {
-	       /* 
-		* depends; need to install or upgrade if we don't have the
-	        * package installed or if the version does not satisfy the
-	        * build dep. This is complicated by the fact that if we
-	        * depend on a version lower than what we already have 
-	        * installed it is not clear what should be done; in practice
-	        * this case should be rare though and right now nothing
-	        * is done about it :-( 
-		*/
-	       if (IV.end() == true ||
-	          Cache->VS().CheckDep(IV.VerStr(),(*D).Op,(*D).Version.c_str()) == false)
-	             TryToInstall(Pkg,Cache,Fix,false,false,ExpectedInst);
-	    }
+            for (; CV.end() != true; CV++)
+            {
+               if (Cache->VS().CheckDep(CV.VerStr(),(*D).Op,(*D).Version.c_str()) == true)
+                  break;
+            }
+            if (CV.end() == true)
+	       return _error->Error(_("%s dependency for %s cannot be satisfied "
+                                      "because no available versions of package %s "
+                                      "can satisfy version requirements"),
+				      Last->BuildDepType((*D).Type),Src.c_str(),
+                                      (*D).Package.c_str());
+
+            /*
+	     * TODO: if we depend on a version lower than what we already have 
+	     * installed it is not clear what should be done; in practice
+	     * this case should be rare, and right now nothing is 
+             * done about it :-( 
+	     */
+	    if (Prv.end() == true && // Nothing provides it; and
+                (IV.end() == true || //  It is not installed, or
+	         Cache->VS().CheckDep(IV.VerStr(),(*D).Op,(*D).Version.c_str()) == false))
+                                     //  the version installed doesn't 
+                                     //  satisfy constraints 
+	       TryToInstall(Pkg,Cache,Fix,false,false,ExpectedInst);
 	 }	       
       }
       
@@ -2115,6 +2221,11 @@ bool DoBuildDep(CommandLine &CmdL)
   
    if (InstallPackages(Cache, false, true) == false)
       return _error->Error(_("Failed to process build dependencies"));
+
+   // CNC:2003-03-06
+   if (CheckOnly(Cache) == true)
+      return true;
+   
    return true;
 }
 									/*}}}*/
@@ -2198,7 +2309,8 @@ bool ShowHelp(CommandLine &CmdL)
       "Commands:\n"
       "   update - Retrieve new lists of packages\n"
       "   upgrade - Perform an upgrade\n"
-      "   install - Install new packages (pkg is libc6 not libc6.deb)\n"
+// CNC:2003-02-20 - Use .rpm extension in documentation.
+      "   install - Install new packages (pkg is libc6 not libc6.rpm)\n"
       "   remove - Remove packages\n"
       "   source - Download source archives\n"
       "   build-dep - Configure build-dependencies for source packages\n"
@@ -2298,6 +2410,7 @@ int main(int argc,const char *argv[])
       {0,"remove","APT::Get::Remove",0},
       {0,"only-source","APT::Get::Only-Source",0},
       {0,"arch-only","APT::Get::Arch-Only",0},
+      {0,"check-only","APT::Get::Check-Only",0}, // CNC:2003-03-06
       {'c',"config-file",0,CommandLine::ConfigFile},
       {'o',"option",0,CommandLine::ArbItem},
       {0,0,0,0}};

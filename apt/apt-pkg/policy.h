@@ -77,8 +77,15 @@ class pkgPolicy : public pkgDepCache::Policy
    signed short GetPriority(pkgCache::PkgIterator const &Pkg);
    pkgCache::VerIterator GetMatch(pkgCache::PkgIterator Pkg);
 
+   // CNC:2003-03-06
+   virtual signed short GetPkgPriority(const pkgCache::PkgIterator &Pkg);
+
    // Things for the cache interface.
    virtual pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator Pkg);
+   // CNC:2002-03-17 - Every place that uses this function seems to
+   //		       currently check for IsCritical() as well. Since
+   //		       this is a virtual (heavy) function, we'll try
+   //		       not to use it while not necessary.
    virtual bool IsImportantDep(pkgCache::DepIterator Dep) {return pkgDepCache::Policy::IsImportantDep(Dep);};
    bool InitDefaults();
    

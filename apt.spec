@@ -1,14 +1,16 @@
 # hey Emacs, its -*- mode: rpm-spec; coding: cyrillic-cp1251; -*-
 
 Name: apt
-Version: 0.5.5cnc1
-Release: alt3
+Version: 0.5.5cnc4.1
+Release: alt7
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
 License: GPL
 Group: System/Configuration/Packaging
 Packager: APT Development Team <apt@packages.altlinux.org>
+
+%def_without static
 
 Source0: http://moin.conectiva.com.br/files/AptRpm/attachments/%name-%version.tar.bz2
 Source1: apt.conf
@@ -17,34 +19,30 @@ Source3: README.rsync
 Source4: apt.8
 Source5: apt.ru.po
 
-Patch1: apt-0.5.5cnc1-alt-distro.patch
-#Patch2: apt-0.5.4cnc1-alt-INLINEDEPFLAG.patch
-Patch3: apt-0.5.4cnc1-alt-configure-build.patch
-Patch4: apt-0.5.4cnc9-alt-getsrc.patch
-Patch5: apt-0.5.4cnc3-alt-md5hash-debug.patch
-Patch6: apt-0.5.4cnc9-alt-rsync.patch
-Patch7: apt-0.5.4cnc8-alt-rpm_cmd.patch
-Patch8: apt-0.5.4cnc8-alt-rpm-fancypercent.patch
-#Patch9: apt-0.5.4cnc9-alt-algo.patch
-#Patch10: apt-0.5.4cnc9-alt-replace.patch
-#Patch11: apt-0.5.4cnc9-alt-fixes.patch
-#Patch12: apt-0.5.4cnc9-alt-CachedMD5.patch
-Patch13: apt-0.5.5cnc1-alt-pkgpriorities.patch
-Patch14: apt-0.5.4cnc9-alt-bz2.patch
-#Patch15: apt-0.5.4cnc9-alt-rename-segfault.patch
-Patch16: apt-0.5.4cnc9-alt-rpmlistparser-kernel.patch
-Patch17: apt-0.5.4cnc9-alt-packagemanager-CheckRConflicts.patch
-Patch18: apt-0.5.4cnc9-alt-install_virtual.patch
-Patch19: apt-0.5.4cnc9-alt-specialchars.patch
-#Patch20: apt-0.5.4cnc9-alt-rpmrecords_epoch.patch
-#Patch21: apt-0.5.4cnc9-alt-lockfix.patch
-Patch22: apt-0.5.4cnc9-alt-install_virtual_version.patch
-Patch23: apt-0.5.5cnc1-alt-methods_gpg_homedir.patch
-Patch24: apt-0.5.4cnc9-alt-pkgorderlist_score.patch
-#Patch25: apt-0.5.4cnc9-alt-cdrom-unmount.patch
-Patch26: apt-0.5.5cnc1-alt-APT_DOMAIN.patch
-Patch27: apt-0.5.5cnc1-mattdm-manbuild.patch
-Patch28: apt-0.5.5cnc1-alt-debsystem.patch
+Patch1: apt-0.5.5cnc2-alt-distro.patch
+Patch2: apt-0.5.5cnc2-alt-rpm.patch
+Patch3: apt-0.5.4cnc9-alt-getsrc.patch
+Patch4: apt-0.5.4cnc3-alt-md5hash-debug.patch
+Patch5: apt-0.5.4cnc9-alt-rsync.patch
+Patch6: apt-0.5.5cnc4-alt-rpm_cmd.patch
+Patch7: apt-0.5.5cnc4.1-alt-rpm-fancypercent.patch
+Patch8: apt-0.5.5cnc1-alt-pkgpriorities.patch
+Patch9: apt-0.5.4cnc9-alt-bz2.patch
+Patch10: apt-0.5.4cnc9-alt-packagemanager-CheckRConflicts.patch
+Patch11: apt-0.5.5cnc4-alt-install_virtual.patch
+Patch12: apt-0.5.4cnc9-alt-install_virtual_version.patch
+Patch13: apt-0.5.5cnc1-alt-methods_gpg_homedir.patch
+Patch14: apt-0.5.4cnc9-alt-pkgorderlist_score.patch
+Patch15: apt-0.5.5cnc1-alt-debsystem.patch
+Patch16: apt-0.5.5cnc3-alt-i18n-apt-cdrom.patch
+Patch17: apt-0.5.5cnc4-alt-tinfo.patch
+Patch18: apt-cnc-20030322-algo.patch
+Patch19: apt-0.5.5cnc4-alt-versionmatch.patch
+Patch20: apt-0.5.5cnc4-alt-versionmatch2.patch
+Patch21: apt-0.5.5cnc4-alt-defaults.patch
+Patch22: apt-0.5.5cnc4.1-alt-fixpriorsort.patch
+Patch23: apt-0.5.5cnc4.1-alt-parseargs.patch
+Patch24: apt-0.5.5cnc4.1-alt-virtual_scores.patch
 
 # Need to be adopted. Or not?
 Patch31: apt-0.3.19cnc53-stelian-apt-pkg-algorithms-scores.patch
@@ -60,8 +58,8 @@ Obsoletes: apt-0.5
 
 BuildPreReq: librpm-devel >= 4.0.4, rpm-build >= 4.0.4
 
-# Automatically added by buildreq on Wed Feb 12 2003
-BuildRequires: bzlib-devel docbook-dtds docbook-utils gcc-c++ libdb2-devel libpopt-devel librpm-devel libstdc++-devel openjade perl-SGMLSpm sgml-common xml-common zlib-devel
+# Automatically added by buildreq on Tue Mar 11 2003
+BuildRequires: docbook-dtds docbook-utils gcc-c++ libreadline-devel librpm-devel libstdc++-devel libtinfo-devel openjade perl-SGMLSpm sgml-common xml-common
 
 %define risk_usage_en This package is still under development.
 
@@ -193,33 +191,29 @@ This package contains method 'rsync' for APT.
 %prep
 %setup -q -n apt-%version
 %patch1 -p1
-#%patch2 -p1
+%patch2 -p1
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
 %patch8 -p1
-#%patch9 -p1
-#%patch10 -p1
-#%patch11 -p1
-#%patch12 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
 %patch13 -p1
 %patch14 -p1
-#%patch15 -p1
+%patch15 -p1
 %patch16 -p1
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
-#%patch20 -p1
-#%patch21 -p1
+%patch20 -p1
+%patch21 -p1
 %patch22 -p1
 %patch23 -p1
 %patch24 -p1
-#%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
 
 # Need to be adopted. Or not?
 #%patch31 -p1
@@ -230,6 +224,8 @@ This package contains method 'rsync' for APT.
 
 %__install -p -m644 %SOURCE3 %SOURCE4 .
 %__install -p -m644 %SOURCE5 po/ru.po
+
+find -type f -name \*.orig -print -delete
 
 %build
 %add_optflags -fno-exceptions -D_GNU_SOURCE
@@ -258,15 +254,17 @@ find -type f -print0 |
 
 %make clean
 
-%make_build STATICLIBS=1 NOISY=1
+%make_build %{?_enable_static:STATICLIBS=1} NOISY=1
 
 %install
-%__mkdir_p $RPM_BUILD_ROOT{%_bindir,%_libdir/apt,%_mandir/man{1,5,8},%_includedir/apt-pkg,%_includedir/apt-inst,%_sysconfdir/apt/{vendors.list.d,apt.conf.d}}
-%__mkdir_p $RPM_BUILD_ROOT%_localstatedir/apt/lists/partial
+%__mkdir_p $RPM_BUILD_ROOT{%_bindir,%_libdir/apt,%_mandir/man{1,5,8},%_includedir/apt-pkg,%_includedir/apt-inst,%_sysconfdir/apt/{apt.conf,sources.list,vendors.list}.d}
+%__mkdir_p $RPM_BUILD_ROOT%_localstatedir/apt/{lists/partial,prefetch}
 %__mkdir_p $RPM_BUILD_ROOT/var/cache/apt/{archives/partial,gen{pkg,src}list}
 
 %__cp -a bin/lib*.so* $RPM_BUILD_ROOT%_libdir/
+%if_enabled static
 %__cp -a bin/lib*.a* $RPM_BUILD_ROOT%_libdir/
+%endif
 
 %__install -p -m755 bin/methods/* $RPM_BUILD_ROOT%_libdir/apt/
 %__install -p -m755 bin/apt-* $RPM_BUILD_ROOT%_bindir/
@@ -311,8 +309,7 @@ fi
 %exclude %_libdir/apt/rsync
 %dir %_sysconfdir/apt
 %config(noreplace) %_sysconfdir/apt/apt.conf
-%dir %_sysconfdir/apt/apt.conf.d
-%dir %_sysconfdir/apt/vendors.list.d
+%dir %_sysconfdir/apt/*.d
 %_mandir/man?/*
 %docdir
 %_localstatedir/apt
@@ -337,14 +334,74 @@ fi
 %_libdir/*.so
 %_includedir/*
 
+%if_enabled static
 %files -n libapt-devel-static
 %_libdir/*.a
+%endif
 
 %files rsync
 %dir %_libdir/apt
 %_libdir/apt/rsync
 
 %changelog
+* Sun Sep 28 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt7
+- apt-pkg/rpm/rpmpm.cc(pkgRPMPM::ExecRPM): honor "quiet" option.
+- Additional sorting hacks for virtual packages (mouse).
+
+* Wed Sep 03 2003 Rider <rider@altlinux.ru> 0.5.5cnc4.1-alt6
+- Fixed sorting of equal packages names with different versions (Mouse).
+- Fixed parsing command line arguments (Mouse).
+
+* Tue Jun 24 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt5
+- apt-get: Optimize pure virtual packages install.
+- libapt,apt-get: Use pkgVersioningSystem's CheckDep algorithm
+  for normal version match.
+- Changed some defaults in code rather then in /etc/apt.conf;
+  cleaned up /etc/apt.conf file.
+- Do not build static libraries by default.
+
+* Mon Apr 28 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt4
+- apt-get: substitute virtual package with real one (mouse).
+- libapt: ignore serial and check both for version and
+  version-release while matching version string (mouse).
+- Mouse birthday edition.
+
+* Tue Mar 25 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt3
+- Applied cnc-20030322 algorithm changes.
+- Updated russian translation (avd).
+
+* Tue Mar 11 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt2
+- Fixed -lncurses/-ltinfo linkage.
+- Updated buildrequires.
+
+* Sat Mar 08 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4.1-alt1
+- Updated to 0.5.5cnc4.1
+
+* Fri Mar 07 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc4-alt1
+- Updated to 0.5.5cnc4, renumbered patches.
+- Updated patches:
+  + alt-rpm_cmd
+- Removed patches due to upstream fixes:
+  + alt-APT_DOMAIN
+  + alt-specialchars
+- Packaged directories:
+  + Dir::Etc::sourceparts (/etc/apt/sources.list.d);
+  + Dir::State::prefetch (/var/lib/apt/prefetch).
+- apt-cdrom: i18n'ed (avd).
+- Updated russian translation (avd).
+
+* Fri Feb 28 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc3-alt1
+- Updated to 0.5.5cnc3
+
+* Sun Feb 23 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc2-alt1
+- Updated to 0.5.5cnc2
+- Merged upstream patches:
+  + alt-rpmlistparser-kernel
+  + mattdm-manbuild
+- Updated genbasedir (svd).
+- Cleaned up genbasedir a bit.
+- Cleaned up and updated buildrequires.
+
 * Thu Feb 13 2003 Dmitry V. Levin <ldv@altlinux.org> 0.5.5cnc1-alt3
 - Introduced APT::Ignore-dpkg support and set this flag by default,
   to address #0002119.
@@ -941,5 +998,5 @@ fi
 - initial package creation. Yeah, it's totally broken for sure.
 
 # Local Variables:
-# compile-command: "rpmbuild --target=i586 -ba apt.spec"
+# compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:

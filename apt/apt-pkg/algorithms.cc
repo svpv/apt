@@ -142,9 +142,18 @@ bool pkgSimulate::Configure(PkgIterator iPkg)
       // Print out each package and the failed dependencies
       for (pkgCache::DepIterator D = Sim[Pkg].InstVerIter(Sim).DependsList(); D.end() == false; D++)
       {
+         // CNC:2003-02-17 - IsImportantDep() currently calls IsCritical(), so
+         //		     these two are currently doing the same thing. Check
+         //		     comments in IsImportantDep() definition.
+#if 0
 	 if (Sim.IsImportantDep(D) == false || 
 	     (Sim[D] & pkgDepCache::DepInstall) != 0)
 	    continue;
+#else
+	 if (D.IsCritical() == false || 
+	     (Sim[D] & pkgDepCache::DepInstall) != 0)
+	    continue;
+#endif
 	 
 	 if (D->Type == pkgCache::Dep::Obsoletes)
 	    cout << " Obsoletes:" << D.TargetPkg().Name();
@@ -341,7 +350,8 @@ bool pkgDistUpgrade(pkgDepCache &Cache)
 	        Cache[D.ParentPkg()].CandidateVer != 0 &&
 		Cache[D.ParentPkg()].CandidateVerIter(Cache).Downloadable() == true &&
 	        (pkgCache::Version*)D.ParentVer() == Cache[D.ParentPkg()].CandidateVer &&
-	        Cache.VS().CheckDep(I.CurrentVer().VerStr(), D) == true)
+	        Cache.VS().CheckDep(I.CurrentVer().VerStr(), D) == true &&
+		Cache.GetPkgPriority(D.ParentPkg()) >= Cache.GetPkgPriority(I))
 	    {
 	       Cache.MarkInstall(D.ParentPkg(),true);
 	       Obsoleted = true;
@@ -374,7 +384,8 @@ bool pkgDistUpgrade(pkgDepCache &Cache)
 	        Cache[D.ParentPkg()].CandidateVer != 0 &&
 		Cache[D.ParentPkg()].CandidateVerIter(Cache).Downloadable() == true &&
 	        (pkgCache::Version*)D.ParentVer() == Cache[D.ParentPkg()].CandidateVer &&
-	        Cache.VS().CheckDep(I.CurrentVer().VerStr(), D) == true)
+	        Cache.VS().CheckDep(I.CurrentVer().VerStr(), D) == true &&
+		Cache.GetPkgPriority(D.ParentPkg()) >= Cache.GetPkgPriority(I))
 	    {
 	       Cache.MarkInstall(D.ParentPkg(),false);
 	       Obsoleted = true;

@@ -18,6 +18,9 @@ $(LOCAL)-DEP := $(addprefix $(DEP)/,$(addsuffix .o.d,$(notdir $(basename $(SOURC
 $(LOCAL)-HEADERS := $(addprefix $(INCLUDE)/,$(HEADERS))
 $(LOCAL)-LIB := $(LIB)/lib$(LIBRARY).a
 
+# CNC:2003-02-14
+include $(PODOMAIN_H)
+
 # Install the command hooks
 headers: $($(LOCAL)-HEADERS)
 library: $($(LOCAL)-LIB)

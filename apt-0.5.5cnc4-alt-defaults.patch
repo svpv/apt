@@ -1,0 +1,40 @@
+diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/init.cc apt-0.5.5cnc4.1/apt-pkg/init.cc
+--- apt-0.5.5cnc4.1.orig/apt-pkg/init.cc	2003-06-25 18:35:05 +0400
++++ apt-0.5.5cnc4.1/apt-pkg/init.cc	2003-06-25 18:35:45 +0400
+@@ -72,7 +72,7 @@ bool pkgInitConfig(Configuration &Cnf)
+    Cnf.Set("Dir::Etc::main","apt.conf");
+    Cnf.Set("Dir::Etc::parts","apt.conf.d");
+    Cnf.Set("Dir::Etc::preferences","preferences");
+-   Cnf.Set("Dir::Bin::methods","/usr/lib/apt/methods");
++   Cnf.Set("Dir::Bin::methods","/usr/lib/apt");
+    Cnf.Set("Acquire::ComprExtension", ".bz2");
+ 	      
+    bool Res = true;
+diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/rpm/rpmpm.cc apt-0.5.5cnc4.1/apt-pkg/rpm/rpmpm.cc
+--- apt-0.5.5cnc4.1.orig/apt-pkg/rpm/rpmpm.cc	2003-06-25 18:35:05 +0400
++++ apt-0.5.5cnc4.1/apt-pkg/rpm/rpmpm.cc	2003-06-25 18:43:01 +0400
+@@ -332,7 +332,7 @@ bool pkgRPMPM::ExecRPM(Item::RPMOps op, 
+       }	 
+    }
+ 
+-   if (_config->FindB("RPM::Order",false) == false)
++   if (_config->FindB("RPM::Order",true) == false)
+       Args[n++] = "--noorder";
+     
+    string cmd;
+diff -uprk.orig apt-0.5.5cnc4.1.orig/buildlib/archtable apt-0.5.5cnc4.1/buildlib/archtable
+--- apt-0.5.5cnc4.1.orig/buildlib/archtable	2003-03-08 02:14:52 +0300
++++ apt-0.5.5cnc4.1/buildlib/archtable	2003-06-25 18:37:36 +0400
+@@ -5,8 +5,10 @@
+ 
+ # The left side is a regex for awk
+ 
+-i.86	i386
+-pentium	i386
++i[34]86	i386
++i.86	i586
++pentium.*	i586
++athlon	i586
+ sparc	sparc
+ sparc64	sparc
+ alpha.*	alpha

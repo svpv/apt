@@ -2,6 +2,8 @@
 
 	* apt-pkg/versionmatch.cc (pkgVersionMatch::Find):
 	Add APT::Install::VirtualVersion support.
+	* cmdline/apt-get.cc (TryToChangeVer):
+	Substitute virtual package with real one.
 
 --- apt-0.5.4cnc9/apt-pkg/versionmatch.cc.orig	2002-07-23 21:54:50 +0400
 +++ apt-0.5.4cnc9/apt-pkg/versionmatch.cc	2003-01-21 16:42:55 +0300
@@ -33,3 +35,24 @@
     // This will be Ended by now.
     return Ver;
  }
+--- apt-0.5.4cnc9/cmdline/apt-get.cc.orig	2002-10-18 22:32:12 +0400
++++ apt-0.5.4cnc9/cmdline/apt-get.cc	2003-01-23 15:33:45 +0300
+@@ -1119,7 +1119,7 @@
+ // TryToChangeVer - Try to change a candidate version			/*{{{*/
+ // ---------------------------------------------------------------------
+ /* */
+-bool TryToChangeVer(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
++bool TryToChangeVer(pkgCache::PkgIterator &Pkg,pkgDepCache &Cache,
+ 		    const char *VerTag,bool IsRel)
+ {
+    pkgVersionMatch Match(VerTag,(IsRel == true?pkgVersionMatch::Release : 
+@@ -1143,6 +1143,9 @@
+    }
+    
+    Cache.SetCandidateVersion(Ver);
++   if (Ver.ParentPkg() != Pkg) {
++      Pkg = Ver.ParentPkg();
++   }
+    return true;
+ }
+ 									/*}}}*/

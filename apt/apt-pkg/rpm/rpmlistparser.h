@@ -14,6 +14,8 @@
 #define PKGLIB_RPMLISTPARSER_H
 
 #include <apt-pkg/pkgcachegen.h>
+#include <apt-pkg/rpmhandler.h>
+#include <apt-pkg/rpmmisc.h>
 #include <rpm/rpmlib.h>
 #include <map>
 #include <vector>
@@ -22,20 +24,26 @@
 using namespace std;
 
 class RPMHandler;
+class RPMPackageData;
 
 class rpmListParser : public pkgCacheGenerator::ListParser
 {
    RPMHandler *Handler;
+   RPMPackageData *RpmData;
    Header header;
+
+   string CurrentName;
+   const pkgCache::VerIterator *VI;
    
-   map<string,unsigned long> *DupPackages;
-   vector<string> Essentials;
-   vector<string> Importants;
+#ifdef WITH_HASH_MAP
+   typedef hash_map<const char*,bool,
+   		    hash<const char*>,cstr_eq_pred> SeenPackagesType;
+#else
+   typedef map<const char*,bool,cstr_lt_pred> SeenPackagesType;
+#endif
+   SeenPackagesType *SeenPackages;
    
-   vector<regex_t*> AllowedDupPackages;
    bool Duplicated;
-   
-   bool GetConfig();
    
    unsigned long UniqFindTagWrite(int Tag);
    bool ParseStatus(pkgCache::PkgIterator Pkg,pkgCache::VerIterator Ver);
@@ -59,13 +67,23 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    virtual unsigned short VersionHash();
    virtual bool UsePackage(pkgCache::PkgIterator Pkg,
 			   pkgCache::VerIterator Ver);
-   virtual unsigned long Offset();
+   virtual unsigned long Offset()
+	{return Handler->Offset();};
    virtual unsigned long Size();
+
+   virtual bool OrderedOffset()
+   	{return Handler->OrderedOffset();};
+
+   virtual bool IsDatabase()
+   	{return Handler->IsDatabase();};
+
    virtual bool CollectFileProvides(pkgCache &Cache,
 				    pkgCache::VerIterator Ver); 
    virtual bool Step();
    
    bool LoadReleaseInfo(pkgCache::PkgFileIterator FileI,FileFd &File);
+
+   void VirtualizePackage(string Name);
    
    rpmListParser(RPMHandler *Handler);
    ~rpmListParser();

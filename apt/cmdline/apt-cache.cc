@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: apt-cache.cc,v 1.5 2003/01/29 18:43:48 niemeyer Exp $
+// $Id: apt-cache.cc,v 1.61 2003/02/10 01:40:58 doogie Exp $
 /* ######################################################################
    
    apt-cache - Manages the cache files
@@ -31,7 +31,9 @@
 #include <config.h>
 #include <apti18n.h>
 
-#include <locale.h>
+// CNC:2003-02-14 - apti18n.h includes libintl.h which includes locale.h,
+// 		    as reported by Radu Greab.
+//#include <locale.h>
 #include <iostream>
 #include <unistd.h>
 #include <errno.h>
@@ -563,7 +565,8 @@ bool Depends(CommandLine &CmdL)
 	    continue;
 	 }
 	 
-	 cout << Pkg.Name() << endl;
+	 // CNC:2003-03-03
+	 cout << Pkg.Name() << "-" << Ver.VerStr() << endl;
 	 
 	 for (pkgCache::DepIterator D = Ver.DependsList(); D.end() == false; D++)
 	 {
@@ -576,8 +579,12 @@ bool Depends(CommandLine &CmdL)
 	    pkgCache::PkgIterator Trg = D.TargetPkg();
 	    if (Trg->VersionList == 0)
 	       cout << D.DepType() << ": <" << Trg.Name() << ">" << endl;
-	    else
+	    // CNC:2003-03-03
+	    else if (D.TargetVer() == 0)
 	       cout << D.DepType() << ": " << Trg.Name() << endl;
+	    else
+	       cout << D.DepType() << ": " << Trg.Name()
+		    << " " << D.CompType() << " " << D.TargetVer() << endl;
 	    
 	    if (Recurse == true)
 	       Colours[D.TargetPkg()->ID]++;
@@ -591,7 +598,9 @@ bool Depends(CommandLine &CmdL)
 	       if (V != Cache.VerP + V.ParentPkg()->VersionList ||
 		   V->ParentPkg == D->Package)
 		  continue;
-	       cout << "    " << V.ParentPkg().Name() << endl;
+	       // CNC:2003-03-03
+	       cout << "    " << V.ParentPkg().Name()
+		    << "-" << V.VerStr() << endl;
 	       
 	       if (Recurse == true)
 		  Colours[D.ParentPkg()->ID]++;
@@ -599,6 +608,229 @@ bool Depends(CommandLine &CmdL)
 	 }
       }      
    }   
+   while (DidSomething == true);
+   
+   return true;
+}
+									/*}}}*/
+// CNC:2003-02-19
+// WhatDepends - Print out a reverse dependency tree			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+bool WhatDepends(CommandLine &CmdL)
+{
+   pkgCache &Cache = *GCache;
+   SPtrArray<unsigned> Colours = new unsigned[Cache.Head().PackageCount];
+   memset(Colours,0,sizeof(*Colours)*Cache.Head().PackageCount);
+   
+   for (const char **I = CmdL.FileList + 1; *I != 0; I++)
+   {
+      pkgCache::PkgIterator Pkg = Cache.FindPkg(*I);
+      if (Pkg.end() == true)
+      {
+	 _error->Warning(_("Unable to locate package %s"),*I);
+	 continue;
+      }
+      Colours[Pkg->ID] = 1;
+   }
+   
+   bool Recurse = _config->FindB("APT::Cache::RecurseDepends",false);
+   bool DidSomething;
+   do
+   {
+      DidSomething = false;
+      for (pkgCache::PkgIterator Pkg = Cache.PkgBegin(); Pkg.end() == false; Pkg++)
+      {
+	 if (Colours[Pkg->ID] != 1)
+	    continue;
+	 Colours[Pkg->ID] = 2;
+	 DidSomething = true;
+	 
+	 pkgCache::VerIterator Ver = Pkg.VersionList();
+	 if (Ver.end() == true)
+	    cout << '<' << Pkg.Name() << '>' << endl;
+	 else
+	    cout << Pkg.Name() << "-" << Ver.VerStr() << endl;
+
+	 SPtrArray<unsigned> LocalColours = 
+		     new unsigned[Cache.Head().PackageCount];
+	 memset(LocalColours,0,sizeof(*LocalColours)*Cache.Head().PackageCount);
+	    
+	 // Display all dependencies directly on the package.
+	 for (pkgCache::DepIterator RD = Pkg.RevDependsList();
+	      RD.end() == false; RD++)
+	 {
+	    pkgCache::PkgIterator Parent = RD.ParentPkg();
+
+	    if (LocalColours[Parent->ID] == 1)
+	       continue;
+	    LocalColours[Parent->ID] = 1;
+	       
+	    if (Ver.end() == false && RD.TargetVer() &&
+	        Cache.VS->CheckDep(Ver.VerStr(),RD) == false)
+	       continue;
+
+	    if (Recurse == true && Colours[Parent->ID] == 0)
+	       Colours[Parent->ID] = 1;
+
+	    pkgCache::VerIterator ParentVer = Parent.VersionList();
+
+	    // Show the package
+	    cout << "  " << Parent.Name()
+		 << "-" << ParentVer.VerStr() << endl;
+
+	    // Display all dependencies from that package that relate
+	    // to the queried package.
+	    for (pkgCache::DepIterator D = ParentVer.DependsList();
+	         D.end() == false; D++)
+	    {
+	       // Go on if it's the same package and version or
+	       // if it's the same package and has no versions
+	       // (a virtual package).
+	       if (D.TargetPkg() != Pkg ||
+	           Ver.end() == false &&
+		   Cache.VS->CheckDep(Ver.VerStr(),D) == false) {
+		  // Oops. Either it's not the same package, or the
+		  // version didn't match. Check virtual provides from
+		  // the queried package version and verify if this
+		  // dependency matches one of those.
+		  bool Hit = false;
+		  for (pkgCache::PrvIterator Prv = Ver.ProvidesList();
+		       Prv.end() == false; Prv++) {
+		     if (Prv.ParentPkg() == D.TargetPkg() &&
+			 (Prv.ParentPkg()->VersionList == 0 ||
+			  Cache.VS->CheckDep(Prv.ProvideVersion(),D)==false)) {
+			Hit = true;
+			break;
+		     }
+		  }
+		  if (Hit == false)
+		     continue;
+	       }
+
+	       // Bingo!
+	       pkgCache::PkgIterator Trg = D.TargetPkg();
+	       if (Trg->VersionList == 0)
+		  cout << "    " << D.DepType()
+				 << ": <" << Trg.Name() << ">" << endl;
+	       else if (D.TargetVer() == 0)
+		  cout << "    " << D.DepType()
+				 << ": " << Trg.Name() << endl;
+	       else
+		  cout << "    " << D.DepType()
+				 << ": " << Trg.Name()
+				 << " " << D.CompType() << " "
+				 << D.TargetVer() << endl;
+
+	       // Display all solutions
+	       SPtrArray<pkgCache::Version *> List = D.AllTargets();
+	       pkgPrioSortList(Cache,List);
+	       for (pkgCache::Version **I = List; *I != 0; I++)
+	       {
+		  pkgCache::VerIterator V(Cache,*I);
+		  if (V != Cache.VerP + V.ParentPkg()->VersionList ||
+		      V->ParentPkg == D->Package)
+		     continue;
+		  cout << "      " << V.ParentPkg().Name()
+		       << "-" << V.VerStr() << endl;
+		  
+		  if (Recurse == true)
+		     Colours[D.ParentPkg()->ID]++;
+	       }
+	    }
+	 }
+
+	 // Is this a virtual package the user queried directly?
+	 if (Ver.end())
+	    continue;
+
+	 // Display all dependencies on virtual provides, which were not
+	 // yet shown in the step above.
+	 for (pkgCache::PrvIterator RDPrv = Ver.ProvidesList();
+	      RDPrv.end() == false; RDPrv++) {
+	    for (pkgCache::DepIterator RD = RDPrv.ParentPkg().RevDependsList();
+	         RD.end() == false; RD++)
+	    {
+	       pkgCache::PkgIterator Parent = RD.ParentPkg();
+
+	       if (LocalColours[Parent->ID] == 1)
+		  continue;
+	       LocalColours[Parent->ID] = 1;
+		  
+	       if (Ver.end() == false &&
+		   Cache.VS->CheckDep(Ver.VerStr(),RD) == false)
+		  continue;
+
+	       if (Recurse == true && Colours[Parent->ID] == 0)
+		  Colours[Parent->ID] = 1;
+
+	       pkgCache::VerIterator ParentVer = Parent.VersionList();
+
+	       // Show the package
+	       cout << "  " << Parent.Name()
+		    << "-" << ParentVer.VerStr() << endl;
+
+	       for (pkgCache::DepIterator D = ParentVer.DependsList();
+		    D.end() == false; D++)
+	       {
+		  // Go on if it's the same package and version or
+		  // if it's the same package and has no versions
+		  // (a virtual package).
+		  if (D.TargetPkg() != RDPrv.ParentPkg() ||
+		      Ver.end() == false &&
+		      Cache.VS->CheckDep(Ver.VerStr(),D) == false) {
+		     // Oops. Either it's not the same package, or the
+		     // version didn't match. Check virtual provides from
+		     // the queried package version and verify if this
+		     // dependency matches one of those.
+		     bool Hit = false;
+		     for (pkgCache::PrvIterator Prv = Ver.ProvidesList();
+			  Prv.end() == false; Prv++) {
+			if (Prv.ParentPkg() == D.TargetPkg() &&
+			    (Prv.ParentPkg()->VersionList == 0 ||
+			     Cache.VS->CheckDep(Prv.ProvideVersion(),D)) == false) {
+			   Hit = true;
+			   break;
+			}
+		     }
+		     if (Hit == false)
+			continue;
+		  }
+
+		  // Bingo!
+		  pkgCache::PkgIterator Trg = D.TargetPkg();
+		  if (Trg->VersionList == 0)
+		     cout << "    " << D.DepType()
+				    << ": <" << Trg.Name() << ">" << endl;
+		  else if (D.TargetVer() == 0)
+		     cout << "    " << D.DepType()
+				    << ": " << Trg.Name() << endl;
+		  else
+		     cout << "    " << D.DepType()
+				    << ": " << Trg.Name()
+				    << " " << D.CompType() << " "
+				    << D.TargetVer() << endl;
+
+		  // Display all solutions
+		  SPtrArray<pkgCache::Version *> List = D.AllTargets();
+		  pkgPrioSortList(Cache,List);
+		  for (pkgCache::Version **I = List; *I != 0; I++)
+		  {
+		     pkgCache::VerIterator V(Cache,*I);
+		     if (V != Cache.VerP + V.ParentPkg()->VersionList ||
+			 V->ParentPkg == D->Package)
+			continue;
+		     cout << "      " << V.ParentPkg().Name()
+			  << "-" << V.VerStr() << endl;
+		     
+		     if (Recurse == true)
+			Colours[D.ParentPkg()->ID]++;
+		  }
+	       }
+	    }
+	 }
+      } 
+   }
    while (DidSomething == true);
    
    return true;
@@ -1287,7 +1519,8 @@ bool ShowHelp(CommandLine &Cmd)
    
    cout << 
     _("Usage: apt-cache [options] command\n"
-      "       apt-cache [options] add file1 [file1 ...]\n"
+// CNC:2003-02-20 - Use file2, not file1 twice.
+      "       apt-cache [options] add file1 [file2 ...]\n"
       "       apt-cache [options] showpkg pkg1 [pkg2 ...]\n"
       "       apt-cache [options] showsrc pkg1 [pkg2 ...]\n"
       "\n"
@@ -1295,7 +1528,7 @@ bool ShowHelp(CommandLine &Cmd)
       "cache files, and query information from them\n"
       "\n"
       "Commands:\n"
-      "   add - Add an package file to the source cache\n"
+      "   add - Add a package file to the source cache\n"
       "   gencaches - Build both the package and source cache\n"
       "   showpkg - Show some general information for a single package\n"
       "   showsrc - Show source records\n"
@@ -1306,6 +1539,7 @@ bool ShowHelp(CommandLine &Cmd)
       "   search - Search the package list for a regex pattern\n"
       "   show - Show a readable record for the package\n"
       "   depends - Show raw dependency information for a package\n"
+      "   whatdepends - Show raw dependency information on a package\n"
       "   pkgnames - List the names of all packages\n"
       "   dotty - Generate package graphs for GraphVis\n"
       "   policy - Show policy settings\n"
@@ -1362,6 +1596,7 @@ int main(int argc,const char *argv[])
                                     {"unmet",&UnMet},
                                     {"search",&Search},
                                     {"depends",&Depends},
+                                    {"whatdepends",&WhatDepends},
                                     {"dotty",&Dotty},
                                     {"show",&ShowPackage},
                                     {"pkgnames",&ShowPkgNames},

@@ -17,7 +17,7 @@ LIBEXT=$(GLIBC_VER)$(LIBSTDCPP_VER)
 MAJOR=3.3
 MINOR=0
 # CNC:2002-07-03
-SLIBS=$(PTHREADLIB) $(RPMLIBS)
+SLIBS=$(PTHREADLIB) $(INTLLIBS) $(RPMLIBS)
 APT_DOMAIN:=libapt-pkg$(MAJOR)
 
 # Source code for the contributed non-core things
@@ -45,6 +45,9 @@ HEADERS+= algorithms.h depcache.h pkgcachegen.h cacheiterators.h \
 	  clean.h srcrecords.h cachefile.h versionmatch.h policy.h \
 	  pkgsystem.h indexfile.h repository.h
 
+# CNC:2003-02-15
+WITH_DEB=no
+ifeq ($(WITH_DEB),yes)
 # Source code for the debian specific components
 # In theory the deb headers do not need to be exported..
 SOURCE+= deb/deblistparser.cc deb/debrecords.cc deb/dpkgpm.cc \
@@ -52,6 +55,7 @@ SOURCE+= deb/deblistparser.cc deb/debrecords.cc deb/dpkgpm.cc \
 	 deb/debindexfile.cc deb/debindexfile.cc
 HEADERS+= debversion.h debsrcrecords.h dpkgpm.h debrecords.h \
 	  deblistparser.h debsystem.h debindexfile.h
+endif
 
 # CNC:2002-07-03
 # Source code for the rpm specific components
@@ -59,7 +63,8 @@ SOURCE+= rpm/rpmhandler.cc rpm/rpmindexfile.cc rpm/rpmlistparser.cc \
 	 rpm/rpmpackagedata.cc rpm/rpmpm.cc rpm/rpmrecords.cc \
 	 rpm/rpmsrcrecords.cc rpm/rpmsystem.cc rpm/rpmversion.cc
 HEADERS+= rpmhandler.h rpmindexfile.h rpmlistparser.h rpmpackagedata.h \
-	  rpmpm.h rpmrecords.h rpmsrcrecords.h rpmsystem.h rpmversion.h
+	  rpmpm.h rpmrecords.h rpmsrcrecords.h rpmsystem.h rpmversion.h \
+	  rpmmisc.h
 
 HEADERS := $(addprefix apt-pkg/,$(HEADERS))
 

@@ -1,0 +1,231 @@
+2003-06-24  Dmitry V. Levin <ldv@altlinux.org>
+
+	* apt-pkg/versionmatch.cc (pkgVersionMatch::MatchVer):
+	Use pkgVersioningSystem's CheckDep for normal (non-prefix) match.
+	* apt-pkg/versionmatch.h (class pkgVersionMatch):
+	Added "int VerOp" private member.
+	Added argument to constructor.
+	* apt-pkg/versionmatch.cc (pkgVersionMatch::pkgVersionMatch):
+	Initialize VerOp.
+	* cmdline/apt-get.cc (DoInstall):
+	Changed parser to initialize VerOp.
+	* cmdline/apt-get.cc (TryToChangeVer): Use it.
+	* cmdline/apt-get.cc (op2str): New function.
+	* cmdline/apt-get.cc (TryToChangeVer): Use it.
+
+diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/versionmatch.cc apt-0.5.5cnc4.1/apt-pkg/versionmatch.cc
+--- apt-0.5.5cnc4.1.orig/apt-pkg/versionmatch.cc	2003-06-24 15:43:54 +0400
++++ apt-0.5.5cnc4.1/apt-pkg/versionmatch.cc	2003-06-24 15:18:19 +0400
+@@ -15,6 +15,7 @@
+ #pragma implementation "apt-pkg/versionmatch.h"
+ #endif
+ #include <apt-pkg/versionmatch.h>
++#include <apt-pkg/version.h>
+ #include <apt-pkg/configuration.h>
+ 
+ #include <apt-pkg/strutl.h>
+@@ -27,7 +28,7 @@
+ // VersionMatch::pkgVersionMatch - Constructor				/*{{{*/
+ // ---------------------------------------------------------------------
+ /* Break up the data string according to the selected type */
+-pkgVersionMatch::pkgVersionMatch(string Data,MatchType Type) : Type(Type)
++pkgVersionMatch::pkgVersionMatch(string Data,MatchType Type,int Op) : VerOp(Op), Type(Type)
+ {
+    MatchAll = false;
+    VerPrefixMatch = false;
+@@ -162,13 +163,22 @@ bool pkgVersionMatch::MatchVer(const cha
+ /* */
+ pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
+ {
++   pkgVersioningSystem *VS = Pkg.Cache()->VS;
+    pkgCache::VerIterator Ver = Pkg.VersionList();
++
+    for (; Ver.end() == false; Ver++)
+    {
+       if (Type == Version)
+       {
+-	 if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
+-	    return Ver;
++         if (VerPrefixMatch)
++	 {
++	    if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
++	       return Ver;
++	 } else {
++	    if (VS->CheckDep(Ver.VerStr(),VerOp,VerStr.c_str()) == true)
++	       return Ver;
++	 }
++
+ 	 continue;
+       }
+       
+@@ -185,9 +195,14 @@ pkgCache::VerIterator pkgVersionMatch::F
+     {
+       if (Type == Version)
+       {
+-	 if (MatchVer(Prv.ProvideVersion(),VerStr,VerPrefixMatch) == true)
+-	    return Prv.OwnerVer();
+-	 continue;
++         if (VerPrefixMatch)
++	 {
++	    if (MatchVer(Prv.ProvideVersion(),VerStr,VerPrefixMatch) == true)
++	       return Prv.OwnerVer();
++	 } else {
++	    if (VS->CheckDep(Prv.ProvideVersion(),VerOp,VerStr.c_str()) == true)
++	       return Prv.OwnerVer();
++	 }
+       }
+     }
+    // This will be Ended by now.
+diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/versionmatch.h apt-0.5.5cnc4.1/apt-pkg/versionmatch.h
+--- apt-0.5.5cnc4.1.orig/apt-pkg/versionmatch.h	2003-03-08 02:12:11 +0300
++++ apt-0.5.5cnc4.1/apt-pkg/versionmatch.h	2003-06-24 14:22:28 +0400
+@@ -45,6 +45,7 @@ class pkgVersionMatch
+    // Version Matching
+    string VerStr;
+    bool VerPrefixMatch;
++   int VerOp;
+ 
+    // Release Matching
+    string RelVerStr;
+@@ -66,7 +67,7 @@ class pkgVersionMatch
+    bool FileMatch(pkgCache::PkgFileIterator File);
+    pkgCache::VerIterator Find(pkgCache::PkgIterator Pkg);
+ 			       
+-   pkgVersionMatch(string Data,MatchType Type);
++   pkgVersionMatch(string Data,MatchType Type,int Op = 0);
+ };
+ 
+ #endif
+diff -uprk.orig apt-0.5.5cnc4.1.orig/cmdline/apt-get.cc apt-0.5.5cnc4.1/cmdline/apt-get.cc
+--- apt-0.5.5cnc4.1.orig/cmdline/apt-get.cc	2003-06-24 15:43:54 +0400
++++ apt-0.5.5cnc4.1/cmdline/apt-get.cc	2003-06-24 15:39:37 +0400
+@@ -1172,29 +1172,40 @@ bool TryToInstall(pkgCache::PkgIterator 
+    return true;
+ }
+ 									/*}}}*/
++static const char *op2str(int op)
++{
++   switch (op & 0x0f)
++   {
++      case pkgCache::Dep::LessEq: return "<=";
++      case pkgCache::Dep::GreaterEq: return ">=";
++      case pkgCache::Dep::Less: return "<";
++      case pkgCache::Dep::Greater: return ">";
++      case pkgCache::Dep::Equals: return "=";
++      case pkgCache::Dep::NotEquals: return "!";
++      default: return "";
++   }
++};
++
+ // TryToChangeVer - Try to change a candidate version			/*{{{*/
+ // ---------------------------------------------------------------------
+ /* */
+ bool TryToChangeVer(pkgCache::PkgIterator &Pkg,pkgDepCache &Cache,
+-		    const char *VerTag,bool IsRel)
++		    int VerOp,const char *VerTag,bool IsRel)
+ {
+    pkgVersionMatch Match(VerTag,(IsRel == true?pkgVersionMatch::Release : 
+-				 pkgVersionMatch::Version));
++				 pkgVersionMatch::Version),VerOp);
+    
+    pkgCache::VerIterator Ver = Match.Find(Pkg);
+ 			 
+    if (Ver.end() == true)
+-   {
+-      if (IsRel == true)
+-	 return _error->Error(_("Release '%s' for '%s' was not found"),
+-			      VerTag,Pkg.Name());
+-      return _error->Error(_("Version '%s' for '%s' was not found"),
+-			   VerTag,Pkg.Name());
+-   }
++      return _error->Error(_("%s %s'%s' for '%s' was not found"),
++			   IsRel ? _("Release") : _("Version"),
++			   op2str(VerOp), VerTag,Pkg.Name());
+    
+    if (strcmp(VerTag,Ver.VerStr()) != 0)
+    {
+-      ioprintf(c1out,_("Selected version %s (%s) for %s\n"),
++      ioprintf(c1out,_("Selected %s %s (%s) for %s\n"),
++	       IsRel ? _("release") : _("version"),
+ 	       Ver.VerStr(),Ver.RelStr().c_str(),Pkg.Name());
+    }
+    
+@@ -1455,6 +1466,7 @@ bool DoInstall(CommandLine &CmdL)
+       bool Remove = DefRemove;
+       char *VerTag = 0;
+       bool VerIsRel = false;
++      int VerOp = 0;
+       while (Cache->FindPkg(S).end() == true)
+       {
+ 	 // Handle an optional end tag indicating what to do
+@@ -1472,15 +1484,47 @@ bool DoInstall(CommandLine &CmdL)
+ 	    continue;
+ 	 }
+ 	 
+-	 char *Slash = strchr(S,'=');
+-	 if (Slash != 0)
++	 char *sep = strpbrk(S,"=><");
++	 if (sep)
+ 	 {
++	    char *p;
++	    int eq = 0, gt = 0, lt = 0;
++
+ 	    VerIsRel = false;
+-	    *Slash = 0;
+-	    VerTag = Slash + 1;
++	    for (p = sep; *p && strchr("=><",*p); ++p)
++	       switch (*p)
++	       {
++		  case '=': eq = 1; break;
++		  case '>': gt = 1; break;
++		  case '<': lt = 1; break;
++	       }
++	    if (eq)
++	    {
++	       if (lt && gt)
++		  return _error->Error(_("Couldn't parse name: %s"),S);
++	       else if (lt)
++		  VerOp = pkgCache::Dep::LessEq;
++	       else if (gt)
++		  VerOp = pkgCache::Dep::GreaterEq;
++	       else
++		  VerOp = pkgCache::Dep::Equals;
++	    }
++	    else
++	    {
++	       if (lt && gt)
++		  VerOp = pkgCache::Dep::NotEquals;
++	       else if (lt)
++		  VerOp = pkgCache::Dep::Less;
++	       else if (gt)
++		  VerOp = pkgCache::Dep::Greater;
++	       else
++		  return _error->Error(_("Couldn't parse name: %s"),S);
++	    }
++	    *sep = '\0';
++	    VerTag = p;
+ 	 }
+ 	 
+-	 Slash = strchr(S,'/');
++	 char *Slash = strchr(S,'/');
+ 	 if (Slash != 0)
+ 	 {
+ 	    VerIsRel = true;
+@@ -1530,7 +1574,7 @@ bool DoInstall(CommandLine &CmdL)
+ 		     Pkg.Name(),S);
+ 	    
+ 	    if (VerTag != 0)
+-	       if (TryToChangeVer(Pkg,Cache,VerTag,VerIsRel) == false)
++	       if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
+ 		  return false;
+ 	    
+ 	    Hit |= TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,
+@@ -1544,7 +1588,7 @@ bool DoInstall(CommandLine &CmdL)
+       else
+       {
+ 	 if (VerTag != 0)
+-	    if (TryToChangeVer(Pkg,Cache,VerTag,VerIsRel) == false)
++	    if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
+ 	       return false;
+ 	 if (TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,ExpectedInst) == false)
+ 	    return false;

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: init.cc,v 1.5 2003/01/29 18:43:48 niemeyer Exp $
+// $Id: init.cc,v 1.20 2003/02/09 20:31:05 doogie Exp $
 /* ######################################################################
 
    Init - Initialize the package library
@@ -65,6 +65,8 @@ bool pkgInitConfig(Configuration &Cnf)
    // Configuration
    Cnf.Set("Dir::Etc","etc/apt/");
    Cnf.Set("Dir::Etc::sourcelist","sources.list");
+   // CNC:2003-03-03
+   Cnf.Set("Dir::Etc::sourceparts","sources.list.d");
    Cnf.Set("Dir::Etc::vendorlist","vendors.list");
    Cnf.Set("Dir::Etc::vendorparts","vendors.list.d");
    Cnf.Set("Dir::Etc::main","apt.conf");
@@ -95,20 +97,37 @@ bool pkgInitConfig(Configuration &Cnf)
    if (Cnf.FindB("Debug::pkgInitConfig",false) == true)
       Cnf.Dump();
    
+#ifdef APT_DOMAIN
    if (Cnf.Exists("Dir::Locale"))
    {  
       bindtextdomain(APT_DOMAIN,Cnf.FindDir("Dir::Locale").c_str());
       bindtextdomain(textdomain(0),Cnf.FindDir("Dir::Locale").c_str());
    }
+#endif
    
    return true;
 }
 									/*}}}*/
+
+// CNC:2003-02-16 - We must do that to force a statically linked libapt-pkg
+// 		    library to include the package systems into the binary.
+#include <apt-pkg/rpmsystem.h>
+//#include <apt-pkg/debsystem.h>
+void ForceLinkage()
+{
+	rpmSystem *rpmsys = &rpmSys;
+	rpmsys->ArchiveSupported("");
+	//debSystem *debsys = &debSys;
+	//depsys->ArchiveSupported("");
+}
+
 // pkgInitSystem - Initialize the _system calss				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
 bool pkgInitSystem(Configuration &Cnf,pkgSystem *&Sys)
 {
+   ForceLinkage(); // CNC:2003-02-16 - See above.
+
    Sys = 0;
    string Label = Cnf.Find("Apt::System","");
    if (Label.empty() == false)

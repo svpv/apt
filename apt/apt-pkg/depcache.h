@@ -116,6 +116,10 @@ class pkgDepCache : protected pkgCache::Namespace
       
       virtual VerIterator GetCandidateVer(PkgIterator Pkg);
       virtual bool IsImportantDep(DepIterator Dep);
+      // CNC:2003-03-05 - We need access to the priority in pkgDistUpgrade
+      //		  while checking for obsoleting packages.
+      virtual signed short GetPkgPriority(pkgCache::PkgIterator const &Pkg)
+	 { return 0; };
       
       virtual ~Policy() {};
    };
@@ -164,6 +168,10 @@ class pkgDepCache : protected pkgCache::Namespace
    
    public:
 
+   // CNC:2003-02-23 - See below.
+   class State;
+   friend class State;
+   
    // Legacy.. We look like a pkgCache
    inline operator pkgCache &() {return *Cache;};
    inline Header &Head() {return *Cache->HeaderP;};
@@ -177,6 +185,8 @@ class pkgDepCache : protected pkgCache::Namespace
    inline VerIterator GetCandidateVer(PkgIterator Pkg) {return LocalPolicy->GetCandidateVer(Pkg);};
    inline bool IsImportantDep(DepIterator Dep) {return LocalPolicy->IsImportantDep(Dep);};
    inline Policy &GetPolicy() {return *LocalPolicy;};
+   // CNC:2003-03-05 - See above.
+   inline signed short GetPkgPriority(pkgCache::PkgIterator const &Pkg) {return LocalPolicy->GetPkgPriority(Pkg);};
    
    // Accessors
    inline StateCache &operator [](PkgIterator const &I) {return PkgState[I->ID];};
@@ -207,6 +217,52 @@ class pkgDepCache : protected pkgCache::Namespace
    pkgDepCache(pkgCache *Cache,Policy *Plcy = 0);
    virtual ~pkgDepCache();
 };
+
+// CNC:2003-02-24 - Class to work on the state of a depcache.
+class pkgDepCache::State
+{
+   protected:
+
+   pkgDepCache *Dep;
+
+   StateCache *PkgState;
+   unsigned char *DepState;
+   double iUsrSize;
+   double iDownloadSize;
+   unsigned long iInstCount;
+   unsigned long iDelCount;
+   unsigned long iKeepCount;
+   unsigned long iBrokenCount;
+   unsigned long iBadCount;
+   
+   bool *PkgIgnore;
+      
+   public:
+
+   void Save(pkgDepCache *Dep);
+   void Restore();
+   bool Changed();
+
+   void Ignore(PkgIterator const &I) {PkgIgnore[I->ID] = true;};
+
+   StateCache &operator [](pkgCache::PkgIterator const &I) {return PkgState[I->ID];};
+
+   // Size queries
+   inline double UsrSize() {return iUsrSize;};
+   inline double DebSize() {return iDownloadSize;};
+   inline unsigned long DelCount() {return iDelCount;};
+   inline unsigned long KeepCount() {return iKeepCount;};
+   inline unsigned long InstCount() {return iInstCount;};
+   inline unsigned long BrokenCount() {return iBrokenCount;};
+   inline unsigned long BadCount() {return iBadCount;};
+
+   State(pkgDepCache *Dep=NULL)
+	 : Dep(0), PkgState(0), DepState(0), PkgIgnore(0)
+      { if (Dep != NULL) Save(Dep); };
+   ~State()
+      { delete[] PkgState; delete[] DepState; delete[] PkgIgnore; };
+};
+
 
 /* This is an exact copy of the structure above, nested in pkgDepCache.
  * This is defined again here since SWIG doesn't know how to handle nested
@@ -256,3 +312,5 @@ class pkgDepCache : protected pkgCache::Namespace
 #endif
 
 #endif
+
+// vim:sts=3:sw=3

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: apt-cdrom.cc,v 1.5 2003/01/29 15:11:14 niemeyer Exp $
+// $Id: apt-cdrom.cc,v 1.42 2002/02/15 03:40:00 jgg Exp $
 /* ######################################################################
    
    APT CDROM - Tool for handling APT's CDROM database.
@@ -21,9 +21,16 @@
 #include <config.h>
 #include <apti18n.h>
     
-#include "rpmindexcopy.h" // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
+#include "rpmindexcopy.h"
+#else
+#include "indexcopy.h"
+#endif
 
-#include <locale.h>
+// CNC:2003-02-14 - apti18n.h includes libintl.h which includes locale.h,
+// 		    as reported by Radu Greab.
+//#include <locale.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -69,7 +76,11 @@ bool FindPackages(string CD,vector<string> &List,vector<string> &SList,
       return true;
    
 // CNC:2002-07-11
-#if 0
+#ifdef HAVE_RPM
+   bool Found = false;
+   if (stat("release",&Buf) == 0)
+      Found = true;
+#else
    /* Aha! We found some package files. We assume that everything under 
       this dir is controlled by those package files so we don't look down
       anymore */
@@ -89,10 +100,6 @@ bool FindPackages(string CD,vector<string> &List,vector<string> &SList,
       if (_config->FindB("APT::CDROM::Thorough",false) == false)
 	 return true;
    }
-#else
-   bool Found = false;
-   if (stat("release",&Buf) == 0)
-      Found = true;
 #endif
    
    DIR *D = opendir(".");
@@ -107,14 +114,18 @@ bool FindPackages(string CD,vector<string> &List,vector<string> &SList,
 	  strcmp(Dir->d_name,"..") == 0 ||
 	  //strcmp(Dir->d_name,"source") == 0 ||
 	  strcmp(Dir->d_name,".disk") == 0 ||
-	  // CNC:2002-07-11
-	  //strcmp(Dir->d_name,"experimental") == 0 ||
-	  //strcmp(Dir->d_name,"binary-all") == 0)
+// CNC:2002-07-11
+#ifdef HAVE_RPM
 	  strncmp(Dir->d_name,"RPMS",4) == 0 ||
 	  strncmp(Dir->d_name,"doc",3) == 0)
+#else
+	  strcmp(Dir->d_name,"experimental") == 0 ||
+	  strcmp(Dir->d_name,"binary-all") == 0)
+#endif
 	 continue;
 
-      // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
       if (strncmp(Dir->d_name, "pkglist.", 8) == 0 &&
 	  strcmp(Dir->d_name+strlen(Dir->d_name)-4, ".bz2") == 0)
       {
@@ -132,6 +143,7 @@ bool FindPackages(string CD,vector<string> &List,vector<string> &SList,
       if (_config->FindB("APT::CDROM::Thorough",false) == false &&
 	  Found == true)
 	 continue;
+#endif
 
       // See if the name is a sub directory
       struct stat Buf;
@@ -164,8 +176,6 @@ bool FindPackages(string CD,vector<string> &List,vector<string> &SList,
    return !_error->PendingError();
 }
 									/*}}}*/
-// CNC:2002-07-11
-#if 0
 // DropBinaryArch - Dump dirs with a string like /binary-<foo>/		/*{{{*/
 // ---------------------------------------------------------------------
 /* Here we drop everything that is not this machines arch */
@@ -211,6 +221,10 @@ bool DropBinaryArch(vector<string> &List)
 int Score(string Path)
 {
    int Res = 0;
+#ifdef HAVE_RPM
+   if (Path.find("base/") != string::npos)
+      Res = 1;
+#else
    if (Path.find("stable/") != string::npos)
       Res += 29;
    if (Path.find("/binary-") != string::npos)
@@ -233,6 +247,7 @@ int Score(string Path)
       Res += 10;
    if (Path.find("/debian/") != string::npos)
       Res -= 10;
+#endif
    return Res;
 }
 									/*}}}*/
@@ -246,7 +261,9 @@ bool DropRepeats(vector<string> &List,const char *Name)
    for (unsigned int I = 0; I != List.size(); I++)
    {
       struct stat Buf;
-      if (stat((List[I] + Name).c_str(),&Buf) != 0 &&
+      // CNC:2003-02-14
+      if (stat((List[I]).c_str(),&Buf) != 0 &&
+	  stat((List[I] + Name).c_str(),&Buf) != 0 &&
 	  stat((List[I] + Name + ".gz").c_str(),&Buf) != 0)
 	 _error->Errno("stat","Failed to stat %s%s",List[I].c_str(),
 		       Name);
@@ -289,7 +306,6 @@ bool DropRepeats(vector<string> &List,const char *Name)
    
    return true;
 }
-#endif
 									/*}}}*/
 
 // ReduceSourceList - Takes the path list and reduces it		/*{{{*/
@@ -418,12 +434,19 @@ bool WriteSourceList(string Name,vector<string> &List,bool Source)
    string ShortURI = "cdrom:[" + Name + "]/";   
    string ShortURI2 = "cdrom:" + Name + "/";     // For Compatibility
 
-   // CNC:2002-07-11
    const char *Type;
+// CNC:2002-07-11
+#ifdef HAVE_RPM
    if (Source == true)
       Type = "rpm-src";
    else
       Type = "rpm";
+#else
+   if (Source == true)
+      Type = "deb-src";
+   else
+      Type = "deb";
+#endif
    
    char Buffer[300];
    int CurLine = 0;
@@ -484,9 +507,14 @@ bool WriteSourceList(string Name,vector<string> &List,bool Source)
 	 if (Space == string::npos)
 	    return _error->Error("Internal error");
 	 
-         // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
 	 Out << "rpm cdrom:[" << Name << "]/" << string(*I,0,Space) << 
 	    " " << string(*I,Space+1) << endl;
+#else
+	 Out << "deb cdrom:[" << Name << "]/" << string(*I,0,Space) << 
+	    " " << string(*I,Space+1) << endl;
+#endif
       }
    }
    
@@ -620,9 +648,12 @@ bool DoAdd(CommandLine &)
 	 cout << *I << endl;
    }   
    
-// CNC:2002-07-11
-#if 0
    // Fix up the list
+// CNC:2002-07-11
+#ifdef HAVE_RPM
+   DropRepeats(List,"pkglist");
+   DropRepeats(sList,"srclist");
+#else
    DropBinaryArch(List);
    DropRepeats(List,"Packages");
    DropRepeats(sList,"Sources");
@@ -633,8 +664,8 @@ bool DoAdd(CommandLine &)
    // CNC:2002-07-11
    if (List.size() == 0 && sList.size() == 0)
    {
-	if (_config->FindB("APT::CDROM::NoMount",false) == false)
-		UnmountCdrom(CDROM);
+	if (Mounted && _config->FindB("APT::CDROM::NoMount",false) == false)
+	     UnmountCdrom(CDROM);
 	return _error->Error("Unable to locate any package files, perhaps this is not an APT enabled disc");
    
    }
@@ -667,8 +698,12 @@ bool DoAdd(CommandLine &)
       if (_config->FindB("APT::CDROM::Rename",false) == true ||
 	  Name.empty() == true)
       {
-	 // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
 	 cout << "Please provide a name for this Disc, such as 'Conectiva Disk 1'";
+#else
+	 cout << "Please provide a name for this Disc, such as 'Debian 2.1r1 Disk 1'";
+#endif
 	 while (1)
 	 {
 	    Name = PromptLine("");
@@ -694,9 +729,14 @@ bool DoAdd(CommandLine &)
    cout << "This Disc is called:" << endl << " '" << Name << "'" << endl;
    
    // Copy the package files to the state directory
-   // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
    RPMPackageCopy Copy;
    RPMSourceCopy SrcCopy;
+#else
+   PackageCopy Copy;
+   SourceCopy SrcCopy;
+#endif
    // CNC:2002-10-29
    if (Copy.CopyPackages(ScanDir,Name,List) == false ||
        SrcCopy.CopyPackages(ScanDir,Name,sList) == false)
@@ -726,9 +766,14 @@ bool DoAdd(CommandLine &)
       if (Space == string::npos)
 	 return _error->Error("Internal error");
 
-      // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
       cout << "rpm cdrom:[" << Name << "]/" << string(*I,0,Space) << 
 	 " " << string(*I,Space+1) << endl;
+#else
+      cout << "deb cdrom:[" << Name << "]/" << string(*I,0,Space) << 
+	 " " << string(*I,Space+1) << endl;
+#endif
    }
 
    for (vector<string>::iterator I = sList.begin(); I != sList.end(); I++)
@@ -737,9 +782,14 @@ bool DoAdd(CommandLine &)
       if (Space == string::npos)
 	 return _error->Error("Internal error");
 
-      // CNC:2002-07-11
+// CNC:2002-07-11
+#ifdef HAVE_RPM
       cout << "rpm-src cdrom:[" << Name << "]/" << string(*I,0,Space) << 
 	 " " << string(*I,Space+1) << endl;
+#else
+      cout << "deb-src cdrom:[" << Name << "]/" << string(*I,0,Space) << 
+	 " " << string(*I,Space+1) << endl;
+#endif
    }
 
    cout << "Repeat this process for the rest of the CDs in your set." << endl;

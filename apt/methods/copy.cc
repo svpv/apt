@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: copy.cc,v 1.1 2002/07/23 17:54:53 niemeyer Exp $
+// $Id: copy.cc,v 1.7 2003/02/10 07:34:41 doogie Exp $
 /* ######################################################################
 
    Copy URI - This method takes a uri like a file: uri and copies it
@@ -16,6 +16,10 @@
 #include <sys/stat.h>
 #include <utime.h>
 #include <unistd.h>
+
+// CNC:2003-02-20 - Moved header to fix compilation error when
+// 		    --disable-nls is used.
+#include <apti18n.h>
 									/*}}}*/
 
 class CopyMethod : public pkgAcqMethod
@@ -38,7 +42,7 @@ bool CopyMethod::Fetch(FetchItem *Itm)
    // Stat the file and send a start message
    struct stat Buf;
    if (stat(File.c_str(),&Buf) != 0)
-      return _error->Errno("stat","Failed to stat");
+      return _error->Errno("stat",_("Failed to stat"));
 
    // Forumulate a result and send a start message
    FetchResult Res;
@@ -75,7 +79,7 @@ bool CopyMethod::Fetch(FetchItem *Itm)
    if (utime(Itm->DestFile.c_str(),&TimeBuf) != 0)
    {
       To.OpFail();
-      return _error->Errno("utime","Failed to set modification time");
+      return _error->Errno("utime",_("Failed to set modification time"));
    }
    
    URIDone(Res);

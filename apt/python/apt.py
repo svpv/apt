@@ -115,11 +115,10 @@ class pkgCache(_object):
     def Hash(*args): return apply(_apt.pkgCache_Hash,args)
     def Priority(*args): return apply(_apt.pkgCache_Priority,args)
     def FindPkg(*args): return apply(_apt.pkgCache_FindPkg,args)
+    def FindPackage(*args): return apply(_apt.pkgCache_FindPackage,args)
     def Head(*args): return apply(_apt.pkgCache_Head,args)
-    def PkgBegin(*args): return apply(_apt.pkgCache_PkgBegin,args)
-    def PkgEnd(*args): return apply(_apt.pkgCache_PkgEnd,args)
-    def FileBegin(*args): return apply(_apt.pkgCache_FileBegin,args)
-    def FileEnd(*args): return apply(_apt.pkgCache_FileEnd,args)
+    def PkgIter(*args): return apply(_apt.pkgCache_PkgIter,args)
+    def FileIter(*args): return apply(_apt.pkgCache_FileIter,args)
     __swig_setmethods__["VS"] = _apt.pkgCache_VS_set
     __swig_getmethods__["VS"] = _apt.pkgCache_VS_get
     if _newclass:VS = property(_apt.pkgCache_VS_get,_apt.pkgCache_VS_set)
@@ -605,7 +604,7 @@ class pkgDepCache(_object):
     def BuildGroupOrs(*args): return apply(_apt.pkgDepCache_BuildGroupOrs,args)
     def UpdateVerState(*args): return apply(_apt.pkgDepCache_UpdateVerState,args)
     def Head(*args): return apply(_apt.pkgDepCache_Head,args)
-    def PkgBegin(*args): return apply(_apt.pkgDepCache_PkgBegin,args)
+    def PkgIter(*args): return apply(_apt.pkgDepCache_PkgIter,args)
     def FindPkg(*args): return apply(_apt.pkgDepCache_FindPkg,args)
     def GetCache(*args): return apply(_apt.pkgDepCache_GetCache,args)
     def VS(*args): return apply(_apt.pkgDepCache_VS,args)
@@ -710,15 +709,18 @@ class pkgCachePkgIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCachePkgIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCachePkgIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCachePkgIterator___nonzero__,args)
+    def next(*args): return apply(_apt.pkgCachePkgIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCachePkgIterator___iter__,args)
     NeedsNothing = _apt.pkgCachePkgIterator_NeedsNothing
     NeedsUnpack = _apt.pkgCachePkgIterator_NeedsUnpack
     NeedsConfigure = _apt.pkgCachePkgIterator_NeedsConfigure
-    def next(*args): return apply(_apt.pkgCachePkgIterator_next,args)
     def end(*args): return apply(_apt.pkgCachePkgIterator_end,args)
     def __eq__(*args): return apply(_apt.pkgCachePkgIterator___eq__,args)
     def __ne__(*args): return apply(_apt.pkgCachePkgIterator___ne__,args)
     def __deref__(*args): return apply(_apt.pkgCachePkgIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCachePkgIterator___mul__,args)
+    def Package(*args): return apply(_apt.pkgCachePkgIterator_Package,args)
     def Cache(*args): return apply(_apt.pkgCachePkgIterator_Cache,args)
     def Name(*args): return apply(_apt.pkgCachePkgIterator_Name,args)
     def Section(*args): return apply(_apt.pkgCachePkgIterator_Section,args)
@@ -772,7 +774,9 @@ class pkgCacheVerIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCacheVerIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCacheVerIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCacheVerIterator___nonzero__,args)
     def next(*args): return apply(_apt.pkgCacheVerIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCacheVerIterator___iter__,args)
     def end(*args): return apply(_apt.pkgCacheVerIterator_end,args)
     def assign(*args): return apply(_apt.pkgCacheVerIterator_assign,args)
     def __eq__(*args): return apply(_apt.pkgCacheVerIterator___eq__,args)
@@ -780,6 +784,7 @@ class pkgCacheVerIterator(_object):
     def CompareVer(*args): return apply(_apt.pkgCacheVerIterator_CompareVer,args)
     def __deref__(*args): return apply(_apt.pkgCacheVerIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCacheVerIterator___mul__,args)
+    def Version(*args): return apply(_apt.pkgCacheVerIterator_Version,args)
     def Cache(*args): return apply(_apt.pkgCacheVerIterator_Cache,args)
     def VerStr(*args): return apply(_apt.pkgCacheVerIterator_VerStr,args)
     def Section(*args): return apply(_apt.pkgCacheVerIterator_Section,args)
@@ -834,12 +839,15 @@ class pkgCacheDepIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCacheDepIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCacheDepIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCacheDepIterator___nonzero__,args)
     def next(*args): return apply(_apt.pkgCacheDepIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCacheDepIterator___iter__,args)
     def end(*args): return apply(_apt.pkgCacheDepIterator_end,args)
     def __eq__(*args): return apply(_apt.pkgCacheDepIterator___eq__,args)
     def __ne__(*args): return apply(_apt.pkgCacheDepIterator___ne__,args)
     def __deref__(*args): return apply(_apt.pkgCacheDepIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCacheDepIterator___mul__,args)
+    def Dependency(*args): return apply(_apt.pkgCacheDepIterator_Dependency,args)
     def Cache(*args): return apply(_apt.pkgCacheDepIterator_Cache,args)
     def TargetVer(*args): return apply(_apt.pkgCacheDepIterator_TargetVer,args)
     def TargetPkg(*args): return apply(_apt.pkgCacheDepIterator_TargetPkg,args)
@@ -896,12 +904,15 @@ class pkgCachePrvIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCachePrvIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCachePrvIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCachePrvIterator___nonzero__,args)
     def next(*args): return apply(_apt.pkgCachePrvIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCachePrvIterator___iter__,args)
     def end(*args): return apply(_apt.pkgCachePrvIterator_end,args)
     def __eq__(*args): return apply(_apt.pkgCachePrvIterator___eq__,args)
     def __ne__(*args): return apply(_apt.pkgCachePrvIterator___ne__,args)
     def __deref__(*args): return apply(_apt.pkgCachePrvIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCachePrvIterator___mul__,args)
+    def Provides(*args): return apply(_apt.pkgCachePrvIterator_Provides,args)
     def Cache(*args): return apply(_apt.pkgCachePrvIterator_Cache,args)
     def Name(*args): return apply(_apt.pkgCachePrvIterator_Name,args)
     def ProvideVersion(*args): return apply(_apt.pkgCachePrvIterator_ProvideVersion,args)
@@ -940,12 +951,15 @@ class pkgCachePkgFileIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCachePkgFileIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCachePkgFileIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCachePkgFileIterator___nonzero__,args)
     def next(*args): return apply(_apt.pkgCachePkgFileIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCachePkgFileIterator___iter__,args)
     def end(*args): return apply(_apt.pkgCachePkgFileIterator_end,args)
     def __eq__(*args): return apply(_apt.pkgCachePkgFileIterator___eq__,args)
     def __ne__(*args): return apply(_apt.pkgCachePkgFileIterator___ne__,args)
     def __deref__(*args): return apply(_apt.pkgCachePkgFileIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCachePkgFileIterator___mul__,args)
+    def PackageFile(*args): return apply(_apt.pkgCachePkgFileIterator_PackageFile,args)
     def Cache(*args): return apply(_apt.pkgCachePkgFileIterator_Cache,args)
     def FileName(*args): return apply(_apt.pkgCachePkgFileIterator_FileName,args)
     def Archive(*args): return apply(_apt.pkgCachePkgFileIterator_Archive,args)
@@ -996,12 +1010,15 @@ class pkgCacheVerFileIterator(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgCacheVerFileIterator, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgCacheVerFileIterator, name)
+    def __nonzero__(*args): return apply(_apt.pkgCacheVerFileIterator___nonzero__,args)
     def next(*args): return apply(_apt.pkgCacheVerFileIterator_next,args)
+    def __iter__(*args): return apply(_apt.pkgCacheVerFileIterator___iter__,args)
     def end(*args): return apply(_apt.pkgCacheVerFileIterator_end,args)
     def __eq__(*args): return apply(_apt.pkgCacheVerFileIterator___eq__,args)
     def __ne__(*args): return apply(_apt.pkgCacheVerFileIterator___ne__,args)
     def __deref__(*args): return apply(_apt.pkgCacheVerFileIterator___deref__,args)
     def __mul__(*args): return apply(_apt.pkgCacheVerFileIterator___mul__,args)
+    def VerFile(*args): return apply(_apt.pkgCacheVerFileIterator_VerFile,args)
     def Cache(*args): return apply(_apt.pkgCacheVerFileIterator_Cache,args)
     def File(*args): return apply(_apt.pkgCacheVerFileIterator_File,args)
     def Index(*args): return apply(_apt.pkgCacheVerFileIterator_Index,args)
@@ -1057,7 +1074,7 @@ class pkgCacheFile(_object):
     def BuildGroupOrs(*args): return apply(_apt.pkgCacheFile_BuildGroupOrs,args)
     def UpdateVerState(*args): return apply(_apt.pkgCacheFile_UpdateVerState,args)
     def Head(*args): return apply(_apt.pkgCacheFile_Head,args)
-    def PkgBegin(*args): return apply(_apt.pkgCacheFile_PkgBegin,args)
+    def PkgIter(*args): return apply(_apt.pkgCacheFile_PkgIter,args)
     def FindPkg(*args): return apply(_apt.pkgCacheFile_FindPkg,args)
     def GetCache(*args): return apply(_apt.pkgCacheFile_GetCache,args)
     def VS(*args): return apply(_apt.pkgCacheFile_VS,args)
@@ -1209,6 +1226,44 @@ ReadConfigFile = _apt.ReadConfigFile
 
 ReadConfigDir = _apt.ReadConfigDir
 
+class ConfigurationItem(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, ConfigurationItem, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, ConfigurationItem, name)
+    __swig_setmethods__["Tag"] = _apt.ConfigurationItem_Tag_set
+    __swig_getmethods__["Tag"] = _apt.ConfigurationItem_Tag_get
+    if _newclass:Tag = property(_apt.ConfigurationItem_Tag_get,_apt.ConfigurationItem_Tag_set)
+    __swig_setmethods__["Value"] = _apt.ConfigurationItem_Value_set
+    __swig_getmethods__["Value"] = _apt.ConfigurationItem_Value_get
+    if _newclass:Value = property(_apt.ConfigurationItem_Value_get,_apt.ConfigurationItem_Value_set)
+    __swig_setmethods__["Parent"] = _apt.ConfigurationItem_Parent_set
+    __swig_getmethods__["Parent"] = _apt.ConfigurationItem_Parent_get
+    if _newclass:Parent = property(_apt.ConfigurationItem_Parent_get,_apt.ConfigurationItem_Parent_set)
+    __swig_setmethods__["Child"] = _apt.ConfigurationItem_Child_set
+    __swig_getmethods__["Child"] = _apt.ConfigurationItem_Child_get
+    if _newclass:Child = property(_apt.ConfigurationItem_Child_get,_apt.ConfigurationItem_Child_set)
+    __swig_setmethods__["Next"] = _apt.ConfigurationItem_Next_set
+    __swig_getmethods__["Next"] = _apt.ConfigurationItem_Next_get
+    if _newclass:Next = property(_apt.ConfigurationItem_Next_get,_apt.ConfigurationItem_Next_set)
+    def FullTag(*args): return apply(_apt.ConfigurationItem_FullTag,args)
+    def __init__(self,*args):
+        self.this = apply(_apt.new_ConfigurationItem,args)
+        self.thisown = 1
+    def __del__(self, destroy= _apt.delete_ConfigurationItem):
+        try:
+            if self.thisown: destroy(self)
+        except: pass
+    def __repr__(self):
+        return "<C ConfigurationItem instance at %s>" % (self.this,)
+
+class ConfigurationItemPtr(ConfigurationItem):
+    def __init__(self,this):
+        self.this = this
+        if not hasattr(self,"thisown"): self.thisown = 0
+        self.__class__ = ConfigurationItem
+_apt.ConfigurationItem_swigregister(ConfigurationItemPtr)
+
 class OpProgress(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, OpProgress, name, value)
@@ -1352,6 +1407,10 @@ class pkgAcquireItem(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgAcquireItem, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgAcquireItem, name)
+    __swig_getmethods__["DestFile"] = _apt.pkgAcquireItem_DestFile_get
+    if _newclass:DestFile = property(_apt.pkgAcquireItem_DestFile_get)
+    __swig_getmethods__["ErrorText"] = _apt.pkgAcquireItem_ErrorText_get
+    if _newclass:ErrorText = property(_apt.pkgAcquireItem_ErrorText_get)
     StatIdle = _apt.pkgAcquireItem_StatIdle
     StatFetching = _apt.pkgAcquireItem_StatFetching
     StatDone = _apt.pkgAcquireItem_StatDone
@@ -1359,9 +1418,6 @@ class pkgAcquireItem(_object):
     __swig_setmethods__["Status"] = _apt.pkgAcquireItem_Status_set
     __swig_getmethods__["Status"] = _apt.pkgAcquireItem_Status_get
     if _newclass:Status = property(_apt.pkgAcquireItem_Status_get,_apt.pkgAcquireItem_Status_set)
-    __swig_setmethods__["ErrorText"] = _apt.pkgAcquireItem_ErrorText_set
-    __swig_getmethods__["ErrorText"] = _apt.pkgAcquireItem_ErrorText_get
-    if _newclass:ErrorText = property(_apt.pkgAcquireItem_ErrorText_get,_apt.pkgAcquireItem_ErrorText_set)
     __swig_setmethods__["FileSize"] = _apt.pkgAcquireItem_FileSize_set
     __swig_getmethods__["FileSize"] = _apt.pkgAcquireItem_FileSize_get
     if _newclass:FileSize = property(_apt.pkgAcquireItem_FileSize_get,_apt.pkgAcquireItem_FileSize_set)
@@ -1383,9 +1439,6 @@ class pkgAcquireItem(_object):
     __swig_setmethods__["QueueCounter"] = _apt.pkgAcquireItem_QueueCounter_set
     __swig_getmethods__["QueueCounter"] = _apt.pkgAcquireItem_QueueCounter_get
     if _newclass:QueueCounter = property(_apt.pkgAcquireItem_QueueCounter_get,_apt.pkgAcquireItem_QueueCounter_set)
-    __swig_setmethods__["DestFile"] = _apt.pkgAcquireItem_DestFile_set
-    __swig_getmethods__["DestFile"] = _apt.pkgAcquireItem_DestFile_get
-    if _newclass:DestFile = property(_apt.pkgAcquireItem_DestFile_get,_apt.pkgAcquireItem_DestFile_set)
     def Failed(*args): return apply(_apt.pkgAcquireItem_Failed,args)
     def Done(*args): return apply(_apt.pkgAcquireItem_Done,args)
     def Start(*args): return apply(_apt.pkgAcquireItem_Start,args)
@@ -1526,7 +1579,7 @@ class pkgAcquire(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, pkgAcquire, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, pkgAcquire, name)
-    def ItemsList(*args): return apply(_apt.pkgAcquire_ItemsList,args)
+    def ItemsIter(*args): return apply(_apt.pkgAcquire_ItemsIter,args)
     def GetConfig(*args): return apply(_apt.pkgAcquire_GetConfig,args)
     Continue = _apt.pkgAcquire_Continue
     Failed = _apt.pkgAcquire_Failed
@@ -1535,8 +1588,6 @@ class pkgAcquire(_object):
     def Shutdown(*args): return apply(_apt.pkgAcquire_Shutdown,args)
     def WorkersBegin(*args): return apply(_apt.pkgAcquire_WorkersBegin,args)
     def WorkerStep(*args): return apply(_apt.pkgAcquire_WorkerStep,args)
-    def ItemsBegin(*args): return apply(_apt.pkgAcquire_ItemsBegin,args)
-    def ItemsEnd(*args): return apply(_apt.pkgAcquire_ItemsEnd,args)
     def UriBegin(*args): return apply(_apt.pkgAcquire_UriBegin,args)
     def UriEnd(*args): return apply(_apt.pkgAcquire_UriEnd,args)
     def Clean(*args): return apply(_apt.pkgAcquire_Clean,args)
@@ -1660,6 +1711,9 @@ class GlobalError(_object):
     __setattr__ = lambda self, name, value: _swig_setattr(self, GlobalError, name, value)
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, GlobalError, name)
+    def PushState(*args): return apply(_apt.GlobalError_PushState,args)
+    def PopState(*args): return apply(_apt.GlobalError_PopState,args)
+    def PopBackState(*args): return apply(_apt.GlobalError_PopBackState,args)
     def Errno(*args): return apply(_apt.GlobalError_Errno,args)
     def WarningE(*args): return apply(_apt.GlobalError_WarningE,args)
     def Error(*args): return apply(_apt.GlobalError_Error,args)
@@ -1711,5 +1765,49 @@ class pkgAcquireStatusDumbPtr(pkgAcquireStatusDumb):
         if not hasattr(self,"thisown"): self.thisown = 0
         self.__class__ = pkgAcquireStatusDumb
 _apt.pkgAcquireStatusDumb_swigregister(pkgAcquireStatusDumbPtr)
+
+class ROpPyProgress(OpProgress):
+    __swig_setmethods__ = {}
+    for _s in [OpProgress]: __swig_setmethods__.update(_s.__swig_setmethods__)
+    __setattr__ = lambda self, name, value: _swig_setattr(self, ROpPyProgress, name, value)
+    __swig_getmethods__ = {}
+    for _s in [OpProgress]: __swig_getmethods__.update(_s.__swig_getmethods__)
+    __getattr__ = lambda self, name: _swig_getattr(self, ROpPyProgress, name)
+    __swig_setmethods__["Op"] = _apt.ROpPyProgress_Op_set
+    __swig_getmethods__["Op"] = _apt.ROpPyProgress_Op_get
+    if _newclass:Op = property(_apt.ROpPyProgress_Op_get,_apt.ROpPyProgress_Op_set)
+    __swig_setmethods__["SubOp"] = _apt.ROpPyProgress_SubOp_set
+    __swig_getmethods__["SubOp"] = _apt.ROpPyProgress_SubOp_get
+    if _newclass:SubOp = property(_apt.ROpPyProgress_SubOp_get,_apt.ROpPyProgress_SubOp_set)
+    __swig_setmethods__["Percent"] = _apt.ROpPyProgress_Percent_set
+    __swig_getmethods__["Percent"] = _apt.ROpPyProgress_Percent_get
+    if _newclass:Percent = property(_apt.ROpPyProgress_Percent_get,_apt.ROpPyProgress_Percent_set)
+    __swig_setmethods__["MajorChange"] = _apt.ROpPyProgress_MajorChange_set
+    __swig_getmethods__["MajorChange"] = _apt.ROpPyProgress_MajorChange_get
+    if _newclass:MajorChange = property(_apt.ROpPyProgress_MajorChange_get,_apt.ROpPyProgress_MajorChange_set)
+    def CheckChange(*args): return apply(_apt.ROpPyProgress_CheckChange,args)
+    def __init__(self,*args):
+        self.this = apply(_apt.new_ROpPyProgress,args)
+        self.thisown = 1
+    def __del__(self, destroy= _apt.delete_ROpPyProgress):
+        try:
+            if self.thisown: destroy(self)
+        except: pass
+    def __repr__(self):
+        return "<C ROpPyProgress instance at %s>" % (self.this,)
+
+class ROpPyProgressPtr(ROpPyProgress):
+    def __init__(self,this):
+        self.this = this
+        if not hasattr(self,"thisown"): self.thisown = 0
+        self.__class__ = ROpPyProgress
+_apt.ROpPyProgress_swigregister(ROpPyProgressPtr)
+
+class OpPyProgress(ROpPyProgress):
+	def __init__(self):
+		ROpPyProgress.__init__(self, self)
+	def __repr__(self):
+		return "<C OpPyProgress instance at %s>" % self.this
+
 
 

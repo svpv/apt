@@ -27,7 +27,7 @@ dnl Check the archs, we want the target type.
 AC_CANONICAL_SYSTEM
 
 dnl CNC:2002-07-08
-AM_INIT_AUTOMAKE("apt", "0.5.5")
+AM_INIT_AUTOMAKE("apt", "0.5.5cnc4.1")
 
 dnl Check our C compiler
 AC_CHECK_TOOL_PREFIX
@@ -106,6 +106,28 @@ AC_SUBST(RPMLIBS)
 CPPFLAGS="$SAVE_CPPFLAGS"
 LIBS="$SAVE_LIBS"
 
+dnl CNC:2003-03-03
+AC_MSG_CHECKING(for --with-hashmap)
+AC_ARG_WITH([hashmap],
+	    AC_HELP_STRING(--with-hashmap, use the c++ hash_map extension),
+[
+if test "$withval" != no
+then 
+  AC_DEFINE(WITH_HASH_MAP, 1, 
+	    [Define if you want to use the c++ hash_map extension.]) 
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+],
+[AC_MSG_RESULT(no)])
+
+dnl Check for apt-shell dependencies
+AC_CHECK_LIB(ncurses,tputs,
+  [AC_CHECK_HEADER(readline/readline.h,
+     [AC_CHECK_LIB(readline,readline,
+        [COMPILE_APTSHELL=yes],,[-lncurses])])])
+AC_SUBST(COMPILE_APTSHELL)
 
 dnl Converts the ARCH to be something singular for this general CPU family
 dnl This is often the dpkg architecture string.
@@ -207,8 +229,7 @@ AC_PATH_PROG(DEBIANDOC_HTML,debiandoc2html)
 AC_PATH_PROG(DEBIANDOC_TEXT,debiandoc2text)
 
 dnl Check for the SGML tools needed to build man pages
-AC_PATH_PROG(NSGMLS,nsgmls)
-AC_PATH_PROG(SGMLSPL,sgmlspl)
+AC_PATH_PROG(DOCBOOK2MAN,docbook2man)
 
 dnl Check for YODL
 dnl AC_CHECK_PROG(YODL_MAN,yodl2man,"yes","")
@@ -222,7 +243,6 @@ dnl It used to be that the user could select translations and that could get
 dnl passed to the makefiles, but now that can only work if you use special
 dnl gettext approved makefiles, so this feature is unsupported by this.
 dnl CNC:2002-10-22
-ALL_LINGUAS="de_DE es_ES it_IT pt_BR ru"
 AM_GNU_GETTEXT(external)
 if test x"$USE_NLS" = "xyes"; then
    AC_DEFINE(USE_NLS)

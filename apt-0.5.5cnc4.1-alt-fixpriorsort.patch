@@ -1,0 +1,32 @@
+--- apt-0.5.5cnc4.1/apt-pkg/algorithms.cc.orig	2003-09-28 14:06:16 +0400
++++ apt-0.5.5cnc4.1/apt-pkg/algorithms.cc	2003-09-28 14:09:16 +0400
+@@ -1411,27 +1411,28 @@
+ static int PrioComp(const void *A,const void *B)
+ {
+    pkgCache::VerIterator L(*PrioCache,*(pkgCache::Version **)A);
+    pkgCache::VerIterator R(*PrioCache,*(pkgCache::Version **)B);
+    
+    // CNC:2002-11-27
+    if ((R.ParentPkg()->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential &&
+        (L.ParentPkg()->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential)
+    return 1;
+    if ((R.ParentPkg()->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential &&
+        (L.ParentPkg()->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
+    return -1;
+    
+    if (L->Priority != R->Priority)
+       return L->Priority - R->Priority;
+-   return strcmp(L.ParentPkg().Name(),R.ParentPkg().Name());
++   // PrioComp("gcc2","gcc3") == 1
++   return strcmp(R.ParentPkg().Name(),L.ParentPkg().Name());
+ }
+ void pkgPrioSortList(pkgCache &Cache,pkgCache::Version **List)
+ {
+    unsigned long Count = 0;
+    PrioCache = &Cache;
+    for (pkgCache::Version **I = List; *I != 0; I++)
+       Count++;
+    qsort(List,Count,sizeof(*List),PrioComp);
+ }
+ 									/*}}}*/
+ // vim:sts=3:sw=3
