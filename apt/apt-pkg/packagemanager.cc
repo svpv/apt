@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: packagemanager.cc,v 1.8 2003/01/31 16:32:30 niemeyer Exp $
+// $Id: packagemanager.cc,v 1.30 2003/04/27 03:04:15 doogie Exp $
 /* ######################################################################
 
    Package Manager - Abstacts the package manager
@@ -133,7 +133,7 @@ bool pkgPackageManager::CreateOrderList()
    delete List;
    List = new pkgOrderList(&Cache);
    
-   bool NoImmConfigure = _config->FindB("APT::Immediate-Configure",false);
+   bool NoImmConfigure = !_config->FindB("APT::Immediate-Configure",true);
    
    // Generate the list of affected packages and sort it
    for (PkgIterator I = Cache.PkgBegin(); I.end() == false; I++)
@@ -542,7 +542,6 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
 	 }
       }
    }
-#endif
 
    // Check for reverse conflicts.
    if (CheckRConflicts(Pkg,Pkg.RevDependsList(),
@@ -552,6 +551,7 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
    for (PrvIterator P = Cache[Pkg].InstVerIter(Cache).ProvidesList(); 
 	P.end() == false; P++)
       CheckRConflicts(Pkg,P.ParentPkg().RevDependsList(),P.ProvideVersion());
+#endif
    
    if (Install(Pkg,FileNames[Pkg->ID]) == false)
       return false;

@@ -23,6 +23,8 @@
 #include <apt-pkg/rpmhandler.h>
 #include <apt-pkg/rpmsystem.h>
 
+#include <apti18n.h>
+
 // RecordParser::rpmRecordParser - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -37,6 +39,8 @@ rpmRecordParser::rpmRecordParser(string File, pkgCache &Cache)
       struct stat Buf;
       if (stat(File.c_str(),&Buf) == 0 && S_ISDIR(Buf.st_mode))
 	 Handler = new RPMDirHandler(File);
+      else if (flExtension(File) == "rpm")
+	 Handler = new RPMSingleFileHandler(File);
       else
 	 Handler = new RPMFileHandler(File);
    }
@@ -172,6 +176,8 @@ string rpmRecordParser::LongDesc()
 /* */
 string rpmRecordParser::SourcePkg()
 {
+   // This must be the *package* name, not the *file* name. We have no
+   // current way to extract it safely from the file name.
    return "";
 }
 									/*}}}*/
@@ -192,7 +198,7 @@ void rpmRecordParser::BufCat(const char *begin, const char *end)
       char *tmp = (char*)realloc(Buffer, BufSize);
       if (tmp == NULL)
       {
-	 _error->Errno("realloc", "could not allocate buffer for record text");
+	 _error->Errno("realloc", _("Could not allocate buffer for record text"));
 	 return;
       }
       Buffer = tmp;
@@ -275,7 +281,6 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
    char *str;
    char **strv;
    char **strv2;
-   int num;
    int_32 *numv;
    char buf[32];
 
@@ -419,6 +424,24 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
    Stop = Buffer + BufUsed;
 }
 									/*}}}*/
+
+bool rpmRecordParser::HasFile(const char *File)
+{
+   if (*File == '\0')
+      return false;
+   char **names = NULL;
+   int_32 count = 0;
+   rpmHeaderGetEntry(HeaderP, RPMTAG_OLDFILENAMES,
+		     NULL, (void **) &names, &count);
+   while (count--) 
+   {
+      char *name = names[count];
+      if (strcmp(name, File) == 0)
+	 return true;
+   }
+   return false;
+}
+
 #endif /* HAVE_RPM */
 
 // vim:sts=3:sw=3

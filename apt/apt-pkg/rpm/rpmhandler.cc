@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <utime.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
@@ -26,7 +27,7 @@
 
 #include <apti18n.h>
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmts.h>
 #include <rpm/rpmdb.h>
 #define rpmxxInitIterator(a,b,c,d) rpmtsInitIterator(a,(rpmTag)b,c,d)
@@ -142,6 +143,68 @@ string RPMFileHandler::MD5Sum()
    return str;
 }
 
+bool RPMSingleFileHandler::Skip()
+{
+   if (FD == NULL)
+      return false;
+   if (HeaderP != NULL) {
+      headerFree(HeaderP);
+      HeaderP = NULL;
+      return false;
+   }
+#if RPM_VERSION >= 0x040100
+   rpmts TS = rpmtsCreate();
+   rpmtsSetVSFlags(TS, (rpmVSFlags_e)-1);
+   int rc = rpmReadPackageFile(TS, FD, sFilePath.c_str(), &HeaderP);
+   if (rc != RPMRC_OK && rc != RPMRC_NOTTRUSTED && rc != RPMRC_NOKEY) {
+      _error->Error(_("Failed reading file %s"), sFilePath.c_str());
+      HeaderP = NULL;
+   }
+   rpmtsFree(TS);
+#else
+   int rc = rpmReadPackageHeader(FD, &HeaderP, 0, NULL, NULL);
+   if (rc) {
+      _error->Error(_("Failed reading file %s"), sFilePath.c_str());
+      HeaderP = NULL;
+   }
+#endif
+   return (HeaderP != NULL);
+}
+
+bool RPMSingleFileHandler::Jump(unsigned Offset)
+{
+   assert(Offset == 0);
+   Rewind();
+   return RPMFileHandler::Jump(Offset);
+}
+
+void RPMSingleFileHandler::Rewind()
+{
+   if (FD == NULL)
+      return;
+   if (HeaderP != NULL) {
+      HeaderP = NULL;
+      headerFree(HeaderP);
+   }
+   lseek(Fileno(FD),0,SEEK_SET);
+}
+
+unsigned long RPMSingleFileHandler::FileSize()
+{
+   struct stat S;
+   if (stat(sFilePath.c_str(),&S) != 0)
+      return 0;
+   return S.st_size;
+}
+
+string RPMSingleFileHandler::MD5Sum()
+{
+   MD5Summation MD5;
+   FileFd File(sFilePath, FileFd::ReadOnly);
+   MD5.AddFD(File.Fd(), File.Size());
+   File.Close();
+   return MD5.Result().Value();
+}
 
 RPMDirHandler::RPMDirHandler(string DirName)
    : sDirName(DirName)
@@ -154,8 +217,9 @@ RPMDirHandler::RPMDirHandler(string DirName)
    while (nextFileName() != NULL)
       iSize += 1;
    rewinddir(Dir);
-#ifdef HAVE_RPM41   
+#if RPM_VERSION >= 0x040100
    TS = rpmtsCreate();
+   rpmtsSetVSFlags(TS, (rpmVSFlags_e)-1);
 #endif
 }
 
@@ -188,7 +252,7 @@ RPMDirHandler::~RPMDirHandler()
 {
    if (HeaderP != NULL)
       headerFree(HeaderP);
-#ifdef HAVE_RPM41	 
+#if RPM_VERSION >= 0x040100
    rpmtsFree(TS);
 #endif
    if (Dir != NULL)
@@ -212,7 +276,7 @@ bool RPMDirHandler::Skip()
       FD_t FD = Fopen(sFilePath.c_str(), "r");
       if (FD == NULL)
 	 continue;
-#ifdef HAVE_RPM41	 
+#if RPM_VERSION >= 0x040100
       int rc = rpmReadPackageFile(TS, FD, fname, &HeaderP);
       Fclose(FD);
       if (rc != RPMRC_OK
@@ -260,7 +324,7 @@ unsigned long RPMDirHandler::FileSize()
       return 0;
    struct stat St;
    if (stat(sFilePath.c_str(),&St) != 0) {
-      _error->Errno("stat","Unable to determine the file size");
+      _error->Errno("stat",_("Unable to determine the file size"));
       return 0;
    }
    return St.st_size;
@@ -295,11 +359,12 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
    stat(DataPath(false).c_str(), &St);
    DbFileMtime = St.st_mtime;
 
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    RpmIter = NULL;
 #endif
-#ifdef HAVE_RPM41   
+#if RPM_VERSION >= 0x040100
    Handler = rpmtsCreate();
+   rpmtsSetVSFlags(Handler, (rpmVSFlags_e)-1);
    if (!Dir.empty())
       rpmtsSetRootDir(Handler, Dir.c_str());
    if (rpmtsOpenDB(Handler, WriteLock?O_RDWR:O_RDONLY) != 0)
@@ -317,7 +382,7 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
       return;
    }
 #endif
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    RpmIter = rpmxxInitIterator(Handler, RPMDBI_PACKAGES, NULL, 0);
    if (RpmIter == NULL) {
       _error->Error(_("could not create RPM database iterator"));
@@ -349,7 +414,7 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
 
 RPMDBHandler::~RPMDBHandler()
 {
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    if (RpmIter == NULL)
       return;
    rpmdbFreeIterator(RpmIter);
@@ -359,7 +424,7 @@ RPMDBHandler::~RPMDBHandler()
        headerFree(HeaderP);
 #endif
 
-#ifdef HAVE_RPM41   
+#if RPM_VERSION >= 0x040100
    rpmtsFree(Handler);
 #else
    rpmdbClose(Handler);
@@ -377,19 +442,23 @@ RPMDBHandler::~RPMDBHandler()
 string RPMDBHandler::DataPath(bool DirectoryOnly)
 {
    string File = "packages.rpm";
-#ifdef HAVE_RPM4
+   char *tmp = (char *) rpmExpand("%{_dbpath}", NULL);
+   string DBPath(_config->Find("RPM::RootDir")+tmp);
+   free(tmp);
+
+#if RPM_VERSION >= 0x040000
    if (rpmExpandNumeric("%{_dbapi}") >= 3)
       File = "Packages";       
 #endif
    if (DirectoryOnly == true)
-       return _config->Find("RPM::RootDir")+"/var/lib/rpm";
+       return DBPath;
    else
-       return _config->Find("RPM::RootDir")+"/var/lib/rpm/"+File;
+       return DBPath+"/"+File;
 }
 
 bool RPMDBHandler::Skip()
 {
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    if (RpmIter == NULL)
        return false;
    HeaderP = rpmdbNextIterator(RpmIter);
@@ -416,7 +485,7 @@ bool RPMDBHandler::Skip()
 bool RPMDBHandler::Jump(unsigned int Offset)
 {
    iOffset = Offset;
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    if (RpmIter == NULL)
       return false;
    rpmdbFreeIterator(RpmIter);
@@ -434,7 +503,7 @@ bool RPMDBHandler::Jump(unsigned int Offset)
 
 void RPMDBHandler::Rewind()
 {
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
    if (RpmIter == NULL)
       return;
    rpmdbFreeIterator(RpmIter);   

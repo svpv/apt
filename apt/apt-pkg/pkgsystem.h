@@ -89,6 +89,8 @@ class pkgSystem
 
    // Return a list of system index files..
    virtual bool AddStatusFiles(std::vector<pkgIndexFile *> &List) = 0;   
+   // CNC:2003-11-21
+   virtual bool AddSourceFiles(std::vector<pkgIndexFile *> &List) {};
    virtual bool FindIndex(pkgCache::PkgFileIterator File,
 			  pkgIndexFile *&Found) const = 0;
    
@@ -104,6 +106,9 @@ class pkgSystem
    	{return true;};
    virtual bool IgnoreDep(pkgVersioningSystem &VS, pkgCache::DepIterator &Dep)
 	{return false;};
+
+   // CNC:2003-11-24
+   virtual unsigned long OptionsHash() const {return 0;};
 
    pkgSystem();
    virtual ~pkgSystem() {};

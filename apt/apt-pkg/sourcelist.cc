@@ -18,6 +18,9 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/strutl.h>
 
+// CNC:2003-11-21
+#include <apt-pkg/pkgsystem.h>
+
 #include <apti18n.h>
 
 #include <fstream>
@@ -247,14 +250,16 @@ bool pkgSourceList::ReadMainList()
       return false;
    
    Reset();
-   string Parts = _config->FindDir("Dir::Etc::sourceparts");
-   if (FileExists(Parts) == true)
-      Res &= ReadSourceDir(Parts);
-   
+   // CNC:2003-11-28 - Entries in sources.list have priority over
+   //                  entries in sources.list.d.
    string Main = _config->FindFile("Dir::Etc::sourcelist");
    if (FileExists(Main) == true)
       Res &= ReadAppend(Main);   
 
+   string Parts = _config->FindDir("Dir::Etc::sourceparts");
+   if (FileExists(Parts) == true)
+      Res &= ReadSourceDir(Parts);
+   
    return Res;
 }
 									/*}}}*/
@@ -267,6 +272,8 @@ void pkgSourceList::Reset()
    for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
       delete *I;
    SrcList.erase(SrcList.begin(),SrcList.end());
+   // CNC:2003-11-21
+   _system->AddSourceFiles(SrcList);
 }
 									/*}}}*/
 // CNC:2003-03-03 - Function moved to ReadAppend() and Reset().
@@ -294,7 +301,8 @@ bool pkgSourceList::ReadAppend(string File)
       delete *I;
    SrcList.erase(SrcList.begin(),SrcList.end());
 #endif
-   char Buffer[300];
+   // CNC:2003-12-10 - 300 is too short.
+   char Buffer[1024];
 
    int CurLine = 0;
    while (F.eof() == false)
@@ -420,6 +428,10 @@ bool pkgSourceList::ReadSourceDir(string Dir)
    for (struct dirent *Ent = readdir(D); Ent != 0; Ent = readdir(D))
    {
       if (Ent->d_name[0] == '.')
+	 continue;
+
+      // CNC:2003-12-02 Only accept .list files as valid sourceparts
+      if (flExtension(Ent->d_name) != "list")
 	 continue;
       
       // Skip bad file names ala run-parts

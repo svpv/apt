@@ -419,7 +419,8 @@ bool pkgDistUpgrade(pkgDepCache &Cache)
    if (_config->FindB("APT::Remove-Depends",false) == true)
       Fix.RemoveDepends();
    
-   return Fix.Resolve();
+   // CNC:2003-03-22
+   return Fix.Resolve(true);
 }
 									/*}}}*/
 // AllUpgrade - Upgrade as many packages as possible			/*{{{*/
@@ -1029,6 +1030,22 @@ bool pkgProblemResolver::Resolve(bool BrokenFix)
 		  if ((Flags[Pkg->ID] & Protected) != 0)
 		     continue;
 		
+		  // CNC:2003-03-22
+		  pkgDepCache::State State(&Cache);
+		  if (BrokenFix == true && DoUpgrade(Pkg) == true)
+		  {
+		     if (Cache[I].InstBroken() == false &&
+			 State.BrokenCount() >= Cache.BrokenCount())
+		     {
+			if (Debug == true)
+			   clog << "  Installing " << Pkg.Name() << endl;
+			Change = true;
+			break;
+		     }
+		     else
+			State.Restore();
+		  }
+
 		  if (Debug == true)
 		     clog << "  Added " << Pkg.Name() << " to the remove list" << endl;
 		  
@@ -1405,7 +1422,7 @@ static int PrioComp(const void *A,const void *B)
    return -1;
    
    if (L->Priority != R->Priority)
-      return R->Priority - L->Priority;
+      return L->Priority - R->Priority;
    return strcmp(L.ParentPkg().Name(),R.ParentPkg().Name());
 }
 void pkgPrioSortList(pkgCache &Cache,pkgCache::Version **List)

@@ -26,7 +26,10 @@
 // CNC:2002-07-03
 #include <apt-pkg/repository.h>
 #include <apt-pkg/md5.h>
+#include <config.h>
+#include <apt-pkg/luaiface.h>
 #include <iostream>
+#include <assert.h>
 using namespace std;
 
 #include <apti18n.h>
@@ -188,7 +191,7 @@ pkgAcqIndex::pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,
 
    // Create the item
    // CNC:2002-07-03
-   Desc.URI = URI + ".bz2";
+   Desc.URI = URI + _config->Find("Acquire::ComprExtension", ".bz2");
    Desc.Description = URIDesc;
    Desc.Owner = this;
    Desc.ShortDesc = ShortDesc;
@@ -773,6 +776,33 @@ bool pkgAcqArchive::QueueNext()
    return false;
 }   
 									/*}}}*/
+
+// CNC:2003-03-19
+#ifdef WITH_LUA
+// ScriptsAcquireDone - Script trigger.					/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+template<class T>
+static void ScriptsAcquireDone(const char *ConfKey,
+			       string &StoreFilename,
+			       string &ErrorText,
+			       T &Status)
+{
+   if (_lua->HasScripts(ConfKey) == true) {
+      _lua->SetGlobal("acquire_filename", StoreFilename.c_str());
+      _lua->SetGlobal("acquire_error", (const char *)NULL);
+      _lua->RunScripts(ConfKey, true);
+      const char *Error = _lua->GetGlobal("acquire_error");
+      if (Error != NULL && *Error != 0) {
+	 Status = pkgAcquire::Item::StatError;
+	 ErrorText = Error;
+      }
+      _lua->ResetGlobals();
+   }
+}
+									/*}}}*/
+#endif
+
 // AcqArchive::Done - Finished fetching					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -817,6 +847,13 @@ void pkgAcqArchive::Done(string Message,unsigned long Size,string Md5Hash,
    {
       StoreFilename = DestFile = FileName;
       Local = true;
+
+// CNC:2003-03-19
+#ifdef WITH_LUA
+      ScriptsAcquireDone("Scripts::Acquire::Archive::Done",
+			 StoreFilename, ErrorText, Status);
+#endif
+
       return;
    }
    
@@ -827,6 +864,13 @@ void pkgAcqArchive::Done(string Message,unsigned long Size,string Md5Hash,
    
    StoreFilename = DestFile = FinalFile;
    Complete = true;
+
+// CNC:2003-03-19
+#ifdef WITH_LUA
+   ScriptsAcquireDone("Scripts::Acquire::Archive::Done",
+		      StoreFilename, ErrorText, Status);
+#endif
+
 }
 									/*}}}*/
 // AcqArchive::Failed - Failure handler					/*{{{*/
@@ -965,6 +1009,13 @@ void pkgAcqFile::Done(string Message,unsigned long Size,string MD5,
       {
 	 if (S_ISLNK(St.st_mode) != 0)
 	    unlink(DestFile.c_str());
+	 // CNC:2003-12-11 - Check if FileName == DestFile
+	 else {
+	    struct stat St2;
+	    if (stat(FileName.c_str(), &St2) == 0
+	        && St.st_ino == St2.st_ino)
+	       return;
+	 }
       }
       
       // Symlink the file

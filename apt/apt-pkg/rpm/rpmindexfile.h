@@ -195,5 +195,83 @@ class rpmPkgDirIndex : public rpmPkgListIndex
       {};
 };
 
+class rpmSrcDirIndex : public rpmSrcListIndex
+{
+   protected:
+
+   virtual string MainType() const {return "srcdir";}
+   virtual string IndexPath() const;   
+
+   public:
+
+   virtual bool GetReleases(pkgAcquire *Owner) const { return true; }
+   virtual bool GetIndexes(pkgAcquire *Owner) const { return true; }
+
+   // Creates a RPMHandler suitable for usage with this object
+   virtual RPMHandler *CreateHandler() const
+	   { return new RPMDirHandler(IndexPath()); };
+
+   virtual const Type *GetType() const;
+   
+   // Interface for the Cache Generator
+   virtual unsigned long Size() const;
+
+   rpmSrcDirIndex(string URI,string Dist,string Section,
+		   pkgRepository *Repository) :
+	   rpmSrcListIndex(URI,Dist,Section,Repository)
+      {};
+};
+
+class rpmSinglePkgIndex : public rpmPkgListIndex
+{
+   protected:
+
+   string FilePath;
+
+   virtual string MainType() const {return "pkg";}
+   virtual string IndexPath() const {return FilePath;}
+
+   public:
+
+   virtual bool GetReleases(pkgAcquire *Owner) const { return true; }
+   virtual bool GetIndexes(pkgAcquire *Owner) const { return true; }
+
+   // Creates a RPMHandler suitable for usage with this object
+   virtual RPMHandler *CreateHandler() const
+	   { return new RPMSingleFileHandler(IndexPath()); };
+
+   virtual string ArchiveURI(string File) const;
+
+   virtual const Type *GetType() const;
+   
+   rpmSinglePkgIndex(string File) :
+	   rpmPkgListIndex("", "", "", NULL), FilePath(File) {};
+};
+
+class rpmSingleSrcIndex : public rpmSrcListIndex
+{
+   protected:
+
+   string FilePath;
+
+   virtual string MainType() const {return "src";}
+   virtual string IndexPath() const {return FilePath;}
+
+   public:
+
+   virtual bool GetReleases(pkgAcquire *Owner) const { return true; }
+   virtual bool GetIndexes(pkgAcquire *Owner) const { return true; }
+
+   // Creates a RPMHandler suitable for usage with this object
+   virtual RPMHandler *CreateHandler() const
+	   { return new RPMSingleFileHandler(IndexPath()); };
+
+   virtual string ArchiveURI(string File) const;
+
+   virtual const Type *GetType() const;
+   
+   rpmSingleSrcIndex(string File) :
+	   rpmSrcListIndex("", "", "", NULL), FilePath(File) {};
+};
 
 #endif

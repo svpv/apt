@@ -1,5 +1,5 @@
-copy: *.8
 copy: *.conf
+copy: *.old
 copy: *.patch
 copy: *.po
 copy: *.rsync

@@ -24,7 +24,7 @@
 
 #include "cached_md5.h"
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmts.h>
 #endif
 
@@ -41,6 +41,7 @@ int tags[] =  {
        RPMTAG_SOURCERPM,
        RPMTAG_SIZE,
        RPMTAG_VENDOR,
+       RPMTAG_OS,
        
        RPMTAG_DESCRIPTION, 
        RPMTAG_SUMMARY, 
@@ -216,7 +217,7 @@ bool loadUpdateInfo(char *path, map<string,UpdateInfo> &map)
    return true;
 }
 
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
 // No prototype from rpm after 4.0.
 extern "C" {
 int headerGetRawEntry(Header h, int_32 tag, int_32 * type,
@@ -577,9 +578,10 @@ int main(int argc, char ** argv)
 
    md5cache = new CachedMD5(string(op_dir) + string(op_suf), "genpkglist");
 
-#ifdef HAVE_RPM41   
-   rpmts ts = rpmtsCreate();
+#if RPM_VERSION >= 0x040100
    rpmReadConfigFiles(NULL, NULL);
+   rpmts ts = rpmtsCreate();
+   rpmtsSetVSFlags(ts, (rpmVSFlags_e)-1);
 #else
    int isSource;
 #endif   
@@ -612,7 +614,7 @@ int main(int argc, char ** argv)
 	    exit(1);
 	 }
 	 
-#ifdef HAVE_RPM41	 
+#if RPM_VERSION >= 0x040100
 	 rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
 	 if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
 #else
@@ -637,13 +639,13 @@ int main(int argc, char ** argv)
 	    headerFree(newHeader);
 	    headerFree(h);
 	 }
-	 fdClose(fd);
+	 Fclose(fd);
       }
    }
 
-   fdClose(outfd);
+   Fclose(outfd);
 
-#ifdef HAVE_RPM41	 
+#if RPM_VERSION >= 0x040100
    ts = rpmtsFree(ts);
 #endif
    

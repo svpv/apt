@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: versionmatch.cc,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
+// $Id: versionmatch.cc,v 1.9 2003/05/19 17:58:26 doogie Exp $
 /* ######################################################################
 
    Version Matching 
@@ -15,6 +15,8 @@
 #pragma implementation "apt-pkg/versionmatch.h"
 #endif
 #include <apt-pkg/versionmatch.h>
+// CNC:2003-11-05
+#include <apt-pkg/version.h>
 
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/error.h>
@@ -26,7 +28,8 @@
 // VersionMatch::pkgVersionMatch - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* Break up the data string according to the selected type */
-pkgVersionMatch::pkgVersionMatch(string Data,MatchType Type) : Type(Type)
+// CNC:2003-11-05
+pkgVersionMatch::pkgVersionMatch(string Data,MatchType Type,int Op) : VerOp(Op), Type(Type)
 {
    MatchAll = false;
    VerPrefixMatch = false;
@@ -123,18 +126,38 @@ pkgVersionMatch::pkgVersionMatch(string Data,MatchType Type) : Type(Type)
 /* */
 bool pkgVersionMatch::MatchVer(const char *A,string B,bool Prefix)
 {   
-   const char *Ab = A;
-   const char *Ae = Ab + strlen(A);
+   // CNC:2003-11-05 - Patch by ALT-Linux, which ignores the release
+   //                  if it was not provided, and the epoch.
+   string s(A), sc(A);
+   const char *Ab = s.c_str(), *Ac = sc.c_str();
+
+   for (string::iterator i = s.begin(), k = sc.begin(); i != s.end(); ++i,++k)
+   {
+      if (*i == ':')
+      {
+         Ab = &(*i) + 1;
+	 Ac = &(*k) + 1;
+      }
+      else if (*i == '-')
+      {
+         *i = 0;
+	 break;
+      }
+   }
+
+   const char *Ae = Ab + strlen(Ab);
+   const char *Af = Ac + strlen(Ac);
    
    // Strings are not a compatible size.
-   if ((unsigned)(Ae - Ab) != B.length() && Prefix == false ||
-       (unsigned)(Ae - Ab) < B.length())
-      return false;
-   
-   // Match (leading?)
-   if (stringcasecmp(B,Ab,Ab + B.length()) == 0)
-      return true;
-   
+   if (((unsigned)(Ae - Ab) == B.length() || Prefix == true) &&
+       (unsigned)(Ae - Ab) >= B.length() &&
+       stringcasecmp(B,Ab,Ab + B.length()) == 0)
+       return true;
+   else if (((unsigned)(Af - Ac) == B.length() || Prefix == true) &&
+       (unsigned)(Af - Ac) >= B.length() &&
+       stringcasecmp(B,Ac,Ac + B.length()) == 0)
+       return true;
+
    return false;
 }
 									/*}}}*/
@@ -143,13 +166,24 @@ bool pkgVersionMatch::MatchVer(const char *A,string B,bool Prefix)
 /* */
 pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
 {
+   // CNC:2003-11-05
+   pkgVersioningSystem *VS = Pkg.Cache()->VS;
    pkgCache::VerIterator Ver = Pkg.VersionList();
+
    for (; Ver.end() == false; Ver++)
    {
       if (Type == Version)
       {
-	 if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
-	    return Ver;
+	 // CNC:2003-11-05
+         if (VerPrefixMatch)
+	 {
+	    if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
+	       return Ver;
+	 } else {
+	    if (VS->CheckDep(Ver.VerStr(),VerOp,VerStr.c_str()) == true)
+	       return Ver;
+	 }
+
 	 continue;
       }
       
@@ -158,6 +192,27 @@ pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
 	    return Ver;
    }
       
+   // CNC:2003-11-11 - Virtual package handling.
+   if (Type == Version)
+   {
+      bool HasRelease = (strchr(VerStr.c_str(), '-') != NULL);
+      pkgCache::PrvIterator Prv = Pkg.ProvidesList();
+      for (; Prv.end() == false; Prv++)
+      {
+	 const char *PrvVerStr = Prv.ProvideVersion();
+	 if (PrvVerStr == NULL || PrvVerStr[0] == 0)
+	    continue;
+         if (VerPrefixMatch || (HasRelease && strchr(PrvVerStr, '-') == NULL))
+         {
+            if (MatchVer(PrvVerStr,VerStr,VerPrefixMatch) == true)
+               return Prv.OwnerVer();
+         } else {
+            if (VS->CheckDep(PrvVerStr,VerOp,VerStr.c_str()) == true)
+               return Prv.OwnerVer();
+         }
+      }
+   }
+
    // This will be Ended by now.
    return Ver;
 }
@@ -208,13 +263,17 @@ bool pkgVersionMatch::FileMatch(pkgCache::PkgFileIterator File)
    
    if (Type == Origin)
    {
-      if (OrSite.empty() == false)
-	 if (File->Site == 0 ||
-	     OrSite != File.Site())
+      if (OrSite.empty() == false) {
+	 if (File->Site == 0 || OrSite != File.Site())
 	    return false;
-      return true;
+      } else // so we are talking about file:// or status file
+	 if (strcmp(File.Site(),"") == 0 && File->Archive != 0) // skip the status file
+	    return false;
+      return (OrSite == File.Site());		/* both strings match */
    }
    
    return false;
 }
 									/*}}}*/
+
+// vim:sts=3:sw=3

@@ -1,0 +1,140 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/init.cc apt-0.5.15cnc5/apt-pkg/init.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/init.cc	2004-01-16 15:21:38 +0300
++++ apt-0.5.15cnc5/apt-pkg/init.cc	2004-01-16 15:21:01 +0300
+@@ -40,44 +40,44 @@ bool pkgInitConfig(Configuration &Cnf)
+    // General APT things
+    if (strcmp(COMMON_OS,"linux") == 0 ||
+        strcmp(COMMON_OS,"unknown") == 0)
+-      Cnf.Set("APT::Architecture",COMMON_CPU);
++      Cnf.CndSet("APT::Architecture",COMMON_CPU);
+    else
+-      Cnf.Set("APT::Architecture",COMMON_OS "-" COMMON_CPU);
++      Cnf.CndSet("APT::Architecture",COMMON_OS "-" COMMON_CPU);
+    // CNC:2002-09-10
+-   //Cnf.Set("APT::Build-Essential::", "build-essential");
+-   Cnf.Set("Dir","/");
++   //Cnf.CndSet("APT::Build-Essential::", "build-essential");
++   Cnf.CndSet("Dir","/");
+    
+    // State   
+-   Cnf.Set("Dir::State","var/lib/apt/");
++   Cnf.CndSet("Dir::State","var/lib/apt/");
+    
+    /* Just in case something goes horribly wrong, we can fall back to the
+       old /var/state paths.. */
+    struct stat St;   
+    if (stat("/var/lib/apt/.",&St) != 0 &&
+        stat("/var/state/apt/.",&St) == 0)
+-      Cnf.Set("Dir::State","var/state/apt/");
++      Cnf.CndSet("Dir::State","var/state/apt/");
+        
+-   Cnf.Set("Dir::State::lists","lists/");
+-   Cnf.Set("Dir::State::cdroms","cdroms.list");
++   Cnf.CndSet("Dir::State::lists","lists/");
++   Cnf.CndSet("Dir::State::cdroms","cdroms.list");
+    
+    // Cache
+-   Cnf.Set("Dir::Cache","var/cache/apt/");
+-   Cnf.Set("Dir::Cache::archives","archives/");
+-   Cnf.Set("Dir::Cache::srcpkgcache","srcpkgcache.bin");
+-   Cnf.Set("Dir::Cache::pkgcache","pkgcache.bin");
++   Cnf.CndSet("Dir::Cache","var/cache/apt/");
++   Cnf.CndSet("Dir::Cache::archives","archives/");
++   Cnf.CndSet("Dir::Cache::srcpkgcache","srcpkgcache.bin");
++   Cnf.CndSet("Dir::Cache::pkgcache","pkgcache.bin");
+    
+    // Configuration
+-   Cnf.Set("Dir::Etc","etc/apt/");
+-   Cnf.Set("Dir::Etc::sourcelist","sources.list");
++   Cnf.CndSet("Dir::Etc","etc/apt/");
++   Cnf.CndSet("Dir::Etc::sourcelist","sources.list");
+    // CNC:2003-03-03
+-   Cnf.Set("Dir::Etc::sourceparts","sources.list.d");
+-   Cnf.Set("Dir::Etc::vendorlist","vendors.list");
+-   Cnf.Set("Dir::Etc::vendorparts","vendors.list.d");
+-   Cnf.Set("Dir::Etc::main","apt.conf");
+-   Cnf.Set("Dir::Etc::parts","apt.conf.d");
+-   Cnf.Set("Dir::Etc::preferences","preferences");
+-   Cnf.Set("Dir::Bin::methods",LIBDIR "/apt/methods");
+-   Cnf.Set("Acquire::ComprExtension", ".bz2");
++   Cnf.CndSet("Dir::Etc::sourceparts","sources.list.d");
++   Cnf.CndSet("Dir::Etc::vendorlist","vendors.list");
++   Cnf.CndSet("Dir::Etc::vendorparts","vendors.list.d");
++   Cnf.CndSet("Dir::Etc::main","apt.conf");
++   Cnf.CndSet("Dir::Etc::parts","apt.conf.d");
++   Cnf.CndSet("Dir::Etc::preferences","preferences");
++   Cnf.CndSet("Dir::Bin::methods",LIBDIR "/apt/methods");
++   Cnf.CndSet("Acquire::ComprExtension", ".bz2");
+ 	      
+    bool Res = true;
+    
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cache.cc apt-0.5.15cnc5/cmdline/apt-cache.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-cache.cc	2003-12-23 23:31:15 +0300
++++ apt-0.5.15cnc5/cmdline/apt-cache.cc	2004-01-16 15:21:01 +0300
+@@ -1952,8 +1952,8 @@ int main(int argc,const char *argv[])
+ 
+    // Parse the command line and initialize the package library
+    CommandLine CmdL(Args,_config);
+-   if (pkgInitConfig(*_config) == false ||
+-       CmdL.Parse(argc,argv) == false ||
++   if (CmdL.Parse(argc,argv) == false ||
++       pkgInitConfig(*_config) == false ||
+        pkgInitSystem(*_config,_system) == false)
+    {
+       _error->DumpErrors();
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc apt-0.5.15cnc5/cmdline/apt-cdrom.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc	2003-12-23 23:31:19 +0300
++++ apt-0.5.15cnc5/cmdline/apt-cdrom.cc	2004-01-16 15:21:01 +0300
+@@ -901,8 +901,8 @@ int main(int argc,const char *argv[])
+ 
+    // Parse the command line and initialize the package library
+    CommandLine CmdL(Args,_config);
+-   if (pkgInitConfig(*_config) == false ||
+-       CmdL.Parse(argc,argv) == false ||
++   if (CmdL.Parse(argc,argv) == false ||
++       pkgInitConfig(*_config) == false ||
+        pkgInitSystem(*_config,_system) == false)
+    {
+       _error->DumpErrors();
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-config.cc apt-0.5.15cnc5/cmdline/apt-config.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-config.cc	2003-12-23 23:31:21 +0300
++++ apt-0.5.15cnc5/cmdline/apt-config.cc	2004-01-16 15:21:01 +0300
+@@ -109,8 +109,8 @@ int main(int argc,const char *argv[])
+ 
+    // Parse the command line and initialize the package library
+    CommandLine CmdL(Args,_config);
+-   if (pkgInitConfig(*_config) == false ||
+-       CmdL.Parse(argc,argv) == false ||
++   if (CmdL.Parse(argc,argv) == false ||
++       pkgInitConfig(*_config) == false ||
+        pkgInitSystem(*_config,_system) == false)
+    {
+       _error->DumpErrors();
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-get.cc apt-0.5.15cnc5/cmdline/apt-get.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-get.cc	2003-12-23 23:30:50 +0300
++++ apt-0.5.15cnc5/cmdline/apt-get.cc	2004-01-16 15:21:01 +0300
+@@ -3067,8 +3067,8 @@ int main(int argc,const char *argv[])
+ 
+    // Parse the command line and initialize the package library
+    CommandLine CmdL(Args,_config);
+-   if (pkgInitConfig(*_config) == false ||
+-       CmdL.Parse(argc,argv) == false ||
++   if (CmdL.Parse(argc,argv) == false ||
++       pkgInitConfig(*_config) == false ||
+        pkgInitSystem(*_config,_system) == false)
+    {
+       if (_config->FindB("version") == true)
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-shell.cc apt-0.5.15cnc5/cmdline/apt-shell.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-shell.cc	2003-12-23 23:31:46 +0300
++++ apt-0.5.15cnc5/cmdline/apt-shell.cc	2004-01-16 15:21:01 +0300
+@@ -4303,8 +4303,8 @@ int main(int argc,const char *argv[])
+ 
+    // Parse the command line and initialize the package library
+    CommandLine CmdL(CommandArgs(""),_config);
+-   if (pkgInitConfig(*_config) == false ||
+-       CmdL.Parse(argc,argv) == false ||
++   if (CmdL.Parse(argc,argv) == false ||
++       pkgInitConfig(*_config) == false ||
+        pkgInitSystem(*_config,_system) == false)
+    {
+       if (_config->FindB("version") == true)

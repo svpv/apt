@@ -24,7 +24,7 @@
 
 #include "cached_md5.h"
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmts.h>
 #endif
  
@@ -41,6 +41,7 @@ int tags[] =  {
        RPMTAG_SOURCERPM,
        RPMTAG_SIZE,
        RPMTAG_VENDOR,
+       RPMTAG_OS,
        
        RPMTAG_DESCRIPTION, 
        RPMTAG_SUMMARY, 
@@ -125,7 +126,7 @@ void usage()
    cerr << "                are in the same directory level"<<endl;
 }
 
-#ifdef HAVE_RPM4
+#if RPM_VERSION >= 0x040000
 extern "C" {
 // No prototype from rpm after 4.0.
 int headerGetRawEntry(Header h, int_32 tag, int_32 * type,
@@ -219,17 +220,16 @@ int main(int argc, char ** argv)
 	 srpmdir = string(prefix) + "/" + srpmdir;
    }
 #else
-   if (!flatStructure) {
+   if (!flatStructure)
       srpmdir = "../"+srpmdir;
 #ifndef REMOVE_THIS_SOMEDAY
-   /* This code is here just so that code in rpmsrcrecords.cc is able
-    * to detect if that's a "new" style SRPM directory scheme, or an
-    * old style. Someday, when most repositories were already rebuilt
-    * with that new gensrclist tool, this code may be safely removed. */
-   } else {
+   /* This code is here just so that code in rpmsrcrecords.cc in versions
+    * prior to 0.5.15cnc4 is able to detect if that's a "new" style SRPM
+    * directory scheme, or an old style. Someday, when 0.5.15cnc4 will be
+    * history, this code may be safely removed. */
+   else
       srpmdir = "./"+srpmdir;
 #endif
-   }
 #endif
    
    entry_no = scandir(buf, &dirEntries, selectDirent, alphasort);
@@ -258,9 +258,10 @@ int main(int argc, char ** argv)
       return 1;
    }
 
-#ifdef HAVE_RPM41
-   rpmts ts = rpmtsCreate();
+#if RPM_VERSION >= 0x040100
    rpmReadConfigFiles(NULL, NULL);
+   rpmts ts = rpmtsCreate();
+   rpmtsSetVSFlags(ts, (rpmVSFlags_e)-1);
 #else
    Header sigs;
 #endif   
@@ -291,7 +292,7 @@ int main(int argc, char ** argv)
 
       size[0] = sb.st_size;
 	 
-#ifdef HAVE_RPM41      
+#if RPM_VERSION >= 0x040100
       rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
       if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
 #else
@@ -365,16 +366,16 @@ int main(int argc, char ** argv)
 	    
 	    headerFree(newHeader);
 	    headerFree(h);
-#ifndef HAVE_RPM41
+#if RPM_VERSION < 0x040100
 	    rpmFreeSignature(sigs);
 #endif
       }
-      fdClose(fd);
+      Fclose(fd);
    } 
    
-   fdClose(outfd);
+   Fclose(outfd);
 
-#ifdef HAVE_RPM41   
+#if RPM_VERSION >= 0x040100
    ts = rpmtsFree(ts);
 #endif   
    

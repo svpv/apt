@@ -1,0 +1,12 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/deb/debsystem.cc apt-0.5.15cnc5/apt-pkg/deb/debsystem.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/deb/debsystem.cc	2003-12-23 23:18:33 +0300
++++ apt-0.5.15cnc5/apt-pkg/deb/debsystem.cc	2004-01-16 15:12:44 +0300
+@@ -185,6 +185,8 @@ bool debSystem::ArchiveSupported(const c
+ signed debSystem::Score(Configuration const &Cnf)
+ {
+    signed Score = 0;
++   if (Cnf.FindB("APT::Ignore-dpkg",true) == true)
++      return Score;
+    if (FileExists(Cnf.FindFile("Dir::State::status","/var/lib/dpkg/status")) == true)
+        Score += 10;
+    if (FileExists(Cnf.FindFile("Dir::Bin::dpkg","/usr/bin/dpkg")) == true)

@@ -1,0 +1,36 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc5/apt-pkg/rpm/rpmsystem.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsystem.cc	2003-12-23 23:19:32 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmsystem.cc	2004-01-16 15:11:40 +0300
+@@ -132,7 +132,7 @@ bool rpmSystem::Initialize(Configuration
+    Cnf.CndSet("Dir::Etc::translateparts", "translate.list.d");
+    Cnf.CndSet("Dir::State::prefetch", "prefetch");
+    Cnf.CndSet("Dir::Locale","/usr/share/locale");
+-   Cnf.CndSet("Acquire::DistroID","Conectiva"); // hee hee
++   Cnf.CndSet("Acquire::DistroID","ALT Linux"); // hee hee
+    Cnf.CndSet("Acquire::CDROM::Mount", "/mnt/cdrom");
+    Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
+ 
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc apt-0.5.15cnc5/cmdline/apt-cdrom.cc
+--- apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc	2003-12-23 23:31:19 +0300
++++ apt-0.5.15cnc5/cmdline/apt-cdrom.cc	2004-01-16 15:11:40 +0300
+@@ -700,7 +700,7 @@ bool DoAdd(CommandLine &)
+ 	  Name.empty() == true)
+       {
+ 	 // CNC:2003-11-25
+-	 cout << _("Please provide a name for this Disc, such as 'Distribution Disk 1'");
++	 cout << _("Please provide a name for this Disc, such as 'ALT Linux Disk 1'");
+ 	 while (1)
+ 	 {
+ 	    Name = PromptLine("");
+diff -uprk.orig apt-0.5.15cnc5.orig/methods/ftp.cc apt-0.5.15cnc5/methods/ftp.cc
+--- apt-0.5.15cnc5.orig/methods/ftp.cc	2003-12-23 23:24:24 +0300
++++ apt-0.5.15cnc5/methods/ftp.cc	2004-01-16 15:11:40 +0300
+@@ -190,7 +190,7 @@ bool FTPConn::Login()
+    // Setup the variables needed for authentication
+    string User = "anonymous";
+    // CNC:2003-06-16
+-   string Pass = "apt_get_ftp_2.1@rpm.linux.user";
++   string Pass = "apt_get_ftp_2.1@alt.linux.user";
+ 
+    // Fill in the user/pass
+    if (ServerName.User.empty() == false)

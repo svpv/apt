@@ -1,0 +1,48 @@
+2004-01-16  Dmitry V. Levin <ldv@altlinux.org>
+
+	* cmdline/apt-get.cc (TryToInstall):
+	Optimize pure virtual packages install.
+	Add APT::Install::Virtual support.
+
+--- apt-0.5.15cnc5/cmdline/apt-get.cc.orig	2003-12-23 23:30:50 +0300
++++ apt-0.5.15cnc5/cmdline/apt-get.cc	2004-01-16 15:06:11 +0300
+@@ -1208,14 +1208,24 @@ bool TryToInstall(pkgCache::PkgIterator 
+ {
+    /* This is a pure virtual package and there is a single available 
+       provides */
+-   if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0 &&
+-       Pkg.ProvidesList()->NextProvides == 0)
++   if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0)
+    {
+-      pkgCache::PkgIterator Tmp = Pkg.ProvidesList().OwnerPkg();
+-      // CNC:2003-11-21 - Check if the current candidate is really
+-      //                  providing that dependency
+-      ioprintf(c1out,_("Selecting %s for '%s'\n"),
+-	       Tmp.Name(),Pkg.Name());
++      if (!Remove)
++         for (pkgCache::PrvIterator pv = Pkg.ProvidesList(); pv.end() == false; pv++)
++         {
++	    pkgCache::PkgIterator Tmp = pv.OwnerPkg();
++	    // Just marked for install?
++	    if (Cache[Tmp].Install() && Cache[Tmp].NewInstall())
++	       return true;
++         }
++
++      if ((Pkg.ProvidesList()->NextProvides == 0 ||
++        (!Remove && _config->FindB("APT::Install::Virtual", false))))
++      {
++	 pkgCache::PkgIterator Tmp = Pkg.ProvidesList().OwnerPkg();
++	 ioprintf(c1out,_("Note, selecting %s instead of %s\n"),
++	          Tmp.Name(),Pkg.Name());
++
+       pkgCache::VerIterator Ver = Cache[Tmp].CandidateVerIter(Cache);
+       pkgCache::PrvIterator Prv = Ver.ProvidesList();
+       bool Found = false;
+@@ -1249,6 +1259,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	 }
+       }
+       Pkg = Tmp;
++      }
+    }
+    
+    // Handle the no-upgrade case

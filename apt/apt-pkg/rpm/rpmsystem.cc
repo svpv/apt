@@ -35,7 +35,11 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <rpm/rpmlib.h>
+#include <assert.h>
 									/*}}}*/
+#if RPM_VERSION >= 0x040201
+extern int _rpmds_nopromote;
+#endif
 
 rpmSystem rpmSys;
 
@@ -111,7 +115,10 @@ bool rpmSystem::UnLock(bool NoErrors)
 /* */
 pkgPackageManager *rpmSystem::CreatePM(pkgDepCache *Cache) const
 {
-   return new pkgRPMPM(Cache);
+   if (_config->Find("RPM::PM", "internal") == "internal")
+      return new pkgRPMLibPM(Cache);
+   else
+      return new pkgRPMExtPM(Cache);
 }
 									/*}}}*/
 // System::Initialize - Setup the configuration space..			/*{{{*/
@@ -173,6 +180,32 @@ bool rpmSystem::Initialize(Configuration &Cnf)
 	 Cnf.Set("RPM::Options::", "--nodeps");
    }
 
+#if RPM_VERSION >= 0x040201
+   const char *RPMOptions[] =
+   {
+      "RPM::Options",
+      "RPM::Install-Options",
+      "RPM::Erase-Options",
+      NULL,
+   };
+   int NoPromote = 1;
+   const char *Opt = *RPMOptions;
+   while (*Opt && NoPromote)
+   {
+      Top = _config->Tree(Opt);
+      if (Top != 0)
+      {
+	 for (Top = Top->Child; Top != 0; Top = Top->Next)
+	    if (Top->Value == "--promoteepoch") {
+	       NoPromote = 0;
+	       break;
+	    }
+      }
+      Opt++;
+   }
+   _rpmds_nopromote = NoPromote;
+#endif
+
    return true;
 }
 									/*}}}*/
@@ -210,6 +243,29 @@ bool rpmSystem::AddStatusFiles(vector<pkgIndexFile *> &List)
    if (StatusFile == NULL)
       StatusFile = new rpmDatabaseIndex();
    List.push_back(StatusFile);
+   return true;
+}
+									/*}}}*/
+// System::AddSourceFiles - Register aditional source files		/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+bool rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
+{
+   const Configuration::Item *Top;
+   Top = _config->Tree("APT::Arguments");
+   if (Top != 0)
+   {
+      for (Top = Top->Child; Top != 0; Top = Top->Next) {
+	 const string &S = Top->Value;
+	 if (FileExists(S) && flExtension(S) == "rpm")
+	 {
+	    if (S.length() > 8 and string(S, S.length()-8) == ".src.rpm")
+	       List.push_back(new rpmSingleSrcIndex(S));
+	    else
+	       List.push_back(new rpmSinglePkgIndex(S));
+	 }
+      }
+   }
    return true;
 }
 									/*}}}*/
@@ -438,6 +494,38 @@ void rpmSystem::CacheBuilt()
    rpmdata->CacheBuilt();
 }
 									/*}}}*/
+
+// System::OptionsHash - Identify options which change the cache	/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+static void HashString(unsigned long &Hash, const char *Str)
+{
+   for (const char *I = Str; *I != 0; I++)
+      Hash = 5*Hash + *I;
+}
+static void HashOption(unsigned long &Hash, const char *Name)
+{
+   const Configuration::Item *Top = _config->Tree(Name);
+   if (Top != 0)
+      HashString(Hash, Top->Value.c_str());
+}
+static void HashOptionTree(unsigned long &Hash, const char *Name)
+{
+   const Configuration::Item *Top = _config->Tree(Name);
+   if (Top != 0)
+      for (Top = Top->Child; Top != 0; Top = Top->Next)
+	 HashString(Hash, Top->Value.c_str());
+}
+unsigned long rpmSystem::OptionsHash() const
+{
+   unsigned long Hash = 0;
+   HashOption(Hash, "RPM::Architecture");
+   HashOptionTree(Hash, "RPM::Allow-Duplicated");
+   HashOptionTree(Hash, "RPM::Ignore");
+   return Hash;
+}
+									/*}}}*/
+
 #endif /* HAVE_RPM */
 
 // vim:sts=3:sw=3

@@ -17,6 +17,7 @@
 
 #ifdef HAVE_RPM
 
+#include <assert.h>
 
 #include <apt-pkg/rpmsrcrecords.h>
 #include <apt-pkg/error.h>
@@ -26,7 +27,7 @@
 
 #include <apti18n.h>
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmds.h>
 #endif
 
@@ -36,7 +37,13 @@
 rpmSrcRecordParser::rpmSrcRecordParser(string File,pkgIndexFile const *Index)
     : Parser(Index), HeaderP(0), Buffer(0), BufSize(0), BufUsed(0)
 {
-   FileHandler = new RPMFileHandler(File);
+   struct stat Buf;
+   if (stat(File.c_str(),&Buf) == 0 && S_ISDIR(Buf.st_mode))
+      Handler = new RPMDirHandler(File);
+   else if (flExtension(File) == "rpm")
+      Handler = new RPMSingleFileHandler(File);
+   else
+      Handler = new RPMFileHandler(File);
 }
 									/*}}}*/
 // SrcRecordParser::~rpmSrcRecordParser - Destructor			/*{{{*/
@@ -44,7 +51,7 @@ rpmSrcRecordParser::rpmSrcRecordParser(string File,pkgIndexFile const *Index)
 /* */
 rpmSrcRecordParser::~rpmSrcRecordParser()
 {
-   delete FileHandler;
+   delete Handler;
    free(Buffer);
 }
 									/*}}}*/
@@ -77,53 +84,17 @@ const char **rpmSrcRecordParser::Binaries()
    a complete source package */
 bool rpmSrcRecordParser::Files(vector<pkgSrcRecords::File> &List)
 {
-   char *srpm, *md5;
-   char *dir;
-   int type, count;
-   int_32 *size;
-   int rc;
-
    assert(HeaderP != NULL);
     
    List.clear();
    
-   rc = headerGetEntry(HeaderP, CRPMTAG_FILENAME,
-		       &type, (void**)&srpm, &count);
-   if (rc != 1)
-      return _error->Error(_("error parsing file record %s"),
-			   "(CRPMTAG_FILENAME)");
-   rc = headerGetEntry(HeaderP, CRPMTAG_MD5,
-		       &type, (void**)&md5, &count);
-   if (rc != 1)
-      return _error->Error(_("error parsing file record %s"),
-			   "(CRPMTAG_MD5)");
-   rc = headerGetEntry(HeaderP, CRPMTAG_FILESIZE,
-		       &type, (void**)&size, &count);
-   if (rc != 1)
-      return _error->Error(_("error parsing file record %s"),
-			   "(CRPMTAG_FILESIZE)");
-   rc = headerGetEntry(HeaderP, CRPMTAG_DIRECTORY,
-		       &type, (void**)&dir, &count);
-   if (rc != 1)
-      return _error->Error(_("error parsing file record %s"),
-			   "(CRPMTAG_DIRECTORY)");
-
    pkgSrcRecords::File F;
 
-   F.MD5Hash = string(md5);
-   F.Size = size[0];
-   F.Path = string(dir)+"/"+string(srpm);
+   F.MD5Hash = Handler->MD5Sum();
+   F.Size = Handler->FileSize();
+   F.Path = flCombine(Handler->Directory(), Handler->FileName());
    F.Type = "srpm";
 
-#ifndef REMOVE_THIS_SOMEDAY
-   /* This code is here to detect if that's a "new" style SRPM directory
-    * scheme, or an old style. Someday, when most repositories were already
-    * rebuilt with the new gensrclist tool, this code may be safely
-    * removed. */
-   if (F.Path[0] != '.')
-      F.Path = "../" + F.Path;
-#endif
-   
    List.push_back(F);
    
    return true;
@@ -132,23 +103,23 @@ bool rpmSrcRecordParser::Files(vector<pkgSrcRecords::File> &List)
 
 bool rpmSrcRecordParser::Restart()
 {
-   FileHandler->Rewind();
+   Handler->Rewind();
    return true;
 }
 
 bool rpmSrcRecordParser::Step() 
 {
-   if (FileHandler->Skip() == false)
+   if (Handler->Skip() == false)
        return false;
-   HeaderP = FileHandler->GetHeader();
+   HeaderP = Handler->GetHeader();
    return true;
 }
 
 bool rpmSrcRecordParser::Jump(unsigned long Off)
 {
-   if (!FileHandler->Jump(Off))
+   if (!Handler->Jump(Off))
        return false;
-   HeaderP = FileHandler->GetHeader();
+   HeaderP = Handler->GetHeader();
    return true;
 }
 
@@ -222,7 +193,7 @@ string rpmSrcRecordParser::Section() const
 
 unsigned long rpmSrcRecordParser::Offset() 
 {
-    return FileHandler->Offset();
+    return Handler->Offset();
 }
 
 void rpmSrcRecordParser::BufCat(char *text)
@@ -241,7 +212,7 @@ void rpmSrcRecordParser::BufCat(char *begin, char *end)
       char *tmp = (char*)realloc(Buffer, BufSize);
       if (tmp == NULL)
       {
-	 _error->Errno("realloc", "could not allocate buffer for record text");
+	 _error->Errno("realloc", _("Could not allocate buffer for record text"));
 	 return;
       }
       Buffer = tmp;
@@ -465,7 +436,7 @@ bool rpmSrcRecordParser::BuildDepends(vector<pkgSrcRecords::Parser::BuildDepRec>
       {
 	 if (strncmp(namel[i], "rpmlib", 6) == 0) 
 	 {
-#ifdef HAVE_RPM41	
+#if RPM_VERSION >= 0x040100
 	    rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
 				   namel[i], verl?verl[i]:NULL, flagl[i]);
 	    int res = rpmCheckRpmlibProvides(ds);

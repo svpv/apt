@@ -1,0 +1,17 @@
+2002-12-26  Anton Kachalov <mouse@altlinux.org>
+
+	* apt-pkg/packagemanager.cc (pkgPackageManager::CheckRConflicts):
+	Ignore versionless reverse dependencies.
+
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/packagemanager.cc apt-0.5.15cnc5/apt-pkg/packagemanager.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/packagemanager.cc	2003-12-23 23:20:35 +0300
++++ apt-0.5.15cnc5/apt-pkg/packagemanager.cc	2004-01-16 15:27:18 +0300
+@@ -216,7 +216,7 @@ bool pkgPackageManager::CheckRConflicts(
+       if (D.ParentPkg() == Pkg || D.ParentVer() != D.ParentPkg().CurrentVer())
+ 	 continue;
+       
+-      if (Cache.VS().CheckDep(Ver,D) == false) // CNC:2002-07-10
++      if (D.TargetVer() == 0 || Cache.VS().CheckDep(Ver,D) == false) // CNC:2002-07-10
+ 	 continue;
+ 
+       if (EarlyRemove(D.ParentPkg()) == false)

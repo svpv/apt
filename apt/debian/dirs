@@ -1,6 +1,0 @@
-usr/bin
-usr/lib/apt/methods
-usr/lib/dpkg/methods/apt
-etc/apt
-var/cache/apt/archives/partial
-var/lib/apt/lists/partial

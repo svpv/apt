@@ -1,0 +1,141 @@
+This patch is the result of work initiated by Anton Denisov's 
+<fire@kgpu.kamchatka.ru> feedback (and debug-patches).
+
+There are three problems with apt-get source <pkgname>, this patch fixes two of them:
+
+- rpmrecords.cc: SourcePackage() returns empty string because of incorrect 
+  rpmlib's return code interpretation (fixed, now it return in most cases 
+  the source package filename);
+- srcrecords.cc: Find() called from apt-get's DoSource() doesn't match anything
+  because it matches against source package name, but gets a filename as an 
+  argument (in the case of the first branch in DoSource() when the return value 
+  of SourcePackage() is used) (fixed: now matching is done for corresponding 
+  fields).
+
+This makes the first branch in DoSource() work which is almost all one may want.
+
+9 July 2002
+imz@altlinux.ru
+
+A bad side of this patch may be that in the first branch (matching against
+src.rpm name), it takes the full filenmame (including version-release) into
+account while the second branch does only matching against the name (version
+insensitive).
+
+Ported to apt-0.5.4cnc9. (There is a separate apt-0.5.4cnc9-alt-getsrc-debug.patch
+which helps to determine which of the branches is really used.)
+
+imz@altlinux.ru, 28 Sep 2002.
+
+Ported to apt-0.5.15cnc4.
+
+avd@altlinux.org 2003-12-09
+
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/deb/debsrcrecords.h apt-0.5.15cnc5/apt-pkg/deb/debsrcrecords.h
+--- apt-0.5.15cnc5.orig/apt-pkg/deb/debsrcrecords.h	2003-12-23 23:19:00 +0300
++++ apt-0.5.15cnc5/apt-pkg/deb/debsrcrecords.h	2004-01-16 15:18:13 +0300
+@@ -34,6 +34,9 @@ class debSrcRecordParser : public pkgSrc
+    virtual bool Step() {iOffset = Tags.Offset(); return Tags.Step(Sect);};
+    virtual bool Jump(unsigned long Off) {iOffset = Off; return Tags.Jump(Sect,Off);};
+ 
++   // These refer to the archive file for the Version
++   virtual string FileName() const {return Sect.FindS("Filename");};
++
+    virtual string Package() const {return Sect.FindS("Package");};
+    virtual string Version() const {return Sect.FindS("Version");};
+    virtual string Maintainer() const {return Sect.FindS("Maintainer");};
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmrecords.cc apt-0.5.15cnc5/apt-pkg/rpm/rpmrecords.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmrecords.cc	2003-12-23 23:19:50 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmrecords.cc	2004-01-16 15:18:13 +0300
+@@ -178,7 +178,12 @@ string rpmRecordParser::SourcePkg()
+ {
+    // This must be the *package* name, not the *file* name. We have no
+    // current way to extract it safely from the file name.
+-   return "";
++   char *str;
++   int_32 count, type;
++   assert(HeaderP != NULL);
++   int rc = headerGetEntry(HeaderP, RPMTAG_SOURCERPM,
++			   &type, (void**)&str, &count);
++   return string(rc?str:"");
+ }
+ 									/*}}}*/
+ 
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsrcrecords.cc apt-0.5.15cnc5/apt-pkg/rpm/rpmsrcrecords.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsrcrecords.cc	2003-12-23 23:20:00 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmsrcrecords.cc	2004-01-16 15:18:13 +0300
+@@ -123,6 +123,20 @@ bool rpmSrcRecordParser::Jump(unsigned l
+    return true;
+ }
+ 
++// RecordParser::FileName - Return the archive filename on the site	/*{{{*/
++// ---------------------------------------------------------------------
++/* */
++string rpmSrcRecordParser::FileName() const
++{
++   char *str;
++   int_32 count, type;
++   assert(HeaderP != NULL);
++   int rc = headerGetEntry(HeaderP, CRPMTAG_FILENAME,
++			   &type, (void**)&str, &count);
++   return string(rc?str:"");
++}
++									/*}}}*/
++
+ string rpmSrcRecordParser::Package() const
+ {
+    char *str;
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsrcrecords.h apt-0.5.15cnc5/apt-pkg/rpm/rpmsrcrecords.h
+--- apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsrcrecords.h	2003-12-23 23:20:01 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmsrcrecords.h	2004-01-16 15:18:13 +0300
+@@ -44,6 +44,8 @@ public:
+    virtual bool Step(); 
+    virtual bool Jump(unsigned long Off);
+ 
++   virtual string FileName() const;
++
+    virtual string Package() const;
+    virtual string Version() const;
+    virtual string Maintainer() const;
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/srcrecords.cc apt-0.5.15cnc5/apt-pkg/srcrecords.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/srcrecords.cc	2003-12-23 23:19:13 +0300
++++ apt-0.5.15cnc5/apt-pkg/srcrecords.cc	2004-01-16 15:18:13 +0300
+@@ -82,7 +82,7 @@ bool pkgSrcRecords::Restart()
+ 									/*}}}*/
+ // SrcRecords::Find - Find the first source package with the given name	/*{{{*/
+ // ---------------------------------------------------------------------
+-/* This searches on both source package names and output binary names and
++/* This searches on both source package filenames and output binary names and
+    returns the first found. A 'cursor' like system is used to allow this
+    function to be called multiple times to get successive entries */
+ pkgSrcRecords::Parser *pkgSrcRecords::Find(const char *Package,bool SrcOnly)
+@@ -92,6 +92,8 @@ pkgSrcRecords::Parser *pkgSrcRecords::Fi
+    
+    while (true)
+    {
++      // DEBUG:
++      //std::cerr << "start loop" << std::endl;
+       // Step to the next record, possibly switching files
+       while ((*Current)->Step() == false)
+       {
+@@ -107,7 +109,7 @@ pkgSrcRecords::Parser *pkgSrcRecords::Fi
+ 	 return 0;
+ 
+       // Source name hit
+-      if ((*Current)->Package() == Package)
++      if ((*Current)->FileName() == Package)
+ 	 return *Current;
+       
+ 
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/srcrecords.h apt-0.5.15cnc5/apt-pkg/srcrecords.h
+--- apt-0.5.15cnc5.orig/apt-pkg/srcrecords.h	2003-12-23 23:20:10 +0300
++++ apt-0.5.15cnc5/apt-pkg/srcrecords.h	2004-01-16 15:18:13 +0300
+@@ -66,6 +66,8 @@ class pkgSrcRecords
+       virtual unsigned long Offset() = 0;
+       virtual string AsStr() = 0;
+       
++      virtual string FileName() const = 0;
++
+       virtual string Package() const = 0;
+       virtual string Version() const = 0;
+       virtual string Maintainer() const = 0;

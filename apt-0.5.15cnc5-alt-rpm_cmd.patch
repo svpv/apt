@@ -1,0 +1,31 @@
+2004-01-16  Dmitry V. Levin <ldv@altlinux.org>
+
+        * apt-pkg/rpm/rpmpm.cc(pkgRPMPM::ExecRPM):
+        Report actual options being passed to rpm.
+
+--- apt-0.5.15cnc5/apt-pkg/rpm/rpmpm.cc.orig	2004-01-16 14:55:17 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmpm.cc	2004-01-16 14:56:02 +0300
+@@ -497,6 +497,14 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps o
+ 
+    if (_config->FindB("RPM::Order",false) == false)
+       Args[n++] = "--noorder";
++      
++    string cmd;
++    for (unsigned i = 0; i < n; ++i)
++    {
++	if (!cmd.empty())
++	    cmd += ' ';
++	    cmd += Args[i];
++    }
+     
+    bool FilesInArgs = true;
+    char *ArgsFileName = NULL;
+@@ -542,7 +550,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps o
+       return true;
+    }
+ 
+-   cout << _("Executing RPM (")<<operation<<")..." << endl;
++   cout << _("Executing RPM (")<<cmd<<")..." << endl;
+ 
+    cout << flush;
+    clog << flush;

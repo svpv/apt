@@ -170,7 +170,7 @@ bool rpmListIndex::Exists() const
    return FileExists(IndexPath());
 }
 									/*}}}*/
-// SrcListIndex::Size - Return the size of the index			/*{{{*/
+// rpmListIndex::Size - Return the size of the index			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
 unsigned long rpmListIndex::Size() const
@@ -237,7 +237,10 @@ string rpmSrcListIndex::ArchiveURI(string File) const
    else
       Res = URI + Dist;
    
-   Res += "/" + File;
+   if (File.find("/") != string::npos)
+      Res += '/' + File;
+   else
+      Res += "/SRPMS."+Section + '/' + File;
 
    if (rpmdata->HasSourceTranslation() == true)
    {
@@ -320,7 +323,7 @@ string rpmPkgListIndex::ArchiveURI(string File) const
    if (File.find("/") != string::npos)
       Res += '/' + File;
    else
-      Res += "/RPMS."+Section + '/' + File;
+      Res += "/RPMS." + Section + '/' + File;
 
    if (rpmdata->HasBinaryTranslation() == true)
    {
@@ -328,7 +331,11 @@ string rpmPkgListIndex::ArchiveURI(string File) const
       Dict["uri"] = URI;
       Dict["dist"] = Dist; 
       Dict["sect"] = Section;
-      Dict["file"] = File;
+      string::size_type pos = File.rfind("/");
+      if (pos != string::npos)
+	 Dict["file"] = string(File, pos+1);
+      else
+	 Dict["file"] = File;
       rpmdata->TranslateBinary(Res, Dict);
    }
 	 
@@ -373,7 +380,7 @@ bool rpmPkgListIndex::Merge(pkgCacheGenerator &Gen,OpProgress &Prog) const
    if (stat(PackageFile.c_str(),&St) != 0) 
    {
       delete Handler;
-      return _error->Errno("stat","Failed to stat");
+      return _error->Errno("stat",_("Failed to stat %s"), PackageFile.c_str());
    }
    File->Size = St.st_size;
    File->mtime = St.st_mtime;
@@ -475,6 +482,51 @@ unsigned long rpmPkgDirIndex::Size() const
 }
 									/*}}}*/
 
+// SrcDirIndex::Index* - Return the URI to the index files		/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+inline string rpmSrcDirIndex::IndexPath() const
+{
+   return ::URI(ArchiveURI("")).Path;
+}
+									/*}}}*/
+// SrcDirIndex::Size - Return the size of the index			/*{{{*/
+// ---------------------------------------------------------------------
+/* This is really only used for progress reporting. */
+unsigned long rpmSrcDirIndex::Size() const
+{
+   // XXX: Must optimize this somehow.
+   RPMHandler *Handler = CreateHandler();
+   unsigned long Res = Handler->Size();
+   delete Handler;
+   return Res;
+}
+
+// SinglePkgIndex::ArchiveURI - URI for the archive       	        /*{{{*/
+// ---------------------------------------------------------------------
+string rpmSinglePkgIndex::ArchiveURI(string File) const
+{
+   char *cwd = getcwd(NULL,0);
+   if (File[0] == '.' && File[1] == '/')
+      File = string(File, 2);
+   string URI = "file://"+flCombine(cwd, File);
+   free(cwd);
+   return URI;
+}
+									/*}}}*/
+// SinglePkgIndex::ArchiveURI - URI for the archive       	        /*{{{*/
+// ---------------------------------------------------------------------
+string rpmSingleSrcIndex::ArchiveURI(string File) const
+{
+   char *cwd = getcwd(NULL,0);
+   if (File[0] == '.' && File[1] == '/')
+      File = string(File, 2);
+   string URI = "file://"+flCombine(cwd, File);
+   free(cwd);
+   return URI;
+}
+									/*}}}*/
+
 // DatabaseIndex::rpmDatabaseIndex - Constructor			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -515,7 +567,7 @@ bool rpmDatabaseIndex::Merge(pkgCacheGenerator &Gen,OpProgress &Prog) const
    pkgCache::PkgFileIterator CFile = Gen.GetCurFile();
    struct stat St;
    if (stat(Handler->DataPath(false).c_str(),&St) != 0)
-      return _error->Errno("fstat","Failed to stat");
+      return _error->Errno("fstat",_("Failed to stat %s"), Handler->DataPath(false).c_str());
    CFile->Size = St.st_size;
    CFile->mtime = Handler->Mtime();
    
@@ -679,9 +731,30 @@ class rpmSLTypeRpmDir : public rpmSLTypeGen
    }   
 };
 
+class rpmSLTypeSrpmDir : public rpmSLTypeGen
+{
+   public:
+
+   bool CreateItem(vector<pkgIndexFile *> &List,
+		   string URI, string Dist, string Section,
+		   pkgSourceList::Vendor const *Vendor) const 
+   {
+      pkgRepository *Rep = GetRepository(URI,Dist,Vendor);
+      List.push_back(new rpmSrcDirIndex(URI,Dist,Section,Rep));
+      return true;
+   };
+
+   rpmSLTypeSrpmDir()
+   {
+      Name = "rpm-src-dir";
+      Label = "Local SRPM directory tree";
+   }   
+};
+
 rpmSLTypeRpm _apt_rpmType;
 rpmSLTypeSrpm _apt_rpmSrcType;
 rpmSLTypeRpmDir _apt_rpmDirType;
+rpmSLTypeSrpmDir _apt_rpmSrcDirType;
 									/*}}}*/
 // Index File types for rpm						/*{{{*/
 class rpmIFTypeSrc : public pkgIndexFile::Type
@@ -722,9 +795,21 @@ const pkgIndexFile::Type *rpmPkgListIndex::GetType() const
 {
    return &_apt_Pkg;
 }
+const pkgIndexFile::Type *rpmSrcDirIndex::GetType() const
+{
+   return &_apt_Src;
+}
 const pkgIndexFile::Type *rpmPkgDirIndex::GetType() const
 {
    return &_apt_Pkg;
+}
+const pkgIndexFile::Type *rpmSinglePkgIndex::GetType() const
+{
+   return &_apt_Pkg;
+}
+const pkgIndexFile::Type *rpmSingleSrcIndex::GetType() const
+{
+   return &_apt_Src;
 }
 const pkgIndexFile::Type *rpmDatabaseIndex::GetType() const
 {

@@ -102,7 +102,8 @@ _GLIBC_
 	if test "$?" = 0; then
 		GLIBC_VER=`./$dummy`
 		AC_MSG_RESULT([$GLIBC_VER])
-		GLIBC_VER="-$GLIBC_VER"
+		dnl CNC:2003-03-25
+		GLIBC_VER="$GLIBC_VER"
 	else
 		AC_MSG_WARN([cannot determine GNU C library minor version number])
 	fi
@@ -131,7 +132,8 @@ _LIBSTDCPP_
 		AC_MSG_WARN([cannot determine standard C++ library version number])
 	else
 		AC_MSG_RESULT([$LIBSTDCPP_VER])
-		LIBSTDCPP_VER="-$LIBSTDCPP_VER"
+		dnl CNC:2003-03-25
+		LIBSTDCPP_VER="$LIBSTDCPP_VER"
 	fi
 	AC_SUBST(LIBSTDCPP_VER)
 ])

@@ -60,11 +60,14 @@ class rpmSystem : public pkgSystem
    virtual bool ArchiveSupported(const char *Type);
    virtual signed Score(Configuration const &Cnf);
    virtual bool AddStatusFiles(vector<pkgIndexFile *> &List);
+   virtual bool AddSourceFiles(vector<pkgIndexFile *> &List);
    virtual bool FindIndex(pkgCache::PkgFileIterator File,
 			  pkgIndexFile *&Found) const;
    virtual bool ProcessCache(pkgDepCache &Cache,pkgProblemResolver &Fix);
    virtual bool IgnoreDep(pkgVersioningSystem &VS,pkgCache::DepIterator &Dep);
    virtual void CacheBuilt();
+
+   virtual unsigned long OptionsHash() const;
 
    rpmSystem();
    virtual ~rpmSystem();

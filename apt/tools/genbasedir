@@ -22,7 +22,11 @@ Options:\n\
    --updateinfo=FILE  Update information file\n\
    --flat             Use flat repository, where SRPMS and RPMS are in\n\
                       the topdir (SRPMS are usually in 'topdir/..')\n\
+   --bloat            Do not strip the package file list, needed for some\n\
+                      distributions that use non-automatically generated\n\
+                      file dependencies\n\
    --meta=NAME        Create a meta repository named NAME\n\
+   -h, --help         Display this help\n\
 \n\
 Examples:\n\
 \n\
@@ -189,10 +193,10 @@ if [ $hashonly -ne 1 ]; then
 
 test -z "$TMPDIR" && TMPDIR=/tmp;
 srcidxdir=`mktemp -d $TMPDIR/genbasedir.XXXXXX 2>/dev/null`
-if [ -z "$srcidxdir" -o ! -d $srcidxdir ]; then
+if [ -z "$srcidxdir" -o ! -d "$srcidxdir" ]; then
 	srcidxdir=$basedir/.srcidxtmp.$$
 	mkdir -p $srcidxdir
-	if [ ! -d $srcidxdir ]; then
+	if [ ! -d "$srcidxdir" ]; then
 		echo "error: can't create temp dir" 1>&2
 		exit 1
 	fi

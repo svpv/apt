@@ -1,0 +1,39 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/Makefile.am apt-0.5.15cnc5/cmdline/Makefile.am
+--- apt-0.5.15cnc5.orig/cmdline/Makefile.am	2003-12-23 23:31:00 +0300
++++ apt-0.5.15cnc5/cmdline/Makefile.am	2004-01-16 15:10:00 +0300
+@@ -12,6 +12,6 @@ LDADD = ../apt-pkg/libapt-pkg.la $(RPMLI
+ apt_cache_SOURCES = apt-cache.cc
+ apt_get_SOURCES = apt-get.cc acqprogress.cc acqprogress.h
+ apt_shell_SOURCES = apt-shell.cc acqprogress.cc acqprogress.h
+-apt_shell_LDADD = $(LDADD) -lreadline -lncurses
++apt_shell_LDADD = $(LDADD) -lreadline -ltinfo
+ apt_config_SOURCES = apt-config.cc
+ apt_cdrom_SOURCES = apt-cdrom.cc rpmindexcopy.cc rpmindexcopy.h
+diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/Makefile.in apt-0.5.15cnc5/cmdline/Makefile.in
+--- apt-0.5.15cnc5.orig/cmdline/Makefile.in	2003-12-23 23:30:26 +0300
++++ apt-0.5.15cnc5/cmdline/Makefile.in	2004-01-16 15:10:00 +0300
+@@ -181,7 +181,7 @@ LDADD = ../apt-pkg/libapt-pkg.la $(RPMLI
+ apt_cache_SOURCES = apt-cache.cc
+ apt_get_SOURCES = apt-get.cc acqprogress.cc acqprogress.h
+ apt_shell_SOURCES = apt-shell.cc acqprogress.cc acqprogress.h
+-apt_shell_LDADD = $(LDADD) -lreadline -lncurses
++apt_shell_LDADD = $(LDADD) -lreadline -ltinfo
+ apt_config_SOURCES = apt-config.cc
+ apt_cdrom_SOURCES = apt-cdrom.cc rpmindexcopy.cc rpmindexcopy.h
+ subdir = cmdline
+diff -uprk.orig apt-0.5.15cnc5.orig/configure.in apt-0.5.15cnc5/configure.in
+--- apt-0.5.15cnc5.orig/configure.in	2003-12-23 23:15:40 +0300
++++ apt-0.5.15cnc5/configure.in	2004-01-16 15:10:00 +0300
+@@ -121,10 +121,10 @@ fi
+ AM_CONDITIONAL(WITH_LUA, test "$enable_scripts" != "no")
+ 
+ dnl Check for apt-shell dependencies
+-AC_CHECK_LIB(ncurses,tputs,
++AC_CHECK_LIB(tinfo,tputs,
+   [AC_CHECK_HEADER(readline/readline.h,
+      [AC_CHECK_LIB(readline,rl_completion_matches,
+-        [compile_aptshell=yes],,[-lncurses])])])
++        [compile_aptshell=yes],,[-ltinfo])])])
+ AM_CONDITIONAL(COMPILE_APTSHELL, test "$compile_aptshell" = "yes")
+ 
+ dnl Converts the ARCH to be something singular for this general CPU family

@@ -1,0 +1,21 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/configure.in apt-0.5.15cnc5/configure.in
+--- apt-0.5.15cnc5.orig/configure.in	2003-12-23 23:15:40 +0300
++++ apt-0.5.15cnc5/configure.in	2004-01-16 19:50:16 +0300
+@@ -11,8 +11,6 @@ AM_MAINTAINER_MODE
+ 
+ AC_CONFIG_HEADER([include/config.h:buildlib/config.h.in])
+ 
+-AC_PROG_LIBTOOL
+-
+ dnl Check our C compiler
+ AC_PROG_CC
+ AM_PROG_CC_C_O
+@@ -22,6 +20,8 @@ dnl Check for other programs
+ AC_PROG_CXX
+ AC_PROG_CPP
+ 
++AC_PROG_LIBTOOL
++
+ dnl Checks for sockets
+ SAVE_LIBS="$LIBS"
+ LIBS=""

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: ftp.cc,v 1.30 2003/02/10 07:34:41 doogie Exp $
+// $Id: ftp.cc,v 1.31 2003/08/10 02:24:39 mdz Exp $
 /* ######################################################################
 
    FTP Aquire Method - This is the FTP aquire method for APT.
@@ -189,7 +189,8 @@ bool FTPConn::Login()
    
    // Setup the variables needed for authentication
    string User = "anonymous";
-   string Pass = "apt_get_ftp_2.1@debian.linux.user";
+   // CNC:2003-06-16
+   string Pass = "apt_get_ftp_2.1@rpm.linux.user";
 
    // Fill in the user/pass
    if (ServerName.User.empty() == false)
@@ -212,11 +213,13 @@ bool FTPConn::Login()
       if (Tag >= 400)
 	 return _error->Error(_("USER failed, server said: %s"),Msg.c_str());
       
-      // Send the Password
-      if (WriteMsg(Tag,Msg,"PASS %s",Pass.c_str()) == false)
-	 return false;
-      if (Tag >= 400)
-	 return _error->Error(_("PASS failed, server said: %s"),Msg.c_str());
+      if (Tag == 331) { // 331 User name okay, need password.
+         // Send the Password
+         if (WriteMsg(Tag,Msg,"PASS %s",Pass.c_str()) == false)
+            return false;
+         if (Tag >= 400)
+            return _error->Error(_("PASS failed, server said: %s"),Msg.c_str());
+      }
       
       // Enter passive mode
       if (_config->Exists("Acquire::FTP::Passive::" + ServerName.Host) == true)

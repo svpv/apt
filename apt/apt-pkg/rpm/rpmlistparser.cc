@@ -29,7 +29,7 @@
 
 #include <rpm/rpmlib.h>
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmds.h>
 #endif
 
@@ -108,7 +108,7 @@ string rpmListParser::Package()
    
    if (headerGetEntry(header, RPMTAG_NAME, &type, (void**)&str, &count) != 1) 
    {
-      _error->Error("Corrupt pkglist: no RPMTAG_NAME in header entry");
+      _error->Error(_("Corrupt pkglist: no RPMTAG_NAME in header entry"));
       return "";
    } 
 
@@ -251,6 +251,10 @@ bool rpmListParser::NewVersion(pkgCache::VerIterator Ver)
    if (ParseProvides(Ver) == false)
        return false;
 
+   if (Handler->ProvideFileName() &&
+       NewProvides(Ver, Handler->FileName(), "") == false)
+	 return false;
+
    return true;
 }
 									/*}}}*/
@@ -278,11 +282,12 @@ bool rpmListParser::UsePackage(pkgCache::PkgIterator Pkg,
 // ---------------------------------------------------------------------
 /* */
 
+/*
 static int compare(const void *a, const void *b)
 {   
    return strcmp(*(char**)a, *(char**)b);
 }
-
+*/
 
 unsigned short rpmListParser::VersionHash()
 {
@@ -384,7 +389,7 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
       
       if (namel[i][0] == 'r' && strncmp(namel[i], "rpmlib", 6) == 0) 
       {
-#ifdef HAVE_RPM41	
+#if RPM_VERSION >= 0x040100
 	 rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
 			        namel[i], verl?verl[i]:NULL, flagl[i]);
 	 int res = rpmCheckRpmlibProvides(ds);
@@ -519,9 +524,21 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 		     NULL, (void **) &names, &count);
    while (count--) 
    {
-      pkgCache::Package *P = Cache.FindPackage(names[count]);
-      if (P != NULL && !NewProvides(Ver, names[count], ""))
-	 return false;
+      const char *FileName = names[count];
+      pkgCache::Package *P = Cache.FindPackage(FileName);
+      if (P != NULL) {
+	 // Check if this is already provided.
+	 bool Found = false;
+	 for (pkgCache::PrvIterator Prv = Ver.ProvidesList();
+	      Prv.end() == false; Prv++) {
+	    if (strcmp(Prv.Name(), FileName) == 0) {
+	       Found = true;
+	       break;
+	    }
+	 }
+	 if (Found == false && NewProvides(Ver, FileName, "") == false)
+	    return false;
+      }
    }
 
    return true;
@@ -646,7 +663,7 @@ bool rpmListParser::LoadReleaseInfo(pkgCache::PkgFileIterator FileI,
    
    if (Section.FindFlag("NotAutomatic",FileI->Flags,
 			pkgCache::Flag::NotAutomatic) == false)
-       _error->Warning("Bad NotAutomatic flag");
+       _error->Warning(_("Bad NotAutomatic flag"));
    
    return !_error->PendingError();
 }
@@ -702,8 +719,8 @@ void rpmListParser::VirtualizePackage(string Name)
       // read the comment above).
       map_ptrloc *ToVerLast = &ToPkgI->VersionList;
       for (pkgCache::VerIterator ToVerLastI = ToPkgI.VersionList();
-	   ToVerLastI.end() == false;
-	   ToVerLast = &ToVerLastI->NextVer, ToVerLast++);
+	   ToVerLastI.end() == false; ToVerLastI++)
+	   ToVerLast = &ToVerLastI->NextVer;
 
       *ToVerLast = FromVerI.Index();
 

@@ -26,8 +26,9 @@
 #include <rpm/misc.h>
 
 #include <stdlib.h>
+#include <assert.h>
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
 #include <rpm/rpmds.h>
 #endif
 
@@ -73,7 +74,12 @@ void rpmVersioningSystem::ParseVersion(const char *V, const char *VEnd,
       if (*epoch == '\0') epoch = "0";
    }
    else
+   {
+#if RPM_VERSION >= 0x040100
+      epoch = "0";
+#endif
       version = evr;
+   }
 
 #define Xstrdup(a) (a) ? strdup(a) : NULL
    *Epoch = Xstrdup(epoch);
@@ -112,10 +118,17 @@ int rpmVersioningSystem::DoCmpVersion(const char *A,const char *AEnd,
    if (rc == 0)
    {
       rc = rpmvercmp(AV, BV);
-      if (rc == 0)
-	 rc = rpmvercmp(AR, BR);
+      if (rc == 0) {
+	  if (AR && !BR)
+	      rc = 1;
+	  else if (!AR && BR)
+	      rc = -1;
+	  else if (AR && BR)
+	      rc = rpmvercmp(AR, BR);
+      }
    }
    free(AE);free(AV);free(AR);;
+   free(BE);free(BV);free(BR);;
    return rc;
 }
 									/*}}}*/
@@ -185,9 +198,11 @@ bool rpmVersioningSystem::CheckDep(const char *PkgVer,
       break;
    }
 
-#ifdef HAVE_RPM41
+#if RPM_VERSION >= 0x040100
    rpmds pds = rpmdsSingle(RPMTAG_PROVIDENAME, "", PkgVer, PkgFlags);
    rpmds dds = rpmdsSingle(RPMTAG_REQUIRENAME, "", DepVer, DepFlags);
+   rpmdsSetNoPromote(pds, _rpmds_nopromote);
+   rpmdsSetNoPromote(dds, _rpmds_nopromote);
    rc = rpmdsCompare(pds, dds);
    rpmdsFree(pds);
    rpmdsFree(dds);
