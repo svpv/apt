@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt3
+Release: alt4
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -42,6 +42,7 @@ Patch29: apt-0.5.15cnc5-alt-findrepos.patch
 Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
+Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -223,6 +224,7 @@ This package contains method 'rsync' for APT.
 %patch30 -p1
 %patch31 -p1
 %patch32 -p1
+%patch33 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -334,6 +336,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Jun 07 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt4
+- apt-shell fixes from Mouse (#4306).
+
 * Sat May 15 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt3
 - apt-pkg/pkgcachegen.cc:
   Remove old sources cache file before creating new one.
