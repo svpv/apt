@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc5
-Release: alt3
+Release: alt4
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -39,6 +39,7 @@ Patch27: apt-0.5.15cnc5-alt-install_virtual.patch
 Patch28: apt-0.5.15cnc5-alt-virtual_scores.patch
 Patch29: apt-0.5.15cnc5-alt-system-lua5.patch
 Patch30: apt-0.5.15cnc5-alt-findrepos.patch
+Patch31: apt-0.5.15cnc5-alt-gettext.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -56,6 +57,9 @@ BuildPreReq: docbook-utils
 
 # lua5.
 BuildPreReq: liblua5-devel
+
+# autopoint
+BuildPreReq: cvs
 
 %def_disable static
 %{?_enable_static:BuildPreReq: glibc-devel-static}
@@ -214,6 +218,7 @@ This package contains method 'rsync' for APT.
 %patch28 -p1
 %patch29 -p1
 %patch30 -p1
+%patch31 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -231,10 +236,7 @@ popd
 # Fix url.
 %__subst -p 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
 
-%__aclocal -I buildlib
-# rsync patch update only methods/Makefile.am so need to run automake
-%__automake
-%__autoconf
+autoreconf -fisv -I buildlib
 
 # --disable-dependency-tracking Speeds up one-time builds
 %configure --includedir=%_includedir/apt-pkg %{subst_enable static}
@@ -328,6 +330,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Feb 27 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt4
+- Fixed build with fresh autotools.
+
 * Wed Jan 21 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt3
 - Readded contrib to documentation.
 - Updated russian translation from Anton Denisov.
