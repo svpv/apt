@@ -1,0 +1,4 @@
+copy: *.conf
+copy: *.patch
+tar.bz2: apt
+copy: rpmpriorities

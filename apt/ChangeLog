@@ -1,0 +1,1780 @@
+2002-01-14 18:53  kojima
+
+	* release, apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmversion.cc: fixed
+	bug in order of rpm --nodeps
+
+2001-12-12 16:50  kojima
+
+	* tools/: genbasedir, gensrclist.cc: fixed genbasedir for --flat
+	and relative --topdir specifications fixed --flat in gensrclist
+
+2001-12-11 22:50  kojima
+
+	* configure.in, release, apt-pkg/pkgcachegen.cc,
+	apt-pkg/rpm/rpmlistparser.cc: minor fixes release cnc55
+
+2001-12-11 15:51  kojima
+
+	* tools/gensrclist.cc: added --flat option to srclist, patched
+	gensrclist with stelian's patch
+
+2001-11-30 22:40  kojima
+
+	* tools/: genbasedir, genpkglist.cc: patched --progress stuff from
+	stelian
+
+2001-11-30 22:34  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmlistparser.h, apt-pkg/rpm/rpmpm.cc, methods/rsh.cc,
+	methods/rsh.h: added RPM::IgnorePkgs kluge
+
+2001-11-13 22:33  kojima
+
+	* deity/: anchor.cc, anchor.h, basic.cc, basic.h, button.cc,
+	button.h, columnbar.cc, columnbar.h, event.cc, event.h, gpmdev.cc,
+	gpmdev.h, graphics.cc, graphics.h, makefile, menubar.cc, menubar.h,
+	notify.cc, notify.h, progress.cc, progress.h, selectloop.cc,
+	selectloop.h, slangdev.cc, slangdev.h, tabdialog.cc, tabdialog.h,
+	textwidg.cc, textwidg.h, tree.cc, tree.h, utils.cc, utils.h,
+	widget-thread.cc, widget-thread.h, widget.cc, widget.h,
+	widgetinit.cc, widgetinit.h, window.cc, window.h, x11dev.cc,
+	x11dev.h, x11xpm.cc, xpm.cc, xpm.h: removed junk
+
+2001-11-13 20:00  kojima
+
+	* cmdline/apt-get.cc: removed stale code
+
+2001-11-13 19:32  kojima
+
+	* configure.in, release, apt-pkg/algorithms.cc,
+	apt-pkg/depcache.cc, apt-pkg/depcache.h, apt-pkg/packagemanager.cc,
+	apt-pkg/contrib/i18n.h, apt-pkg/contrib/progress.cc,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmpackagedata.cc,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmsrcrecords.cc,
+	cmdline/apt-cdrom.cc, cmdline/apt-get.cc, methods/gpg.cc,
+	po/POTFILES.in, po/ru.po, tools/cached_md5.cc: Patches from Dmitry
+	Levin <ldv@alt-linux.org> apt-0.3.19cnc52-configure.patch -- patch
+	for configure to add Russian				       
+	translation and better support of				   
+	 RPM4's db3 usage.  apt-0.3.19cnc52-i18n.patch	    -- i18n patch.
+	All APT messages now can be				      
+	localized.  apt-0.3.19cnc52-replace-support.patch		   
+		      -- support for Replace option. It is		   
+		       better detection whether package is truly	   
+			     removed or is going to be replaced by	   
+			       package with different name.  Patch from
+	Ivan Zakharyashev: apt-cdrom.newfix_imz.patch	   -- Fixes
+	apt-cdrom to better manage				     
+	repository search when CD has both RPMS 			   
+	       and SRPMS.  Alexander Bokovoy <ab@avilink.net>:
+	apt-gpg-pubring.patch		-- uses --homedir instead of
+	--keyring				     option to GPG. It is
+	generally better				    because you
+	also can specify GPG					options in 
+					  ${Apt::GPG::PubringPath}/options
+	apt-ru.po			-- updated Russian translation for
+	APT				       (Dmitry Levin and me).
+
+2001-11-12 18:34  kojima
+
+	* apt-pkg/: acquire-item.cc, acquire-item.h, sourcelist.cc,
+	sourcelist.h: cleanup half-way mirror support
+
+2001-11-12 18:04  kojima
+
+	* configure.in, release, apt-pkg/acquire-item.cc,
+	apt-pkg/acquire-item.h, apt-pkg/pkgcachegen.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/sourcelist.h,
+	apt-pkg/contrib/error.cc, apt-pkg/rpm/rpmpm.cc,
+	apt-pkg/rpm/rpmpm.h, buildlib/archtable, cmdline/apt-get.cc,
+	methods/connect.cc, po/pt_BR.po, tools/Makefile: added -K option,
+	new release (cnc53)
+
+2001-11-09 23:14  kojima
+
+	* configure.in: 	* Enables configure to autodetect the
+	presence of
+		rpmdb library, enabling apt to build correctly
+		on RedHat 7.2 as well as oldest versions.
+
+2001-11-09 23:13  kojima
+
+	* tools/genbasedir:	    * Skips correctly over empty package
+	directories
+	
+		* Adds the --bz2only argument which makes genbasedir
+		to generate only the .bz2 compressed versions of pkglist
+		and srclist (space gain...)
+	
+		* Doesn't change the timestamps on pkglists/srclists if
+		the contents are not modified (making possible for example
+		to make several consecutive runs of genbasedir without
+		having the apt clients download the indexes again and
+	again).
+	
+		* Some minor cleanups (remove the temporary files in /tmp
+		at the end of the script etc).
+
+2001-11-09 23:13  kojima
+
+	* tools/genpkglist.cc:	       * Corrects the use of 'scandir' and
+	makes genpkglist behave
+		correctly when it finds empty RPMS directories (instead of
+		dumping core).
+	
+		* Better package progression indicator.
+
+2001-11-09 23:11  kojima
+
+	* tools/gensrclist.cc: * Use 'scandir' for directory traversal
+	(instead of opendir/  readdir) like in genpkglist.  * Better
+	package progression indicator.
+
+2001-08-07 23:46  kojima
+
+	* tools/: Makefile, cached_md5.cc, cached_md5.h, genpkglist.cc,
+	gensrclist.cc: Alexander Bokovoy <a.bokovoy@sam-solutions.net>'s
+	patch for cleaning up genpkglist
+
+2001-08-02 19:28  kojima
+
+	* configure.in: [no log message]
+
+2001-08-02 17:38  kojima
+
+	* configure.in: [no log message]
+
+2001-08-02 17:30  kojima
+
+	* configure.in, buildlib/configure.mak: various make fixes
+
+2001-08-02 17:15  kojima
+
+	* buildlib/fail.mak: [no log message]
+
+2001-08-02 01:11  kojima
+
+	* configure.in: readded po dir
+
+2001-08-02 01:05  kojima
+
+	* Makefile: readded tools dir
+
+2001-08-02 00:57  kojima
+
+	* release, apt-pkg/rpm/rpmpm.cc, cmdline/apt-cache.cc,
+	cmdline/apt-cdrom.cc, cmdline/apt-config.cc, cmdline/apt-get.cc:
+	fixed tipoes
+
+2001-08-02 00:38  kojima
+
+	* aclocal.m4: removed stale file
+
+2001-08-02 00:35  kojima
+
+	* AUTHORS.RPM, Makefile, acinclude.m4, aclocal.m4, configure.in,
+	apt-pkg/init.cc, apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmpm.cc,
+	apt-pkg/rpm/rpmrecords.cc, methods/file.cc: misc changes bug fix in
+	file method with auth start using 0.5 build system
+
+2001-08-02 00:31  kojima
+
+	* buildlib/: config.guess, config.h.in, config.sub, copy.mak,
+	debiandoc.mak, defaults.mak, environment.mak.in, library.mak,
+	makefile.in, manpage.mak, mkChangeLog, ostable, program.mak,
+	sizetable, staticlibrary.mak, tools.m4: added ostable updated to
+	0.5 buildsystem
+
+2001-07-13 00:47  kojima
+
+	* configure.in, release, apt-pkg/cachefile.cc, apt-pkg/cachefile.h,
+	apt-pkg/depcache.cc, apt-pkg/pkgcachegen.cc,
+	apt-pkg/systemfactory.cc, apt-pkg/contrib/error.cc,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpmpackagedata.cc, apt-pkg/rpm/rpmpm.cc,
+	cmdline/apt-cache.cc, cmdline/apt-get.cc, methods/gpg.cc,
+	po/pt_BR.po, tools/genpkglist.cc, tools/gensrclist.cc,
+	tools/hdlist2pkglist.cc: ignore duplicated version/diff deps
+	packages new release (cnc51)
+
+2001-06-29 09:49  kojima
+
+	* configure.in, release, cmdline/apt-cdrom.cc: fixed bug in
+	apt-cdrom detection of srclists
+
+2001-06-27 23:47  kojima
+
+	* configure.in, release: new release
+
+2001-06-27 23:37  kojima
+
+	* apt-pkg/rpm/: rpminit.cc, rpmpm.cc, rpmpm.h: added --nodeps when
+	isntalling packages
+
+2001-06-26 06:51  kojima
+
+	* apt-pkg/: init.cc, rpm/rpmpackagedata.cc: added config option
+	Dir::Etc::RpmPriorities
+
+2001-06-26 01:35  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpmpm.cc: added
+	RPM::AutoRebuildDB
+
+2001-06-25 19:16  kojima
+
+	* apt-pkg/pkgcache.cc, apt-pkg/rpm/rpminit.cc, cmdline/apt-get.cc,
+	methods/cdrom.cc: added some misc enhancements
+
+2001-06-22 21:21  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpmlistparser.cc,
+	cmdline/apt-get.cc: removed debug msg fixed HoldPkgs
+
+2001-06-19 21:08  kojima
+
+	* configure.in, release: new release
+
+2001-06-19 18:19  kojima
+
+	* apt-pkg/rpm/rpminit.cc: iterate over Packages instead of Names to
+	figure package coutn
+
+2001-06-18 23:52  kojima
+
+	* apt-pkg/rpm/rpmfactory.cc: fixed arch selection
+
+2001-06-16 04:59  kojima
+
+	* apt-pkg/acquire-item.cc: added a delay before file fetch retry
+
+2001-06-16 04:51  kojima
+
+	* release, cmdline/apt-get.cc, methods/cdrom.cc: added
+	acquire::cdrom::copy which will copy all files from all cds before
+	installing
+
+2001-06-16 04:50  kojima
+
+	* apt-pkg/: acquire-item.cc, acquire-method.cc, acquire.cc,
+	packagemanager.cc: fixed typos
+
+2001-06-14 01:29  kojima
+
+	* configure.in, apt-pkg/sourcelist.cc, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpminit.cc, cmdline/apt-cdrom.cc: fixed cache update
+	progress info
+
+2001-06-11 20:57  kojima
+
+	* configure.in, release, apt-pkg/init.cc, tools/Makefile: [no log
+	message]
+
+2001-06-11 20:56  kojima
+
+	* apt-pkg/rpm/: rpmlistparser.cc, rpmlistparser.h: added holdpkgs
+	and renamed allowedduppackages -> allowedduppkgs
+
+2001-06-05 20:14  kojima
+
+	* release, apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmrecords.h,
+	cmdline/apt-get.cc: added rpm::post-invoke-pkgs
+
+2001-06-05 15:26  kojima
+
+	* tools/genpkglist.cc: added fileflags tag to pkglist
+
+2001-05-21 18:01  kojima
+
+	* apt-pkg/rpm/rpminit.cc: consertado: <niemeyer> mrbrocoli: Parece
+	que o apt está dando core-dump quando executando "apt-get install
+	blah" como usuário normal. Não sei se vais ter tempo de ver isso ou
+	se mando pro bugzilla...
+
+2001-05-18 20:55  kojima
+
+	* configure.in: new release
+
+2001-05-18 20:55  kojima
+
+	* apt-pkg/rpm/rpmsrcrecords.cc: fixed apt-get source crash bug
+
+2001-05-18 20:38  kojima
+
+	* apt-pkg/rpm/rpminit.cc: fixed bug with record offset tracking in
+	rpm4
+
+2001-05-18 03:45  kojima
+
+	* apt-pkg/: acquire-item.cc, acquire-item.h: added Acquire::Retries
+	to pkglist and hashfile retrieval
+
+2001-05-18 01:28  kojima
+
+	* release, cmdline/makefile: [no log message]
+
+2001-05-18 01:22  kojima
+
+	* configure.in: [no log message]
+
+2001-05-18 01:22  kojima
+
+	* apt-pkg/rpm/rpminit.cc, cmdline/makefile: fixed dumb errors..
+
+2001-05-18 01:18  kojima
+
+	* release, apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpminit.h, apt-pkg/rpm/rpmlistparser.cc,
+	buildlib/archtable, cmdline/apt-cache.cc, cmdline/apt-get.cc,
+	cmdline/makefile: merged patches for ia64, some code cleanup on
+	rpminit (niemeyer) and cosmetic line-break stuff (vanyaz)
+
+2001-03-29 23:19  kojima
+
+	* apt-pkg/rpm/: rpminit.cc, rpmpm.cc: rpmdbrebuild fixes
+
+2001-03-29 23:19  kojima
+
+	* configure.in: new release
+
+2001-03-29 22:11  kojima
+
+	* apt-pkg/rpm/rpmpm.cc: rpmrebuild on rpm upgrade
+
+2001-03-28 00:18  kojima
+
+	* configure.in: new release
+
+2001-03-28 00:18  kojima
+
+	* apt-pkg/: depcache.cc, makefile, packagemanager.cc,
+	pkgcachegen.cc, contrib/sptr.h: started backport of (commented out)
+	new MarkInstall from 0.5 custom, stripped down OrderInstall()
+
+2001-03-23 20:25  kojima
+
+	* apt-pkg/rpm/: rpmfactory.cc, rpmrecords.cc: extra headers for rpm
+	stuff
+
+2001-03-23 18:52  kojima
+
+	* configure.in: new release
+
+2001-03-23 18:47  kojima
+
+	* apt-pkg/rpm/: rpmfactory.cc, rpmrecords.cc: fixed bug with rpm4
+
+2001-03-22 14:11  kojima
+
+	* apt-pkg/algorithms.cc: uncommented previous fix on dep resolver
+	:P
+
+2001-03-22 14:03  kojima
+
+	* configure.in: new release (38)
+
+2001-03-22 14:01  kojima
+
+	* AUTHORS.RPM, configure.in, rpmpriorities, apt-pkg/depcache.cc,
+	apt-pkg/packagemanager.cc, apt-pkg/pkgcachegen.cc,
+	apt-pkg/sourcelist.h, cmdline/apt-cache.cc, cmdline/apt-get.cc,
+	methods/gpg.cc, methods/gzip.cc, methods/makefile, po/it_IT.po,
+	po/pt_BR.po: italian potfile many fixes
+
+2001-03-22 14:00  kojima
+
+	* apt-pkg/algorithms.cc: fixed upstream bug on dep resolution
+
+2001-03-11 16:36  claudio
+
+	* tools/genbasedir: Added appropriate message at the end of script.
+
+2001-02-20 20:20  kojima
+
+	* configure.in, release, methods/ftp.cc, methods/http.cc: fixed
+	bugs in no_proxy handling
+
+2001-02-17 21:36  kojima
+
+	* configure.in, release, apt-pkg/acquire-item.cc,
+	apt-pkg/cachefile.cc, apt-pkg/cachefile.h,
+	apt-pkg/packagemanager.cc, apt-pkg/pkgcache.cc,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpminit.h, apt-pkg/rpm/rpmlistparser.cc: fixed arch
+	selection code. really. this time it works. I SWEAR IT DOES!!!
+
+2001-02-15 00:42  kojima
+
+	* configure.in: new release
+
+2001-02-15 00:41  kojima
+
+	* apt-pkg/: pkgcache.cc, rpm/rpmlistparser.cc: fixed problem with
+	package name case sensitiveness
+
+2001-02-14 21:59  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpminit.cc: [no log message]
+
+2001-02-14 21:51  kojima
+
+	* release, apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpm.cc, cmdline/apt-get.cc: [no log message]
+
+2001-01-25 01:07  kojima
+
+	* configure.in: new release
+
+2001-01-25 01:07  kojima
+
+	* apt-pkg/rpm/: rpmpm.cc, rpmpm.h: added hooks for GUI
+
+2001-01-24 20:42  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmrecords.cc,
+	cmdline/apt-get.cc: fixed prob with rpm4
+
+2001-01-19 19:32  kojima
+
+	* apt-pkg/: makefile, rpm/rpmlistparser.cc, rpm/rpmpackagedata.h:
+	fixed bug with section/priority in packages
+
+2001-01-19 17:23  kojima
+
+	* po/pt_BR.po: [no log message]
+
+2001-01-18 02:36  kojima
+
+	* apt-pkg/rpm/: rpmfactory.cc, rpmlistparser.cc: fixed arch
+	selection bug
+
+2001-01-16 21:28  kojima
+
+	* configure.in, release, po/es_ES.po, po/pt_BR.po: updated potfiles
+	new release
+
+2001-01-16 01:58  kojima
+
+	* apt-pkg/: depcache.cc, rpm/rpmversion.cc: fixed bug upgrading
+	packages and missing reverse dependency upgrades
+
+2001-01-15 20:14  kojima
+
+	* configure.in, release, apt-pkg/rpm/rpminit.h: new release
+
+2001-01-15 17:29  kojima
+
+	* po/: es_ES.po, pt_BR.po: new potfiles
+
+2001-01-13 19:05  kojima
+
+	* release, apt-pkg/cachefile.cc, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpminit.h, cmdline/apt-cache.cc: fixed a few bugs
+
+2001-01-13 04:17  kojima
+
+	* configure.in: new release
+
+2001-01-13 03:50  kojima
+
+	* apt-pkg/: packagemanager.cc, rpm/rpmlistparser.cc,
+	rpm/rpmlistparser.h, rpm/rpmrecords.cc: fixed early remove bug with
+	vim-enhanced prob
+
+2001-01-11 04:03  kojima
+
+	* release, apt-pkg/acquire-item.cc, apt-pkg/acquire-worker.cc,
+	apt-pkg/acquire.cc, apt-pkg/cachefile.cc, apt-pkg/clean.cc,
+	apt-pkg/depcache.cc, apt-pkg/packagemanager.cc,
+	apt-pkg/pkgcache.cc, apt-pkg/pkgcachegen.cc, apt-pkg/pkgrecords.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/srcrecords.cc,
+	apt-pkg/systemfactory.cc, apt-pkg/tagfile.cc,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmlistparser.h, apt-pkg/rpm/rpmrecords.cc,
+	po/POTFILES.in, po/apt.pot, po/cat-id-tbl.c, po/es_ES.po,
+	po/pt_BR.po: fixed several bugs
+
+2001-01-04 23:26  kojima
+
+	* AUTHORS.RPM, configure.in, release, apt-pkg/acquire-item.cc,
+	apt-pkg/acquire-method.cc, apt-pkg/sourcelist.h,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmrecords.cc,
+	apt-pkg/rpm/rpmsrcrecords.cc, buildlib/config.guess,
+	cmdline/apt-cdrom.cc, cmdline/apt-get.cc, doc/apt-cache.8,
+	doc/apt.conf.5, doc/sources.list.5, doc/vendors.list.5,
+	doc/examples/configure-index, methods/gpg.cc, tools/genbasedir,
+	tools/genpkglist.cc: fixed some mem leaks
+
+2001-01-02 16:08  kojima
+
+	* apt-pkg/rpm/rpmrecords.cc: fixed mem leaks
+
+2000-12-10 15:42  claudio
+
+	* tools/genbasedir: Added linefeeds to usage message, replaced
+	spaces for tabs
+
+2000-12-05 22:51  kojima
+
+	* release, apt-pkg/acquire-item.cc, apt-pkg/acquire-item.h,
+	apt-pkg/sourcelist.cc: finished md5 verificatoin of already
+	downloaded files
+
+2000-12-05 18:40  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: fixed stupid bug in arch handling
+
+2000-12-05 06:28  kojima
+
+	* apt-pkg/: pkgcachegen.cc, rpm/rpmlistparser.cc: removed some
+	debug msgs
+
+2000-12-05 06:17  kojima
+
+	* apt-pkg/rpm/rpmfactory.cc: fixed bug in arch selection
+
+2000-12-05 06:07  kojima
+
+	* apt-pkg/rpm/rpmfactory.cc: temp bla
+
+2000-12-05 05:56  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: fixed bug in rpmlistparser, wrt
+	arch selection
+
+2000-12-05 05:30  kojima
+
+	* apt-pkg/: init.cc, pkgcachegen.cc, systemfactory.h,
+	rpm/rpmfactory.cc, rpm/rpmfactory.h, rpm/rpmlistparser.cc,
+	rpm/rpmlistparser.h: remade multi-arch support
+
+2000-12-04 22:16  kojima
+
+	* apt-pkg/pkgcachegen.cc: tmp test stuff for arch
+
+2000-12-04 21:15  kojima
+
+	* configure.in, release, apt-pkg/acquire-item.cc, apt-pkg/init.cc,
+	apt-pkg/pkgcachegen.cc, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpmfactory.h, apt-pkg/rpm/rpmlistparser.cc,
+	cmdline/apt-get.cc: added some architecture handling stuffs
+
+2000-12-02 20:44  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: fixed stupid little bug
+
+2000-12-02 20:02  kojima
+
+	* apt-pkg/: acquire-item.cc, packagemanager.cc, pkgcachegen.cc,
+	pkgcachegen.h, systemfactory.h, rpm/rpmfactory.cc,
+	rpm/rpmfactory.h, rpm/rpmlistparser.cc, rpm/rpmlistparser.h,
+	rpm/rpmpm.cc: added better multi-architecture support
+
+2000-12-02 17:48  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: merged PreReq and Req into Depends
+
+2000-12-01 00:12  kojima
+
+	* apt-pkg/rpm/rpmfactory.cc: fixed crash with apt-get source when
+	srclist is undownloaded
+
+2000-11-30 20:31  kojima
+
+	* tools/genpkglist.cc: removed kluges in filelist stripper and
+	added a --bloat flag
+
+2000-11-29 22:27  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: made all packages that are
+	installed ignore the architecture check
+
+2000-11-29 22:13  kojima
+
+	* tools/genpkglist.cc: added lib to filelist
+
+2000-11-29 21:48  kojima
+
+	* tools/genpkglist.cc: include /etc files in list of files in
+	pkglist
+
+2000-11-28 00:02  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: fixed more rpm4 incompats
+
+2000-11-27 23:00  kojima
+
+	* apt-pkg/rpm/: rpminit.cc, rpmlistparser.cc: added handling of
+	rpmlib(blal) style requires
+
+2000-11-27 22:23  kojima
+
+	* apt-pkg/rpm/rpminit.cc: fixed some more rpm4 compat stuff
+
+2000-11-27 20:39  kojima
+
+	* apt-pkg/rpm/: rpmfactory.cc, rpminit.cc, rpmrecords.cc: some new
+	rpm4 compat changes
+
+2000-11-27 20:01  kojima
+
+	* doc/pt_BR/: apt-cache.8, apt-cdrom.8, apt-config.8, apt-get.8,
+	apt.8, apt.conf.5, sources.list.5, vendors.list.5: added portuguese
+	transl. of docs
+
+2000-11-08 23:30  kojima
+
+	* configure.in, release, apt-pkg/sourcelist.cc, tools/genbasedir:
+	fixed bug in release retrieval code
+
+2000-11-08 22:40  kojima
+
+	* tools/genbasedir: fixed compat prob with bash1
+
+2000-11-08 21:09  kojima
+
+	* apt-pkg/rpm/: rpminit.cc, rpminit.h: fixed bug with rpm4 support
+
+2000-11-08 20:25  kojima
+
+	* TODO, configure.in, apt-pkg/rpm/rpminit.h, buildlib/config.h.in,
+	buildlib/environment.mak.in, cmdline/makefile, methods/makefile,
+	po/pt_BR.po, tools/Makefile: support for rpm4
+
+2000-11-08 19:52  kojima
+
+	* apt-pkg/rpm/rpminit.cc: added support for rpm4
+
+2000-11-06 18:36  kojima
+
+	* README.RPM: updated docs to point at HOWTO
+
+2000-11-06 14:53  kojima
+
+	* configure.in, release, apt-pkg/acquire.h, apt-pkg/algorithms.cc,
+	apt-pkg/pkgcachegen.h, apt-pkg/systemfactory.cc,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmsrcrecords.cc,
+	cmdline/apt-cache.cc, cmdline/apt-cdrom.cc, cmdline/apt-get.cc,
+	cmdline/rpmindexcopy.cc, tools/genbasedir, tools/genpkglist.cc,
+	tools/gensrclist.cc, tools/hdlist2pkglist.cc: fixed compile errors
+	for RedHat 6.x (with gcc -Wall -Werror)
+
+2000-11-02 23:04  kojima
+
+	* apt-pkg/: sourcelist.cc, rpm/rpmlistparser.cc: fixed bug in
+	vendor authentication
+
+2000-11-02 03:44  kojima
+
+	* po/pt_BR.po: fixed trans
+
+2000-11-02 00:38  kojima
+
+	* apt-pkg/init.cc: [no log message]
+
+2000-11-02 00:29  kojima
+
+	* doc/: apt-cache.8.pt_BR, apt-cdrom.8.pt_BR, apt-config.8.pt_BR,
+	apt-get.8.pt_BR, apt.8.pt_BR, apt.conf.5.pt_BR, makefile,
+	sources.list.5.pt_BR, vendors.list.5.pt_BR: fixed manpage dir struc
+
+2000-11-01 23:54  kojima
+
+	* configure.in, release, doc/makefile: fixed manpage makefile
+
+2000-11-01 23:32  kojima
+
+	* doc/apt-cache.8, doc/apt-cache.8.pt_BR, doc/apt-cdrom.8.pt_BR,
+	doc/apt-config.8.pt_BR, doc/apt-get.8, doc/apt-get.8.pt_BR,
+	doc/apt.8.pt_BR, doc/apt.conf.5.pt_BR, doc/sources.list.5.pt_BR,
+	doc/vendors.list.5.pt_BR, tools/genpkglist.cc, tools/gensrclist.cc:
+	added manpage
+
+2000-11-01 20:27  kojima
+
+	* tools/: Makefile, genpkglist.cc, gensrclist.cc,
+	hdlist2pkglist.cc: added md5 caching to pkglist generators
+
+2000-10-31 22:30  kojima
+
+	* configure.in, release, apt-pkg/init.cc, cmdline/apt-get.cc,
+	doc/apt-cache.8, methods/ftp.cc, methods/http.cc, tools/Makefile,
+	tools/genbasedir, tools/genpkglist.cc: some updates
+
+2000-10-30 20:49  kojima
+
+	* apt-pkg/sourcelist.cc, apt-pkg/contrib/configuration.cc,
+	apt-pkg/contrib/configuration.h, apt-pkg/contrib/strutl.cc,
+	apt-pkg/contrib/strutl.h, doc/sources.list.5, doc/vendors.list.5,
+	doc/examples/vendors.list: new vendor.list format and parser, from
+	Jason
+
+2000-10-30 18:41  kojima
+
+	* tools/genbasedir: fixed genbasedir
+
+2000-10-30 04:17  kojima
+
+	* configure.in, release, apt-pkg/sourcelist.cc, cmdline/apt-get.cc,
+	tools/genbasedir, tools/gensrclist.cc: fixed bugs in source d/l
+
+2000-10-29 23:50  kojima
+
+	* configure.in: new release
+
+2000-10-29 23:49  kojima
+
+	* tools/: genbasedir, genpkglist.cc: fixed gensrclist/pkglist bug
+
+2000-10-29 22:37  kojima
+
+	* configure.in, release: new release
+
+2000-10-29 22:25  kojima
+
+	* apt-pkg/rpm/: rpmsrcrecords.cc, rpmsrcrecords.h: srcrecord for
+	rpm
+
+2000-10-29 22:25  kojima
+
+	* release, apt-pkg/makefile, apt-pkg/pkgrecords.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/srcrecords.cc, apt-pkg/srcrecords.h,
+	apt-pkg/systemfactory.h, apt-pkg/deb/debfactory.cc,
+	apt-pkg/deb/debfactory.h, apt-pkg/deb/debsrcrecords.cc,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpmfactory.h,
+	apt-pkg/rpm/rpminit.h, apt-pkg/rpm/rpmpm.cc,
+	apt-pkg/rpm/rpmrecords.cc, cmdline/apt-get.cc, tools/genpkglist.cc,
+	tools/gensrclist.cc: added support for source download
+
+2000-10-28 05:23  kojima
+
+	* apt-pkg/sourcelist.cc, cmdline/apt-get.cc, tools/Makefile,
+	tools/gensrclist.cc: started source support
+
+2000-10-28 04:49  kojima
+
+	* configure.in: new release
+
+2000-10-28 04:48  kojima
+
+	* apt-pkg/depcache.cc, apt-pkg/pkgrecords.h,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpmfactory.h,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmlistparser.h, apt-pkg/rpm/rpmrecords.h,
+	cmdline/apt-cache.cc, po/apt.pot, po/cat-id-tbl.c, po/es_ES.po,
+	po/pt_BR.po: fixed bug with apt-cache fixed bug with package
+	descriptions/pkgRecords
+
+2000-10-27 00:15  kojima
+
+	* release, apt-pkg/orderlist.cc, apt-pkg/pkgcache.cc,
+	tools/genpkglist.cc: [no log message]
+
+2000-10-26 19:32  kojima
+
+	* doc/makefile: updated doc manpage
+
+2000-10-26 19:23  kojima
+
+	* release, apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmpm.cc,
+	configure.in: new release
+
+2000-10-26 19:22  kojima
+
+	* doc/: apt-cache.8, apt-cdrom.8, apt-config.8, apt-get.8, apt.8,
+	apt.conf.5, sources.list.5, vendors.list.5: updated manpages for
+	cnc
+
+2000-10-25 20:17  kojima
+
+	* tools/genbasedir: [no log message]
+
+2000-10-25 18:49  kojima
+
+	* configure.in: new release
+
+2000-10-25 18:48  kojima
+
+	* release, apt-pkg/rpm/rpmrecords.cc, cmdline/apt-get.cc,
+	tools/genbasedir: [no log message]
+
+2000-10-23 17:31  kojima
+
+	* tools/genbasedir: [no log message]
+
+2000-10-22 23:08  kojima
+
+	* release, buildlib/makefile.in: [no log message]
+
+2000-10-22 23:05  kojima
+
+	* tools/genpkglist.c: [no log message]
+
+2000-10-22 22:57  kojima
+
+	* tools/genpkglist.cc: added new c++ genpkglist
+
+2000-10-22 22:49  kojima
+
+	* configure.in, release: new release
+
+2000-10-22 22:48  kojima
+
+	* Makefile, release, apt-pkg/rpm/extra_rpmtags.h,
+	apt-pkg/rpm/rpminit.h, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpackagedata.cc, apt-pkg/rpm/rpmpackagedata.h,
+	apt-pkg/rpm/rpmpm.h, apt-pkg/rpm/rpmrecords.cc,
+	cmdline/apt-cache.cc, cmdline/apt-get.cc, cmdline/makefile,
+	tools/Makefile: added upgrade summary information
+
+2000-10-21 21:30  kojima
+
+	* configure.in, release: new release
+
+2000-10-21 21:29  kojima
+
+	* apt-pkg/: packagemanager.cc, rpm/rpmlistparser.cc: added release
+	# to the kernel name hack for supporting multiple installed
+	versions
+
+2000-10-19 22:33  claudio
+
+	* ChangeLog: Updated from CVS logs.
+
+2000-10-19 22:32  claudio
+
+	* tools/: genbasedir, genpkglist.c: Language setting to generate a
+	consistent pkglist.
+
+2000-10-19 22:30  claudio
+
+	* po/: es_ES.po, pt_BR.po: Updated es_ES, pt_BR translations.
+
+2000-10-19 22:28  claudio
+
+	* apt-pkg/rpm/: rpmfactory.cc, rpminit.cc, rpmlistparser.cc: Fixed
+	uninitialized variables in dependency checking progress bar.
+
+2000-10-19 22:26  claudio
+
+	* FAQ, apt.spec, configure: Repository cleanup.
+
+2000-10-16 22:29  kojima
+
+	* rpmpriorities: added priorities file
+
+2000-10-16 21:22  kojima
+
+	* apt.spec: [no log message]
+
+2000-10-16 17:28  kojima
+
+	* apt.spec, configure, release, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpminit.h,
+	apt-pkg/rpm/rpmpm.cc, cmdline/apt-get.cc: [no log message]
+
+2000-10-15 00:56  kojima
+
+	* apt.spec, configure.in, release, apt-pkg/rpm/rpmlistparser.cc,
+	cmdline/apt-cache.cc, cmdline/apt-cdrom.cc, cmdline/apt-config.cc,
+	po/POTFILES.in, po/apt.pot, po/cat-id-tbl.c, tools/genpkglist.c:
+	i18nlazation of other utilities
+
+2000-10-14 22:30  kojima
+
+	* apt-pkg/: makefile, systemfactory.cc, rpm/rpmlistparser.cc,
+	rpm/rpmlistparser.h, rpm/rpmpackagedata.cc, rpm/rpmpackagedata.h:
+	replaced package priority hardcoded kluge with a dynamic kluge
+
+2000-10-14 20:19  kojima
+
+	* po/pt_BR.po: updated potfiles
+
+2000-10-14 03:52  kojima
+
+	* apt.spec, apt.spec.in, apt-pkg/acquire-item.cc, apt-pkg/init.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/sourcelist.h: cdrom support sutff
+	and others
+
+2000-10-14 03:51  kojima
+
+	* cmdline/: apt-cdrom.cc, makefile, rpmindexcopy.cc,
+	rpmindexcopy.h: support for cdrom stuff
+
+2000-10-14 03:50  kojima
+
+	* tools/: Makefile, genbasedir, genpkglist.c: genpkglist heuristic
+	file stripping
+
+2000-10-13 19:39  kojima
+
+	* apt-pkg/rpm/rpminit.h: 
+	#ifndef RPMINIT_H_
+
+2000-10-12 22:31  kojima
+
+	* apt.spec, release, apt-pkg/depcache.cc, apt-pkg/systemfactory.cc,
+	apt-pkg/rpm/rpmlistparser.cc, cmdline/apt-cdrom.cc,
+	tools/genbasedir: fixed some stuffs added release file support
+
+2000-10-11 21:35  kojima
+
+	* apt.spec, configure, configure.in, release, apt-pkg/init.cc,
+	apt-pkg/systemfactory.cc, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpm.cc: fixed cache up-to-dateness check new release
+
+2000-10-11 20:51  kojima
+
+	* buildlib/sizetable: fixed buglet in sizetable (tab vs space)
+
+2000-10-11 01:47  kojima
+
+	* tools/genbasedir: fixed bug in genbasedir
+
+2000-10-11 00:36  kojima
+
+	* apt-pkg/acquire-item.cc, apt-pkg/sourcelist.cc,
+	apt-pkg/sourcelist.h, methods/gpg.cc: made gpg stuff use
+	fingerprints
+
+2000-10-10 23:19  kojima
+
+	* apt.spec.in, docs.tar, docs.tar.gz: aupdate docs tarball
+
+2000-10-10 23:05  kojima
+
+	* docs.tar: fixed docs tarball
+
+2000-10-10 22:56  kojima
+
+	* cmdline/makefile, methods/makefile: make it compile dyamic
+
+2000-10-10 22:41  kojima
+
+	* apt.spec, buildlib/environment.mak.in: [no log message]
+
+2000-10-10 21:49  kojima
+
+	* configure: new release
+
+2000-10-10 21:49  kojima
+
+	* README.RPM, REPOSITORIO-APT-HOWTO, apt.spec.in, configure.in,
+	docs.tar, release, apt-pkg/acquire-item.cc, apt-pkg/depcache.cc,
+	apt-pkg/init.cc, apt-pkg/packagemanager.cc, apt-pkg/pkgcachegen.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/sourcelist.h,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmpm.cc,
+	buildlib/environment.mak.in, cmdline/apt-get.cc, po/apt.pot,
+	po/cat-id-tbl.c, po/es_ES.po: new release updates changed
+	authentication code to comply to Jason's stuff use bzip2
+
+2000-10-10 19:37  kojima
+
+	* tools/: genbasedir, genbasedir.tcl, genpkglist.c: updated basedir
+	generator
+
+2000-10-05 20:55  kojima
+
+	* po/: es_ES.po, pt_BR.po: updated pots
+
+2000-09-29 00:51  kojima
+
+	* FAQ, apt.spec, apt.spec.in, release, apt-pkg/contrib/strutl.cc,
+	apt-pkg/contrib/strutl.h, apt-pkg/rpm/rpmrecords.cc,
+	cmdline/acqprogress.cc, cmdline/apt-cache.cc, cmdline/apt-get.cc,
+	tools/mkpackages.c: added claudio's patch to make it work with
+	aptitude
+
+2000-09-26 20:03  kojima
+
+	* AUTHORS.RPM: added RPM port credits file
+
+2000-09-26 19:58  kojima
+
+	* configure, configure.in: enw release
+
+2000-09-26 19:58  kojima
+
+	* apt.spec, apt.spec.in, release, apt-pkg/contrib/error.cc,
+	cmdline/apt-get.cc, doc/examples/vendors.list, methods/gpg.cc,
+	po/apt.pot, po/cat-id-tbl.c, tools/genbasedir.tcl: better msgs for
+	gpg errors
+
+2000-09-26 18:05  kojima
+
+	* FAQ: updated with auth stuff
+
+2000-09-26 17:42  kojima
+
+	* methods/gpg.cc: added gpg method
+
+2000-09-26 17:37  kojima
+
+	* configure, configure.in, release, apt-pkg/sourcelist.cc: more
+	authentication stuff new release
+
+2000-09-26 17:22  kojima
+
+	* REPOSITORIO-APT-HOWTO, apt.spec, apt.spec.in, release,
+	apt-pkg/acquire-item.cc, apt-pkg/acquire-item.h,
+	apt-pkg/acquire-method.cc, apt-pkg/acquire-method.h,
+	apt-pkg/init.cc, apt-pkg/makefile, apt-pkg/packagemanager.h,
+	apt-pkg/sourcelist.cc, apt-pkg/sourcelist.h, apt-pkg/srcrecords.cc,
+	apt-pkg/systemfactory.cc, apt-pkg/systemfactory.h,
+	apt-pkg/contrib/fileutl.cc, apt-pkg/contrib/fileutl.h,
+	apt-pkg/deb/debfactory.cc, apt-pkg/rpm/rpmfactory.cc,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmlistparser.h,
+	apt-pkg/rpm/rpmpm.cc, cmdline/apt-get.cc, cmdline/makefile,
+	methods/makefile, po/apt.pot, po/pt_BR.po: digital signature
+	authentication
+
+2000-09-25 23:26  kojima
+
+	* tools/: genbasedir.tcl, genpkglist.c: added base dir generator
+
+2000-09-22 03:07  kojima
+
+	* po/pt_BR.po: update portug. po
+
+2000-09-20 20:12  kojima
+
+	* FAQ: updated faq
+
+2000-09-20 18:20  kojima
+
+	* configure, configure.in: new release
+
+2000-09-20 18:20  kojima
+
+	* FAQ, apt.spec, apt.spec.in, release, apt-pkg/acquire-item.cc,
+	apt-pkg/cacheiterators.h, apt-pkg/depcache.cc, apt-pkg/pkgcache.cc,
+	apt-pkg/pkgcachegen.cc, apt-pkg/pkgcachegen.h,
+	apt-pkg/rpm/rpmfactory.cc, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmpm.h,
+	apt-pkg/rpm/rpmrecords.cc, cmdline/apt-get.cc, po/pt_BR.po: added
+	pt_BR potfile added support for duplicated package names
+
+2000-09-18 21:34  kojima
+
+	* README.RPM, apt.spec, apt.spec.in, configure, configure.in,
+	release, apt-pkg/acquire-item.cc, apt-pkg/algorithms.cc,
+	apt-pkg/depcache.cc, apt-pkg/orderlist.cc,
+	apt-pkg/packagemanager.cc, apt-pkg/pkgcache.cc, apt-pkg/pkgcache.h,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmrecords.cc: new
+	release fixed md5 stuff
+
+2000-09-18 20:56  kojima
+
+	* tools/genpkglist.c: fixed bug with md5 data
+
+2000-09-16 22:37  kojima
+
+	* po/pt_BR.gmo: [no log message]
+
+2000-09-16 22:36  kojima
+
+	* apt.spec, apt.spec.in, configure, configure.in, release,
+	apt-pkg/depcache.cc, apt-pkg/init.cc, apt-pkg/pkgcachegen.cc,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmlistparser.h,
+	apt-pkg/rpm/rpmpm.cc, cmdline/makefile, po/apt.pot, po/pt_BR.gmo:
+	made obsoleter packages automatically add conflicts new release
+
+2000-09-16 00:49  kojima
+
+	* po/pt_BR.po: [no log message]
+
+2000-09-16 00:37  kojima
+
+	* configure, configure.in: added AC_PROG_INSTALL in configure
+
+2000-09-15 23:06  kojima
+
+	* release, apt-pkg/depcache.cc, apt-pkg/rpm/rpmversion.cc,
+	cmdline/apt-cache.cc, cmdline/apt-get.cc, po/apt.pot: fixed bug
+	with versioned requires and unversioned provides
+
+2000-09-15 22:23  kojima
+
+	* README.RPM: update doc to apt-get isntead of rapt
+
+2000-09-14 02:27  kojima
+
+	* apt-pkg/: makefile, cnc/cncfactory.cc, cnc/cncfactory.h,
+	cnc/cncversion.cc, rpm/rpmfactory.cc, rpm/rpmfactory.h,
+	rpm/rpminit.cc, rpm/rpminit.h, rpm/rpmversion.cc: [no log message]
+
+2000-09-14 00:58  kojima
+
+	* mkinstalldirs, configure, configure.in: [no log message]
+
+2000-09-14 00:55  kojima
+
+	* apt.spec, release, intl/ChangeLog, intl/Makefile.in,
+	intl/VERSION, intl/bindtextdom.c, intl/cat-compat.c,
+	intl/dcgettext.c, intl/dgettext.c, intl/explodename.c,
+	intl/finddomain.c, intl/gettext.c, intl/gettext.h, intl/gettextP.h,
+	intl/hash-string.h, intl/intl-compat.c, intl/l10nflist.c,
+	intl/libgettext.h, intl/linux-msg.sed, intl/loadinfo.h,
+	intl/loadmsgcat.c, intl/localealias.c, intl/po2tbl.sed.in,
+	intl/textdomain.c, intl/xopen-msg.sed: added gettext
+
+2000-09-14 00:50  kojima
+
+	* apt.spec.in, release, cmdline/apt-get.cc, po/apt.pot: some i18n
+	updates
+
+2000-09-14 00:39  kojima
+
+	* FAQ, acinclude.m4, aclocal.m4, apt.spec, apt.spec.in, configure,
+	configure.in, release, apt-pkg/makefile, apt-pkg/contrib/i18n.h,
+	apt-pkg/rpm/rpmlistparser.cc, buildlib/acconfig.h,
+	buildlib/config.h.in, buildlib/environment.mak.in,
+	cmdline/apt-get.cc, cmdline/makefile, po/Makefile.in.in,
+	po/POTFILES.in, po/apt.pot, po/cat-id-tbl.c, po/pt_BR.gmo,
+	po/pt_BR.po, po/stamp-cat-id: i18n
+
+2000-09-13 17:59  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: faster file dependency processing
+
+2000-09-13 00:58  kojima
+
+	* apt-pkg/algorithms.cc: removed temp test code
+
+2000-09-13 00:22  kojima
+
+	* apt.spec, apt.spec.in, release, doc/examples/rapt.conf,
+	doc/examples/rsources.list: new release changed specs
+
+2000-09-13 00:11  kojima
+
+	* FAQ, apt.spec, apt.spec.in, rapt.spec, rapt.spec.in, release,
+	apt-pkg/rpm/rpmlistparser.cc, cmdline/apt-cache.cc: new release,
+	test code to fix prob with conflict/obsolete
+
+2000-09-13 00:00  kojima
+
+	* doc/examples/rsources.list: fixed typo
+
+2000-09-12 23:17  kojima
+
+	* apt-pkg/depcache.cc: removed debug msgs
+
+2000-09-12 23:13  kojima
+
+	* apt-pkg/algorithms.cc: fixed problem with dependencies that can
+	be resolved by a package that's not installed
+
+2000-09-12 20:44  kojima
+
+	* doc/examples/rsources.list: config file suitable for outside use
+
+2000-09-12 20:03  kojima
+
+	* rapt.spec, release, cmdline/makefile: back to static
+
+2000-09-12 00:04  kojima
+
+	* configure, configure.in, rapt.spec, release,
+	apt-pkg/algorithms.cc, apt-pkg/depcache.cc, apt-pkg/init.cc,
+	apt-pkg/sourcelist.cc, apt-pkg/rpm/rpmlistparser.cc,
+	cmdline/makefile, doc/examples/rsources.list: new release changed
+	source.list format
+
+2000-09-06 22:02  kojima
+
+	* configure, configure.in, rapt.spec, release, apt-pkg/init.cc,
+	apt-pkg/rpm/rpmlistparser.cc, cmdline/makefile, tools/Makefile: new
+	release fixed bug with versionhashing
+
+2000-09-06 17:44  kojima
+
+	* rapt.spec, rapt.spec.in: localizado p/ portugues
+
+2000-09-06 17:34  kojima
+
+	* FAQ, README.RPM, configure, configure.in, prepare, rapt.spec,
+	rapt.spec.in, release, cmdline/apt-get.cc: renamed everything back
+	from rapt to apt/apt-get
+
+2000-09-06 17:04  kojima
+
+	* configure: new release
+
+2000-09-06 17:03  kojima
+
+	* rapt.spec.in, cmdline/makefile: changed name of binaries
+
+2000-09-06 16:57  kojima
+
+	* FAQ, configure.in, rapt.spec, rapt.spec.in, release,
+	apt-pkg/init.cc, apt-pkg/pkgcachegen.cc,
+	apt-pkg/rpm/rpmlistparser.h: new release changed some error
+	messages
+
+2000-09-05 22:21  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: added exception package list config
+	option support
+
+2000-09-05 20:59  kojima
+
+	* cmdline/apt-get.cc: removed lc_all lang kluge message
+
+2000-09-05 20:58  kojima
+
+	* tools/genpkglist.c: fix cmd line parse
+
+2000-09-05 01:29  kojima
+
+	* configure, configure.in: new release
+
+2000-09-05 01:29  kojima
+
+	* FAQ, rapt.spec, rapt.spec.in, release,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmpm.cc,
+	cmdline/apt-get.cc: new release added message before exec()ing rpm
+	temp hack to not upgrade kernel
+
+2000-09-04 23:39  kojima
+
+	* configure, configure.in, rapt.spec, rapt.spec.in, release: new
+	version
+
+2000-09-04 23:39  kojima
+
+	* cmdline/apt-get.cc: put back dist-upgrade
+
+2000-09-04 23:32  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: added tmp hardcoded
+	essential/required packages
+
+2000-09-04 18:58  kojima
+
+	* FAQ, configure, configure.in, rapt.spec, rapt.spec.in, release,
+	cmdline/apt-cache.cc, cmdline/apt-get.cc: updated release +stuffs
+
+2000-09-04 18:55  kojima
+
+	* apt-pkg/: algorithms.cc, cachefile.cc, depcache.cc,
+	distrofactory.cc, distrofactory.h, makefile, packagemanager.cc,
+	pkgcache.cc, pkgcachegen.cc, pkgrecords.cc, systemfactory.cc,
+	systemfactory.h, version.cc, cnc/cncfactory.h, deb/debfactory.h,
+	rpm/rpminit.h, rpm/rpmlistparser.cc: renamed abstract distribut6ion
+	factory to from distro to system added temp kluge to add
+	essential/important tags to packages
+
+2000-09-01 03:12  kojima
+
+	* rapt.spec, release, apt-pkg/distrofactory.cc: remove debug msg
+
+2000-09-01 03:12  kojima
+
+	* doc/examples/rsources.list: fixed typo
+
+2000-09-01 02:53  kojima
+
+	* apt-pkg/contrib/progress.cc, cmdline/apt-get.cc: fixed prob with
+	progress update ingterval
+
+2000-09-01 02:50  kojima
+
+	* configure, configure.in, rapt.spec, release,
+	apt-pkg/packagemanager.cc, apt-pkg/rpm/rpmpm.cc,
+	cmdline/apt-get.cc: version 0.6 removed cmd line length limitation
+	to be passed to rpm by rpmpm
+
+2000-09-01 02:13  kojima
+
+	* apt-pkg/cnc/cncfactory.cc: progress indicator sorta fixed
+
+2000-08-31 22:25  kojima
+
+	* release: updated release script
+
+2000-08-31 22:15  kojima
+
+	* rapt.spec, rapt.spec.in, release, doc/examples/rsources.list:
+	added zaphod to the list of repositories (to get latest rapt from
+	here)
+
+2000-08-31 21:18  kojima
+
+	* configure, configure.in: udpated version to 0.5
+
+2000-08-31 21:09  kojima
+
+	* apt-pkg/: acquire-item.cc, rpm/rpmlistparser.cc,
+	rpm/rpmrecords.cc: fixed problem with provides
+
+2000-08-31 20:48  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: added versioned provides
+
+2000-08-31 20:42  kojima
+
+	* tools/genpkglist.c: added full provide tags
+
+2000-08-31 18:52  kojima
+
+	* FAQ: added faq
+
+2000-08-31 18:50  kojima
+
+	* tools/genpkglist.c: added m5d sum tag to pkglist
+
+2000-08-31 18:49  kojima
+
+	* apt-pkg/rpm/extra_rpmtags.h: new md5 tag
+
+2000-08-31 18:48  kojima
+
+	* apt-pkg/rpm/rpmrecords.cc: MD5 sum works
+
+2000-08-31 16:59  kojima
+
+	* cmdline/apt-cache.cc: fixed rapt-cache show for rpm
+
+2000-08-31 02:17  kojima
+
+	* apt-pkg/rpm/rpmpm.cc: debug msgs
+
+2000-08-31 00:50  kojima
+
+	* apt-pkg/rpm/rpmpm.cc: removed debug message for pkg configuration
+
+2000-08-31 00:27  kojima
+
+	* cmdline/: apt-cache.cc, apt-get.cc: removed stale version.h
+
+2000-08-31 00:13  kojima
+
+	* cmdline/makefile: changed binary name from rapt to rapt-get
+
+2000-08-31 00:11  kojima
+
+	* apt-pkg/: orderlist.cc, pkgcachegen.cc, version.cc: removed stale
+	version.h references
+
+2000-08-31 00:07  kojima
+
+	* configure, configure.in: updated version
+
+2000-08-31 00:05  kojima
+
+	* README.RPM, apt-pkg/pkgcachegen.cc, apt-pkg/cnc/cncfactory.h,
+	apt-pkg/cnc/cncversion.cc, apt-pkg/rpm/rpmlistparser.cc: fixed some
+	versioning check bugs
+
+2000-08-30 21:32  kojima
+
+	* apt-pkg/depcache.cc, apt-pkg/distrofactory.h, apt-pkg/makefile,
+	apt-pkg/packagemanager.cc, apt-pkg/pkgcache.cc,
+	apt-pkg/pkgcachegen.cc, apt-pkg/version.cc, apt-pkg/version.h,
+	apt-pkg/cnc/cncfactory.h, apt-pkg/cnc/cncversion.cc,
+	apt-pkg/rpm/rpmlistparser.cc, cmdline/apt-cache.cc,
+	cmdline/apt-get.cc, tools/genpkglist.c: made version comparison
+	code distribution dependent
+	
+	added code for rpm version comparison (partially ripped from rpm)
+
+2000-08-30 17:32  kojima
+
+	* configure: removed architecture kluge
+
+2000-08-30 17:18  kojima
+
+	* configure, configure.in, rapt.spec, rapt.spec.in,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmlistparser.h,
+	cmdline/apt-get.cc: fixed ix86 architecture family problem
+
+2000-08-30 15:04  kojima
+
+	* configure.in: changed ARCHITECTURE define to include the real
+	machine architecture too, along the family
+
+2000-08-30 13:46  kojima
+
+	* apt-pkg/rpm/rpmlistparser.cc: added more kluges for ix86 family
+	detection
+
+2000-08-30 03:21  kojima
+
+	* apt-pkg/sourcelist.cc: removed some debug msgs
+
+2000-08-30 02:51  kojima
+
+	* methods/makefile: make everything static
+
+2000-08-30 02:45  kojima
+
+	* apt-pkg/sourcelist.cc: fixed typo
+
+2000-08-30 02:32  kojima
+
+	* cmdline/makefile: make everything static
+
+2000-08-30 01:51  kojima
+
+	* doc/examples/rsources.list: [no log message]
+
+2000-08-30 00:02  kojima
+
+	* apt-pkg/sourcelist.cc: typo fix
+
+2000-08-29 23:59  kojima
+
+	* configure, rapt.spec, rapt.spec.in, apt-pkg/sourcelist.cc,
+	doc/examples/rapt.conf, doc/examples/rsources.list: [no log
+	message]
+
+2000-08-29 23:31  kojima
+
+	* buildlib/environment.mak.in: update to make only static lib
+
+2000-08-29 23:23  kojima
+
+	* configure.in: updated vesion number
+
+2000-08-29 23:15  kojima
+
+	* rapt.spec, apt-pkg/pkgcachegen.cc, tools/genpkglist.c: [no log
+	message]
+
+2000-08-29 23:10  kojima
+
+	* rapt.spec, rapt.spec.in, apt-pkg/sourcelist.cc,
+	apt-pkg/rpm/rpmpm.cc, cmdline/apt-get.cc, cmdline/makefile:
+	modified stuff to build as static
+
+2000-08-29 22:38  kojima
+
+	* README.RPM: [no log message]
+
+2000-08-29 20:32  kojima
+
+	* README.RPM, apt-pkg/makefile, apt-pkg/rpm/rpmpm.cc,
+	cmdline/makefile, methods/makefile, tools/genpkglist.c: fixed
+	problem with halfway system ugprade
+
+2000-08-26 00:15  kojima
+
+	* apt-pkg/rpm/: rpminit.cc, rpmstatusgen.cc, rpmstatusgen.h: [no
+	log message]
+
+2000-08-26 00:07  kojima
+
+	* rapt.spec, apt-pkg/rpm/extra_rpmtags.h, apt-pkg/rpm/rpmpm.cc,
+	tools/genpkglist.c: [no log message]
+
+2000-08-25 22:58  kojima
+
+	* apt-pkg/: cachefile.cc, distrofactory.cc, pkgcache.cc,
+	sourcelist.cc, cnc/cncfactory.cc, rpm/rpmrecords.cc: fixed pkg
+	cache check
+
+2000-08-25 22:58  kojima
+
+	* README.RPM: [no log message]
+
+2000-08-25 17:39  kojima
+
+	* tools/Makefile: [no log message]
+
+2000-08-25 17:39  kojima
+
+	* cmdline/: apt-cache.cc, apt-get.cc, makefile: updated cmd line
+	utils
+
+2000-08-25 17:39  kojima
+
+	* apt-pkg/rpm/: rpmlistparser.cc, rpmlistparser.h, rpmrecords.cc:
+	fixed list parser and finished reocrd parser
+
+2000-08-25 17:39  kojima
+
+	* apt-pkg/deb/: debfactory.cc, debfactory.h: updated classes with
+	new factory methods
+
+2000-08-25 17:38  kojima
+
+	* apt-pkg/: acquire-item.cc, algorithms.cc, depcache.cc,
+	depcache.h, distrofactory.cc, distrofactory.h, pkgcachegen.cc,
+	pkgrecords.cc, pkgrecords.h, cnc/cncfactory.cc, cnc/cncfactory.h:
+	updated record parsing to rpm
+
+2000-08-25 17:38  kojima
+
+	* configure.in: version change
+
+2000-08-22 22:24  kojima
+
+	* apt.dia, rapt.spec, apt-pkg/cachefile.h, apt-pkg/depcache.cc,
+	apt-pkg/distrofactory.cc, apt-pkg/distrofactory.h,
+	apt-pkg/makefile, apt-pkg/pkgcachegen.cc, apt-pkg/sourcelist.cc,
+	apt-pkg/cnc/cncfactory.cc, apt-pkg/cnc/cncfactory.h,
+	apt-pkg/contrib/fileutl.cc, apt-pkg/deb/debfactory.cc,
+	apt-pkg/deb/debfactory.h, apt-pkg/rpm/rpminit.cc,
+	apt-pkg/rpm/rpminit.h, apt-pkg/rpm/rpmlistparser.cc,
+	apt-pkg/rpm/rpmlistparser.h, apt-pkg/rpm/rpmrecords.cc,
+	apt-pkg/rpm/rpmrecords.h, cmdline/apt-cache.cc, cmdline/makefile,
+	tools/mkpackages.c: [no log message]
+
+2000-08-19 00:08  kojima
+
+	* apt-pkg/cachefile.cc, apt-pkg/distrofactory.cc,
+	apt-pkg/distrofactory.h, apt-pkg/pkgcachegen.cc,
+	apt-pkg/pkgcachegen.h, apt-pkg/cnc/cncfactory.cc,
+	apt-pkg/cnc/cncfactory.h, apt-pkg/deb/debfactory.cc,
+	apt-pkg/deb/debfactory.h, cmdline/apt-cache.cc, cmdline/makefile:
+	cache generator abstracted for debian and cnc
+
+2000-08-17 23:40  kojima
+
+	* README.RPM, apt.dia: documentation update
+
+2000-08-17 03:31  kojima
+
+	* apt-pkg/rpm/rpmpm.cc: [no log message]
+
+2000-08-17 00:35  kojima
+
+	* tools/mkpackages.c: [no log message]
+
+2000-08-11 00:10  kojima
+
+	* README.RPM, prepare, rapt.spec, doc/examples/rapt.conf,
+	doc/examples/rsources.list: [no log message]
+
+2000-08-10 23:20  kojima
+
+	* prepare, rapt.spec: [no log message]
+
+2000-08-10 22:47  kojima
+
+	* tools/: Packages, hdlist.pkgs, status, Makefile, dumprpmdb,
+	mkpackages, mkstatus, update: [no log message]
+
+2000-08-10 22:47  kojima
+
+	* prepare: added file
+
+2000-08-10 22:43  kojima
+
+	* README.RPM, apt.dia, cmdline/apt-get.cc, cmdline/makefile: added
+	some docs files
+
+2000-08-10 18:57  kojima
+
+	* status: [no log message]
+
+2000-08-10 15:42  kojima
+
+	* AUTHORS, COMPILING, COPYING, COPYING.GPL, ChangeLog, Makefile,
+	README.make, TODO, aclocal.m4, configure, configure.in, status,
+	cmdline/acqprogress.cc, cmdline/apt-cache.cc, cmdline/apt-get.cc,
+	cmdline/indexcopy.cc, cmdline/makefile, deity/anchor.cc,
+	deity/anchor.h, deity/basic.cc, deity/basic.h, deity/button.cc,
+	deity/button.h, deity/columnbar.cc, deity/columnbar.h,
+	deity/event.cc, deity/event.h, deity/gpmdev.cc, deity/gpmdev.h,
+	deity/graphics.cc, deity/graphics.h, deity/makefile,
+	deity/menubar.cc, deity/menubar.h, deity/notify.cc, deity/notify.h,
+	deity/progress.cc, deity/progress.h, deity/selectloop.cc,
+	deity/selectloop.h, deity/slangdev.cc, deity/slangdev.h,
+	deity/tabdialog.cc, deity/tabdialog.h, deity/textwidg.cc,
+	deity/textwidg.h, deity/tree.cc, deity/tree.h, deity/utils.cc,
+	deity/utils.h, deity/widget-thread.cc, deity/widget-thread.h,
+	deity/widget.cc, deity/widget.h, deity/widgetinit.cc,
+	deity/widgetinit.h, deity/window.cc, deity/window.h,
+	deity/x11dev.cc, deity/x11dev.h, deity/x11xpm.cc, deity/xpm.cc,
+	deity/xpm.h, methods/cdrom.cc, methods/connect.cc,
+	methods/connect.h, methods/copy.cc, methods/file.cc,
+	methods/ftp.cc, methods/ftp.h, methods/gzip.cc, methods/http.cc,
+	methods/http.h, methods/makefile, methods/rfc2553emu.cc,
+	methods/rfc2553emu.h, apt-pkg/acquire-item.cc,
+	apt-pkg/acquire-item.h, apt-pkg/acquire-method.cc,
+	apt-pkg/acquire-method.h, apt-pkg/acquire-worker.cc,
+	apt-pkg/acquire-worker.h, apt-pkg/acquire.cc, apt-pkg/acquire.h,
+	apt-pkg/algorithms.cc, apt-pkg/algorithms.h, apt-pkg/cachefile.cc,
+	apt-pkg/cachefile.h, apt-pkg/cacheiterators.h, apt-pkg/clean.cc,
+	apt-pkg/clean.h, apt-pkg/depcache.cc, apt-pkg/depcache.h,
+	apt-pkg/distrofactory.cc, apt-pkg/distrofactory.h, apt-pkg/init.cc,
+	apt-pkg/init.h, apt-pkg/makefile, apt-pkg/orderlist.cc,
+	apt-pkg/orderlist.h, apt-pkg/packagemanager.cc,
+	apt-pkg/packagemanager.h, apt-pkg/pkgcache.cc, apt-pkg/pkgcache.h,
+	apt-pkg/pkgcachegen.cc, apt-pkg/pkgcachegen.h,
+	apt-pkg/pkgrecords.cc, apt-pkg/pkgrecords.h, apt-pkg/sourcelist.cc,
+	apt-pkg/sourcelist.h, apt-pkg/srcrecords.cc, apt-pkg/srcrecords.h,
+	apt-pkg/tagfile.cc, apt-pkg/tagfile.h, apt-pkg/version.cc,
+	apt-pkg/version.h, apt-pkg/cnc/cncfactory.cc,
+	apt-pkg/cnc/cncfactory.h, apt-pkg/contrib/cdromutl.cc,
+	apt-pkg/contrib/cdromutl.h, apt-pkg/contrib/cmndline.cc,
+	apt-pkg/contrib/cmndline.h, apt-pkg/contrib/configuration.cc,
+	apt-pkg/contrib/configuration.h, apt-pkg/contrib/crc-16.cc,
+	apt-pkg/contrib/crc-16.h, apt-pkg/contrib/error.cc,
+	apt-pkg/contrib/error.h, apt-pkg/contrib/fileutl.cc,
+	apt-pkg/contrib/fileutl.h, apt-pkg/contrib/md5.cc,
+	apt-pkg/contrib/md5.h, apt-pkg/contrib/mmap.cc,
+	apt-pkg/contrib/mmap.h, apt-pkg/contrib/progress.cc,
+	apt-pkg/contrib/progress.h, apt-pkg/contrib/strutl.cc,
+	apt-pkg/contrib/strutl.h, apt-pkg/contrib/system.h,
+	apt-pkg/deb/debfactory.cc, apt-pkg/deb/debfactory.h,
+	apt-pkg/deb/deblistparser.cc, apt-pkg/deb/deblistparser.h,
+	apt-pkg/deb/debrecords.cc, apt-pkg/deb/debrecords.h,
+	apt-pkg/deb/debsrcrecords.cc, apt-pkg/deb/debsrcrecords.h,
+	apt-pkg/deb/dpkginit.cc, apt-pkg/deb/dpkginit.h,
+	apt-pkg/deb/dpkgpm.cc, apt-pkg/deb/dpkgpm.h,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpminit.h,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmlistparser.h,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmpm.h,
+	apt-pkg/rpm/rpmstatusgen.cc, apt-pkg/rpm/rpmstatusgen.h,
+	buildlib/archtable, buildlib/config.guess, buildlib/config.h.in,
+	buildlib/config.sub, buildlib/configure.mak, buildlib/copy.mak,
+	buildlib/debiandoc.mak, buildlib/defaults.mak,
+	buildlib/environment.mak.in, buildlib/install-sh,
+	buildlib/inttypes.h.in, buildlib/library.mak, buildlib/makefile.in,
+	buildlib/manpage.mak, buildlib/mkChangeLog, buildlib/netdb.h.in,
+	buildlib/program.mak, buildlib/sizetable,
+	buildlib/staticlibrary.mak, buildlib/statvfs.h.in,
+	buildlib/tools.m4, buildlib/yodl_manpage.mak,
+	cmdline/acqprogress.h, cmdline/apt-cdrom.cc, cmdline/apt-config.cc,
+	cmdline/indexcopy.h, debian/changelog, debian/control,
+	debian/copyright, debian/dhelp, debian/dirs, debian/examples,
+	debian/libapt-pkg-dev.dirs, debian/libapt-pkg-doc.dhelp,
+	debian/libapt-pkg-doc.postinst, debian/libapt-pkg-doc.prerm,
+	debian/postinst, debian/postrm, debian/rules, debian/shlibs.local,
+	doc/Bugs, doc/apt-cache.8, doc/apt-cache.8.yo, doc/apt-cdrom.8,
+	doc/apt-cdrom.8.yo, doc/apt-config.8, doc/apt-config.8.yo,
+	doc/apt-get.8, doc/apt-get.8.yo, doc/apt.8, doc/apt.conf.5,
+	doc/apt.conf.5.yo, doc/cache.sgml, doc/design.sgml,
+	doc/dpkg-tech.sgml, doc/files.sgml, doc/guide.sgml, doc/makefile,
+	doc/method.sgml, doc/offline.sgml, doc/sources.list.5,
+	doc/sources.list.5.yo, doc/examples/apt.conf,
+	doc/examples/configure-index, doc/examples/sources.list,
+	dselect/desc.apt, dselect/install, dselect/makefile, dselect/names,
+	dselect/setup, dselect/update, gui/apt.cc, gui/aptwidgets.cc,
+	gui/aptwidgets.h, gui/checkoff.xpm, gui/checkon.xpm,
+	gui/conflicts.xpm, gui/depends.xpm, gui/downgrade.xpm,
+	gui/errorshow.cc, gui/errorshow.h, gui/extracache.cc,
+	gui/extracache.h, gui/makefile, gui/minus.xpm, gui/package.xpm,
+	gui/pkgtree.cc, gui/pkgtree.h, gui/pkgtreeitem.cc,
+	gui/pkgtreeitem.h, gui/plus.xpm, gui/policy.cc, gui/policy.h,
+	gui/progressmeter.cc, gui/progressmeter.h, gui/radiooff.xpm,
+	gui/radioon.xpm, gui/recommends.xpm, gui/section.xpm,
+	gui/statuswidgets.cc, gui/statuswidgets.h, gui/suggests.xpm,
+	gui/upgrade.xpm, test/makefile, test/mthdcat.cc, test/scratch.cc,
+	test/versions.lst, test/versiontest.cc, tools/Makefile,
+	tools/Packages, tools/dumprpmdb, tools/dumprpmdb.c,
+	tools/hashtable.c, tools/hashtable.h, tools/hdlist.pkgs,
+	tools/mkpackages, tools/mkpackages.c, tools/mkstatus,
+	tools/mkstatus.c, tools/status, tools/update: Initial revision
+
+2000-08-10 15:42  kojima
+
+	* AUTHORS, COMPILING, COPYING, COPYING.GPL, ChangeLog, Makefile,
+	README.make, TODO, aclocal.m4, configure, configure.in, status,
+	cmdline/acqprogress.cc, cmdline/apt-cache.cc, cmdline/apt-get.cc,
+	cmdline/indexcopy.cc, cmdline/makefile, deity/anchor.cc,
+	deity/anchor.h, deity/basic.cc, deity/basic.h, deity/button.cc,
+	deity/button.h, deity/columnbar.cc, deity/columnbar.h,
+	deity/event.cc, deity/event.h, deity/gpmdev.cc, deity/gpmdev.h,
+	deity/graphics.cc, deity/graphics.h, deity/makefile,
+	deity/menubar.cc, deity/menubar.h, deity/notify.cc, deity/notify.h,
+	deity/progress.cc, deity/progress.h, deity/selectloop.cc,
+	deity/selectloop.h, deity/slangdev.cc, deity/slangdev.h,
+	deity/tabdialog.cc, deity/tabdialog.h, deity/textwidg.cc,
+	deity/textwidg.h, deity/tree.cc, deity/tree.h, deity/utils.cc,
+	deity/utils.h, deity/widget-thread.cc, deity/widget-thread.h,
+	deity/widget.cc, deity/widget.h, deity/widgetinit.cc,
+	deity/widgetinit.h, deity/window.cc, deity/window.h,
+	deity/x11dev.cc, deity/x11dev.h, deity/x11xpm.cc, deity/xpm.cc,
+	deity/xpm.h, methods/cdrom.cc, methods/connect.cc,
+	methods/connect.h, methods/copy.cc, methods/file.cc,
+	methods/ftp.cc, methods/ftp.h, methods/gzip.cc, methods/http.cc,
+	methods/http.h, methods/makefile, methods/rfc2553emu.cc,
+	methods/rfc2553emu.h, apt-pkg/acquire-item.cc,
+	apt-pkg/acquire-item.h, apt-pkg/acquire-method.cc,
+	apt-pkg/acquire-method.h, apt-pkg/acquire-worker.cc,
+	apt-pkg/acquire-worker.h, apt-pkg/acquire.cc, apt-pkg/acquire.h,
+	apt-pkg/algorithms.cc, apt-pkg/algorithms.h, apt-pkg/cachefile.cc,
+	apt-pkg/cachefile.h, apt-pkg/cacheiterators.h, apt-pkg/clean.cc,
+	apt-pkg/clean.h, apt-pkg/depcache.cc, apt-pkg/depcache.h,
+	apt-pkg/distrofactory.cc, apt-pkg/distrofactory.h, apt-pkg/init.cc,
+	apt-pkg/init.h, apt-pkg/makefile, apt-pkg/orderlist.cc,
+	apt-pkg/orderlist.h, apt-pkg/packagemanager.cc,
+	apt-pkg/packagemanager.h, apt-pkg/pkgcache.cc, apt-pkg/pkgcache.h,
+	apt-pkg/pkgcachegen.cc, apt-pkg/pkgcachegen.h,
+	apt-pkg/pkgrecords.cc, apt-pkg/pkgrecords.h, apt-pkg/sourcelist.cc,
+	apt-pkg/sourcelist.h, apt-pkg/srcrecords.cc, apt-pkg/srcrecords.h,
+	apt-pkg/tagfile.cc, apt-pkg/tagfile.h, apt-pkg/version.cc,
+	apt-pkg/version.h, apt-pkg/cnc/cncfactory.cc,
+	apt-pkg/cnc/cncfactory.h, apt-pkg/contrib/cdromutl.cc,
+	apt-pkg/contrib/cdromutl.h, apt-pkg/contrib/cmndline.cc,
+	apt-pkg/contrib/cmndline.h, apt-pkg/contrib/configuration.cc,
+	apt-pkg/contrib/configuration.h, apt-pkg/contrib/crc-16.cc,
+	apt-pkg/contrib/crc-16.h, apt-pkg/contrib/error.cc,
+	apt-pkg/contrib/error.h, apt-pkg/contrib/fileutl.cc,
+	apt-pkg/contrib/fileutl.h, apt-pkg/contrib/md5.cc,
+	apt-pkg/contrib/md5.h, apt-pkg/contrib/mmap.cc,
+	apt-pkg/contrib/mmap.h, apt-pkg/contrib/progress.cc,
+	apt-pkg/contrib/progress.h, apt-pkg/contrib/strutl.cc,
+	apt-pkg/contrib/strutl.h, apt-pkg/contrib/system.h,
+	apt-pkg/deb/debfactory.cc, apt-pkg/deb/debfactory.h,
+	apt-pkg/deb/deblistparser.cc, apt-pkg/deb/deblistparser.h,
+	apt-pkg/deb/debrecords.cc, apt-pkg/deb/debrecords.h,
+	apt-pkg/deb/debsrcrecords.cc, apt-pkg/deb/debsrcrecords.h,
+	apt-pkg/deb/dpkginit.cc, apt-pkg/deb/dpkginit.h,
+	apt-pkg/deb/dpkgpm.cc, apt-pkg/deb/dpkgpm.h,
+	apt-pkg/rpm/rpminit.cc, apt-pkg/rpm/rpminit.h,
+	apt-pkg/rpm/rpmlistparser.cc, apt-pkg/rpm/rpmlistparser.h,
+	apt-pkg/rpm/rpmpm.cc, apt-pkg/rpm/rpmpm.h,
+	apt-pkg/rpm/rpmstatusgen.cc, apt-pkg/rpm/rpmstatusgen.h,
+	buildlib/archtable, buildlib/config.guess, buildlib/config.h.in,
+	buildlib/config.sub, buildlib/configure.mak, buildlib/copy.mak,
+	buildlib/debiandoc.mak, buildlib/defaults.mak,
+	buildlib/environment.mak.in, buildlib/install-sh,
+	buildlib/inttypes.h.in, buildlib/library.mak, buildlib/makefile.in,
+	buildlib/manpage.mak, buildlib/mkChangeLog, buildlib/netdb.h.in,
+	buildlib/program.mak, buildlib/sizetable,
+	buildlib/staticlibrary.mak, buildlib/statvfs.h.in,
+	buildlib/tools.m4, buildlib/yodl_manpage.mak,
+	cmdline/acqprogress.h, cmdline/apt-cdrom.cc, cmdline/apt-config.cc,
+	cmdline/indexcopy.h, debian/changelog, debian/control,
+	debian/copyright, debian/dhelp, debian/dirs, debian/examples,
+	debian/libapt-pkg-dev.dirs, debian/libapt-pkg-doc.dhelp,
+	debian/libapt-pkg-doc.postinst, debian/libapt-pkg-doc.prerm,
+	debian/postinst, debian/postrm, debian/rules, debian/shlibs.local,
+	doc/Bugs, doc/apt-cache.8, doc/apt-cache.8.yo, doc/apt-cdrom.8,
+	doc/apt-cdrom.8.yo, doc/apt-config.8, doc/apt-config.8.yo,
+	doc/apt-get.8, doc/apt-get.8.yo, doc/apt.8, doc/apt.conf.5,
+	doc/apt.conf.5.yo, doc/cache.sgml, doc/design.sgml,
+	doc/dpkg-tech.sgml, doc/files.sgml, doc/guide.sgml, doc/makefile,
+	doc/method.sgml, doc/offline.sgml, doc/sources.list.5,
+	doc/sources.list.5.yo, doc/examples/apt.conf,
+	doc/examples/configure-index, doc/examples/sources.list,
+	dselect/desc.apt, dselect/install, dselect/makefile, dselect/names,
+	dselect/setup, dselect/update, gui/apt.cc, gui/aptwidgets.cc,
+	gui/aptwidgets.h, gui/checkoff.xpm, gui/checkon.xpm,
+	gui/conflicts.xpm, gui/depends.xpm, gui/downgrade.xpm,
+	gui/errorshow.cc, gui/errorshow.h, gui/extracache.cc,
+	gui/extracache.h, gui/makefile, gui/minus.xpm, gui/package.xpm,
+	gui/pkgtree.cc, gui/pkgtree.h, gui/pkgtreeitem.cc,
+	gui/pkgtreeitem.h, gui/plus.xpm, gui/policy.cc, gui/policy.h,
+	gui/progressmeter.cc, gui/progressmeter.h, gui/radiooff.xpm,
+	gui/radioon.xpm, gui/recommends.xpm, gui/section.xpm,
+	gui/statuswidgets.cc, gui/statuswidgets.h, gui/suggests.xpm,
+	gui/upgrade.xpm, test/makefile, test/mthdcat.cc, test/scratch.cc,
+	test/versions.lst, test/versiontest.cc, tools/Makefile,
+	tools/Packages, tools/dumprpmdb, tools/dumprpmdb.c,
+	tools/hashtable.c, tools/hashtable.h, tools/hdlist.pkgs,
+	tools/mkpackages, tools/mkpackages.c, tools/mkstatus,
+	tools/mkstatus.c, tools/status, tools/update: inicial
+

@@ -1,0 +1,220 @@
+.TH "sources\&.list" "5" "25 Oct 2000" "apt" "" 
+.SH "NOME" 
+sources\&.list \- package resource list for APT
+.PP 
+.SH "DESCRIÇÃO" 
+A lista de recursos de pacotes é usada para localizar arquivos do
+sistema de distribuição de pacotes em uso no sistema\&. 
+.PP 
+A lista de fontes é planejada para suportar qualquer quantidade de
+fontes ativos e uma variedade de meios de fonte\&. O arquivo relaciona
+um fonte por linha, com o fonte mais preferido relacionado
+primeiro\&. O formato de cada linha é: \fItype uri args\fP o primeiro
+item, \fItype\fP, determina o formato para \fIargs\fP\&. \fIuri\fP é
+um Identificador de Recurso Universal (URI), que é um super conjunto
+de Localizadores de Recurso Universal ou URL mais conhecidos e mais
+específicos\&. 
+.PP 
+.SH "Os tipos deb e deb-src" 
+O tipo \fBdeb\fP descreve o ibes, um arquivo tipo Debian de dois níveis,
+\fIdistribuição/componente\fP\&. Tipicamente, \fIdistribuição\fP é um
+dentre \fIstable\fP, \fIunstable\fP ou \fIfrozen\fP, enquanto o
+componente é um dos \fImain\fP, \fIcontrib\fP, \fInon-free\fP ou
+\fInon-us\fP\&. O tipo \fBdeb-src\fP descreve um código-fonte da
+distribuição debian da mesma forma do tipo \fBdeb\fP\&. Uma linha
+\fBdeb-src\fP é necessária para obter índices de fonte\&.
+O formato para uma entrada \fBsources\&.list\fP usando os tipos
+\fIdeb\fP e \fIdeb-src\fP são:
+
+.nf 
+ 
+deb uri distribution [componente1] [componente2] [\&.\&.\&.]
+.fi 
+ 
+
+O URI para o tipo \fIdeb\fP deve especificar a base da distribuição Debian, 
+de onde \fBAPT\fP encontrará as informações que ele
+precisa\&. \fIdistribution\fP pode especificar um caminho exato, neste
+caso o \fIcomponent\fPs deve ser omitido e \fBdistribution\fP deve
+terminar com uma barra (/)\&. Isto é útil para quando há interesse em
+apenas uma sub-seção particular do arquivo denotado pelo URI\&. Se
+\fBdistribution\fP não especificar um caminho exato, pelo menos um
+\fBcomponent\fP deve estar presente\&.
+.PP 
+\fBdistribution\fP também pode conter uma variável, \fB$(ARCH)\fP,
+que expande para a arquitetura Debian (i386, m68k, powerpc, \&.\&.\&.)     
+usada no sistema\&. Isto permite o uso dos arquivos
+\fBsources\&.list\fP independentes da arquitetura\&. Em geral, isto só
+é interessante ao especificar um caminho exato, caso contrário
+\fBAPT\fP irá gerar automaticamente um URI com a arquitetura atual\&.
+.PP 
+Uma vez que apenas uma distribuição pode ser especificada por linha,
+por ser necessário ter linhas múltiplas para o mesmo URI, se um
+subconjunto de todas as distribuições ou componentes disponíveis nesta
+localização for desejado\&. \fBAPT\fP classificará a lista de URI após
+ter criado um conjunto completo internamente, e irá reduzir as múltiplas referências ao mesmo servidor de Internet, por exemplo, em uma conexão simples, dessa forma não estabelece de forma ineficiente uma conexão FTP, a fecha, faz mais alguma coisa e depois restabelece uma conexão para o mesmo servidor\&. Este serviço é útil para acesso a sites FTP ocupados com limites no número de usuários anônimos simultâneos\&. \fBAPT\fP também paralisa conexões para diferentes servidores para lidar com sites de baixa largura de banda com mais eficácia\&.
+.PP 
+É importante listar os fontes em ordem de preferência, sendo o fonte mais preferido listado primeiro\&. Isto resultará tipicamente na classificação por velocidade do mais rápido para o mais lento (CD-ROM seguido por servidores em uma rede local, seguido por servidores de Internet distantes, por exemplo)\&.
+.PP 
+Alguns exemplos:
+
+.nf 
+ 
+deb http://http\&.us\&.debian\&.org/debian stable main contrib non-free
+.fi 
+ 
+
+
+.nf 
+ 
+deb http://http\&.us\&.debian\&.org/debian dists/stable-updates
+.fi 
+ 
+.PP 
+.SH "The rpm and rpm-src types" 
+O tipo \fBrpm\fP descreve um repositório de distribuição baseado em RPM, dividido em dois níveis, \fIdistribuição\fP e \fIcomponente\fP.
+\fIDistribuição\fP é composto tipicamente pela versão da distribuição e o nome do fornecedor, tal como \fI6.0/conectiva\fP.
+\fIComponente\fP é o nome do componente, tal como o tipo \fBrpm-src\fP descreve o código-fonte da distribuição\ da mesma forma que o tipo \fBrpm\fP\&. Uma linha \fBrpm-src\fP é requerida para obter os índices-fonte\&.
+O formato para uma entrada \fBsources\&.list\fP usando os tipos \fIrpm\fP 
+e \fIrpm-src\fP são:
+
+.nf 
+ 
+rpm [\&[fornecedor\&]] uri distribution [componente1] [componente2] [\&.\&.\&.]
+.fi 
+ 
+
+O URI para o tipo \fIrpm\fP deve especificar a base da distribuição a partir do qual \fBAPT\fP encontrará a informação necessária\&. 
+Pelo menos um \fBcomponent\fP deve estar presente\&.
+.PP 
+Já que apenas uma distribuição pode ser especificada por linha, pode ser necessário ter linhas múltiplas para o mesmo URI, se for desejado um subconjunto de todas as distribuições ou componentes disponíveis no mesmo local\&.
+\fBAPT\fP classificará a lista de URI após ela ter gerado um conjunto completo internamente e irá reduzir referências múltiplas para o mesmo servidor de Internet, por exemplo, em uma conexão simples, dessa forma não estabelece de forma ineficiente uma conexão FTP, a fecha, faz mais alguma coisa e depois restabelece uma conexão para o mesmo servidor\&. Este serviço é útil para acesso a sites FTP ocupados com limites no número de usuários anônimos simultâneos\&. \fBAPT\fP também paralisa conexões para diferentes servidores para lidar com sites de baixa largura de banda com mais eficácia\&.
+.PP 
+É importante listar os fontes em ordem de preferência, sendo o fonte mais preferido listado primeiro\&. Isto resultará tipicamente na classificação por velocidade do mais rápido para o mais lento (CD-ROM seguido por servidores em uma rede local, seguido por servidores de Internet distantes, por exemplo)\&.
+.PP 
+Alguns exemplos:
+
+.nf 
+ 
+rpm ftp://ftp\&.conectiva\&.com/pub/conectiva/.0 6.0/conectiva main extra non-us non-free
+.fi 
+ 
+
+.PP 
+.SH "Autenticação-mirror de repositório"
+Ao usar um mirror para uma distribuição, existe o risco do mantenedor do site infiltrar pacotes maliciosos dentro dele, comprometendo a segurança de todos os sistemas que usam este site como um fonte de pacote. Para reduzir a possibilidade de situações como esta, o apt pode autenticar os repositórios de pacote. Observe que a autenticação NÃO garante que os conteúdos de um repositório sejam completamente seguros. Pode apenas verificar se:
+.IP o
+todos os pacotes no repositório têm um checksum válido, em relação ao conteúdo da lista de pacotes;
+
+.IP o
+todos os pacotes que são conhecidos para a lista de pacotes podem ser baixados pelo apt-get;
+
+.IP o
+todas as listas de pacotes têm um checksum correto, em relação ao conteúdo de um arquivo de índice;
+
+.IP o
+o arquivo de índice é assinado digitalmente pelo fornecedor identificado em
+\fBsources.list\fP e a assinatura digital gpg correspondente gpg em 
+\fBvendors.list\fP\&.
+
+.PP
+Pode verificar se um site que espelha um repositório tem os mesmos conteúdos do site original.
+.PP
+Consulte \fBvendors.list\fP (5) para mais informações sobre como configurar a autenticação.
+
+
+.PP 
+.SH "Especificação de URI" 
+Os tipos de URI atualmente reconhecidos são cd-rom, arquivo, http e ftp\&.
+.PP 
+.IP "\fBarquivo\fP" 
+O esquema de arquivos permite um diretório arbitrário no sistema de arquivos a ser considerado como um arquivo\&. Isto é útil para montagem de NFS e mirros ou arquivos locais\&.
+.IP 
+.IP "\fBc-drom\fP" 
+O esquema de cd-rom permite que o \fBAPT\fP use um drive de CD-ROM local com troca de meio\&. Use o programa \fBapt-cdrom(8)\fP para criar todo o cd-rom na lista de fontes\&.
+.IP 
+.IP "\fBhttp\fP" 
+O esquema http especifica um servidor HTTP para o arquivo\&. Se uma variável de ambiente \fB$http_proxy\fP for configurada com o formato 
+\fBhttp://server:port/\fP, o servidor proxy especificado em
+\fB$http_proxy\fP será usado\&. Os usuários dos proxies HTTP/1\&.1 autenticados podem usar uma string com o formato \fBhttp://user:pass@server:port/\fP
+Observe que este não é um método seguro de autenticação\&.
+.IP 
+.IP "\fBftp\fP" 
+O esquema ftp especifica um servidor FTP para o arquivo\&. O comportamento FTP do APT é altamente configurável. Para maiores informações consulte a página de manual \fBapt\&.conf(5)\fP\&. Por favor observe que um proxy ftp pode ser especificado usando a variável de ambiente ftp_proxy\&. É possível especificar um proxy http (servidores proxy http muitas vezes compreendem urls ftp) usando este método e SOMENTE este método\&. Os proxies ftp usando http especificado no arquivo de configuração serão ignorados\&.
+.IP 
+.IP "\fBcópia\fP" 
+O esquema de cópia é idêntico ao esquema de arquivo exceto que os pacotes são copiados para o diretório de cache em vez de serem usados diretamente em sua localização\&. Isto é útil para pessoas que usam um disco de zip para copiar arquivos com o APT\&.
+.IP 
+.PP 
+.SH "EXEMPLOS" 
+Usa o arquivo armazenado localmente (ou NFS montado) em /home/jason/debian
+para stable/main, stable/contrib e stable/non-free\&.
+.RS 
+"deb file:/home/jason/debian stable main contrib non-free"
+.RE 
+.PP 
+Como o acima, exceto que este usa a distribuição instável (desenvolvimento)\&.
+.RS 
+"deb file:/home/jason/debian unstable main contrib non-free"
+.RE 
+.PP 
+Linha do fonte para o acima
+.RS 
+"deb-src file:/home/jason/debian unstable main contrib non-free"
+.RE 
+.PP 
+Usa HTTP para acessar o arquivo no arquivo \&.debian\&.org e usa apenas a área hamm/main\&.
+.RS 
+"deb http://archive\&.debian\&.org/debian-archive hamm main"
+.RE 
+.PP 
+Usa FTP para acessar o arquivo em ftp\&.debian\&.org, no diretório debian
+e usa apenas a área stable/contrib\&.
+.RS 
+"deb ftp://ftp\&.debian\&.org/debian stable contrib"
+.RE
+.PP 
+Uses FTP to access the archive at ftp\&.conectiva\&.com, under the 
+/pub/conectiva directory, for version 6.0 of the conectiva distribution
+and the main component\&.
+.RS 
+"rpm ftp://ftp\&.conectiva\&.cpm/pub/conectiva 6.0/conectiva main"
+.RE 
+.PP 
+Usa FTP para acessar o arquivo em ftp\&.debian\&.org, no diretório debian
+e usa apenas a área unstable/contrib\&. Se esta linha aparecer bem
+como aquela no exemplo anterior em \fBsources\&.list\fP,
+uma sessão FTP simples será usada para ambas as linhas de recurso\&.
+.RS 
+"deb ftp://ftp\&.debian\&.org/debian unstable contrib"
+.RE 
+.PP 
+Usa HTTP para acessar o arquivo em ###nonus\&.debian\&.org, no diretório que não é o da debian-US\&.
+.RS 
+"deb http://nonus\&.debian\&.org/debian-non-US stable/non-US main contrib non-free"
+.RE 
+.PP
+O mesmo que o acima, mas com a autenticação contra o fornecedor chamado \fIbla\fP, que deveria estar relacionado em \fBvendors\&.list\fP\&.
+.RS
+"deb [bla] http://nonus\&.debian\&.org/debian-non-US stable/non-US main contrib non-free"
+.RE
+.PP 
+Usa HTTP para acessar o arquivo em ###nonus\&.debian\&.org, no diretório que não é o da debian-US, e usa apenas os arquivos encontrados em unstable/binary-i386 em computadores i386, unstable/binary-m68k em m68k e assim por diante para outras arquiteturas suportadas\&. [Observe que este exemplo apenas ilustra como usar a variável ##substitation non-us não está mais estruturada como este]
+.RS 
+"deb http://ftp\&.de\&.debian\&.org/debian-non-US unstable/binary-$(ARCH)/"
+.RE 
+.PP 
+.SH "CONSULTE TAMBÉM" 
+apt-cache (8),
+apt\&.conf (5)
+vendors\&.list (5)
+.PP 
+.SH "BUGS" 
+Consulte http://bugs\&.debian\&.org/apt\&. Caso queira reportar um bug em \fBapt-get\fP, por favor veja \fB/usr/doc/debian/bug-reporting\&.txt\fP
+ou o comando \fBbug(1)\fP\&. Se estiver usando o apt em um sistema baseado em  RPM, por favor use http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTOR" 
+O apt foi escrito pelo time do APT <apt@packages\&.debian\&.org>
+e atualizado para os sistemas baseados em RPM por
+Conectiva S.A. <kojima@conectiva\&.com\&.br>
+

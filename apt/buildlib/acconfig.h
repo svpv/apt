@@ -1,0 +1,19 @@
+#undef ARCHITECTURE
+
+#undef HAVE_LIBGPM
+
+#undef HAVE_LIBSLANG
+
+#undef HAVE_LIBXPM
+
+#undef HAVE_MOUNT_H
+
+#undef HAVE_VFS_H
+
+#undef HAVE_X11
+
+#undef NEED_SOCKLEN_T_DEFINE
+
+#undef PACKAGE
+
+#undef VERSION

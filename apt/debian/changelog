@@ -1,0 +1,505 @@
+apt (0.3.19) frozen unstable; urgency=low
+  
+  * Updates to apt-cdrom to support integrated non-us nicely, thanks to
+    Paul Wade.
+  * Fixed that apt-get/cdrom deadlock thing. Closes: #59853, #62945, #61976
+  * Fixed hardcoded path. Closes: #59743
+  * Fixed Jay's relative path bug
+  * Allowed source only CDs. Closes: #58952
+  * Space check is supressed if --print-uris is given. Closes: #58965
+  * Clarified the documenation examples for non-us. Closes: #58646
+  * Typo in the package description. Closes: #60230
+  * Man Page typo. Closes: #60347 
+  * Typo in Algorithms.cc. Closes: #63577
+  * Evil dotty function in apt-cache for generating dependency graphs
+    with the as-yet-unpackaged GraphVis.
+  * Appears to have been fixed in Janurary.. Closes: #57981
+  * New config.guess/sub for the new archs. Closes: #60874
+  * Fixed error reporting for certain kinds of resolution failures. 
+    Closes: #61327
+  * Made autoclean respect 'q' settings. Closes: #63023
+  * Fixed up the example sources.list. Closes: #63676
+  * Added DPkg::FlushSTDIN to control the flushing of stdin before
+    forking dpkg. Closes: #63991
+    
+ -- Ben Gertzfield <che@debian.org>  Fri, 12 May 2000 21:10:54 -0700
+
+apt (0.3.18) frozen unstable; urgency=low
+  
+  * Changes in the postinst script. Closes: #56855, #57237
+  * Fixed bashism. Closes: #57216, #57335
+  * Doc updates. Closes: #57772, #57069, #57331, #57833, #57896
+     
+ -- Ben Gertzfield <che@debian.org>  Sun, 13 Feb 2000 01:52:31 -0800
+
+apt (0.3.17) unstable; urgency=low
+
+  * RFC 2732 usage for CDROM URIs and fixes to apt-cdrom
+  * Fixed the configuration parser to not blow up if ; is in the config 
+    string
+  * Applied visual patch to dselect install script . Closes #55214
+  * Included the configure-index example
+  * Minimal CD swaps
+  * Library soname has increased
+  * Fixed default sources.list to have correct URLs for potato when it 
+    becomes stable
+  * Added a message about erasing sources.list to dselect setup script
+    Closes: #55755
+  * No remove prompt if the archives dir has not changed. Closes: #55709
+  * Fixed inclusion of 2nd sample config file. Closes: #55374
+  * Made file mtimes of 0 not confuse the methods If-Modifed-Since check. 
+    Closes: #55991
+  
+ -- Ben Gertzfield <che@debian.org>  Mon, 31 Jan 2000 12:12:40 -0800
+ 
+apt (0.3.16) unstable; urgency=low
+ 
+  * Made --no-download work. Closes: #52993
+  * Now compiles on OpenBSD, Solaris and HP-UX
+  * Clarify segfault errors
+  * More debhelper fixes. Closes: #52662, #54566, #52090, #53531, #54769
+  * Fix for Joel's discovery of glibc removal behavoir.
+  * Fix for Ben Collins file: uri from slink upgrade.
+  * Fixed resume code in FTP. Closes: #54323
+  * Take more precautions to prevent the corruption Joey Hess saw.
+  * Fixed --no-list-cleanup
+  * RFC 2732 URI parsing ([] for hostnames).
+  * Typo in apt-cache man page. Closes: #54949
+  
+ -- Ben Gertzfield <che@debian.org>  Fri, 14 Jan 2000 08:04:15 -0800
+  
+apt (0.3.15) unstable; urgency=low
+
+  * Added DSelect::WaitAfterDownload Closes: #49549
+  * Fixed cast error in byteswap macro and supporting code. Closes: #50093
+  * Fixed buffer overflow for wide terminal sizes. Closes: #50295
+  * Made -s and clean not do anything. Closes: #50238
+  * Problem with Protected packages and the new OR code.
+  * /usr/share/doc stuff. Closes: #51017, #50228, #51141
+  * Remove doesn't require a package to be installable. Closes: #51175
+  * FTP proxy touch ups in the mabn page. Closes: #51315, #51314
+
+ -- Ben Gertzfield <che@debian.org>  Sat,  4 Dec 1999 21:17:24 -0800
+
+apt (0.3.14) unstable; urgency=low
+
+  * Fix Perl or group pre-depends thing Closes: #46091, #46096, #46233, #45901
+  * Fix handling of dpkg's conversions from < -> <= Closes: #46094, #47088
+  * Make unparsable priorities non-fatal Closes: #46266, #46267, #46293, #46298
+  * Fix handling of '/' for the dist name. Closes: #43830, #45640, #45692
+  * Fixed 'Method gave a blank filename' error from IMS queries onto CDs.
+    Closes: #45034, #45695, #46537
+  * Made OR group handling in the problem resolver more elaborate. Closes: #45646
+  * Added APT::Clean-Installed option. Closes: #45973
+  * Moves the free space check to after the calculated size is printed.
+    Closes: #46639, #47498
+  * mipsel arch Closes: #47614
+  * Beautified URI printing to not include passwords Closes: #46857
+  * Fixed little problem with --no-download Closes: #47557
+  * Tweaked Dselect 'update' script to re-gen the avail file even in the
+    event of a failure Closes: #47112
+  * Retries for source archives too Closes: #47529
+  * Unmounts CDROMs iff it mounted them Closes: #45299
+  * Checks for the partial directories before doing downloads Closes: #47392
+  * no_proxy environment variable (http only!) Closes: #43476
+  * apt-cache showsrc Closes: #45799
+  * De-Refs Single Pure virtual packages. Closes: #42437, #43555
+  * Regexs for install. Closes: #35304, #38835
+  * Dependency reports now show OR group relations
+  * Re-Install feature. Cloes: #46961, #37393, #38919
+  * Locks archive directory on clean (woops)
+  * Remove is not 'sticky'. Closes: #48392
+  * Slightly more accurate 'can not find package' message. Closes: #48311
+  * --trivial-only and --no-remove. Closes: #48518
+  * Increased the cache size. Closes: #47648
+  * Comment woopsie. Closes: #48789
+  * Removes existing links when linking sources. Closes: #48775
+  * Problem resolver does not install all virtual packages. Closes: #48591, #49252
+  * Clearer usage message about 'source' Closes: #48858
+  * Immediate configure internal error Closes: #49062, #48884
+  
+ -- Ben Gertzfield <che@debian.org>  Sun,  7 Nov 1999 20:21:25 -0800
+ 
+apt (0.3.13) unstable; urgency=low
+  
+  * Fix timestamp miss in FTP. Closes: #44363
+  * Fix sorting of Kept packages. Closes: #44377
+  * Fix Segfault for dselect-upgrade. Closes: #44436
+  * Fix handling of '/' for the dist name. Closes #43830
+  * Added APT::Get::Diff-Only and Tar-Only options. Closes #44384
+  * Add commented-out deb-src URI to default sources.list file.  
+
+ -- Ben Gertzfield <che@debian.org>  Sun, 19 Sep 1999 18:54:20 -0700
+ 
+apt (0.3.12) unstable; urgency=low
+  
+  * Fix for typo in the dhelp index. Closes: #40377
+  * Multiple media swap support
+  * Purge support. Closes: #33291, #40694
+  * Better handling of - remove notation. Closes: #41024
+  * Purge support. Closes: #33291, #40694
+  * Error code on failed update. Closes: #41053
+  * apt-cdrom adds entries for source directories. Closes: #41231
+  * Sorts the output of any list. Closes: #41107
+  * Fixes the looping problem. Closes: #41784, #42414, #44022
+  * Fixes the CRC mechanism to lowercase all strings. Closes: #41839
+  * More checks to keep the display sane. Particularly when fail-over is
+    used with local mirrors and CD-Roms. Closes: #42127, #43130, #43668
+  * PThread lockup problem on certain sparc/m68k. Closes: #40628
+  * apt-cdrom understands .gz Package files too. Closes: #42779
+  * Spelling error in dselect method description. Closes: #43251
+  * Added security to the default source list. Closes: #43356
+  
+ -- Ben Gertzfield <che@debian.org>  Fri,  3 Sep 1999 09:04:28 -0700
+ 
+apt (0.3.11) unstable; urgency=low
+
+  * Fix for mis-parsed file: URIs. Closes: #40373, #40366, #40230
+  * Fix for properly upgrading the system from perl 5.004 to 5.005
+
+ -- Ben Gertzfield <che@debian.org>  Mon, 28 Jun 1999 21:06:44 -0700
+
+apt (0.3.9) unstable; urgency=low
+
+  * Spelling error in cachefile.cc. Closes: #39885
+  * Trailing slash in dselect install if you try to use the 
+    default config file. Closes: #40011
+  * Simulate works for autoclean. Closes: #39141
+  * Fixed spelling errors. Closes: #39673
+  * Changed url parsing a bit. Closes: #40070, #40069
+  * Version 0.3.8 will be for slink/hamm (GNU libc 2).
+
+ -- Ben Gertzfield <che@debian.org>  Thu, 24 Jun 1999 18:02:52 -0700
+
+apt (0.3.7) unstable; urgency=low
+
+  * Fixed missing text in the apt-get(8) page. Closes: #37596
+  * Made --simulate and friends work with apt-get source. Closes: #37597, #37656
+  * Fixed inclusion of man pages in the -doc/-dev package. Closes: #37633, #38651
+  * Fixed handling of the -q option with not-entirely integer arguments
+    Closes: #37499
+  * Man page typo Closes: #37762
+  * Fixed parsing of the Source: line. Closes: #37679
+  * Dpkg/dpkg-hurd source bug. Closes: #38004, #38032
+  * Added a check for an empty cache directory. Closes: #37963
+  * Return a failure code if -d is given and packages fail to download.
+    Closes: #38127
+  * Arranged for an ftp proxy specifing an http server to work. See the
+    important note in the sources.list man page.
+  * Accounted for resumed files in the cps calculation. Closes: #36787
+  * Deal with duplicate same version different packages. Closes: #30237
+  * Added --no-download. Closes: #38095
+  * Order of apt-cdrom dist detection. Closes: #38139
+  * Fix apt-cdrom chop handling and missing lines. Closes: #37276
+  * IPv6 http support
+  * Suggests dpkg-dev for apt-get source. Closes: #38158
+  * Fixed typo in apt-get help. Closes: #38712
+  * Improved the error message in the case of broken held package. Closes: #38777
+  * Fixed handling of MD5 failures
+  * Documented list notation Closes: #39008
+  * Change the 'b' to 'B'. Closes: #39007 
+  
+ -- Ben Gertzfield <che@debian.org>  Sun, 20 Jun 1999 18:36:20 -0700
+ 
+apt (0.3.6) unstable; urgency=low
+
+  * Note that 0.3.5 never made it out the door..
+  * Fix for apt-cdrom and unusual disk label locations. Closes: #35571
+  * Made APT print numbers in decimal. Closes: #35617, #37319
+  * Buffer munching fix for FTP. Closes: #35868
+  * Typo in sample config file. Closes: #35907
+  * Fixed whitespace in version compares. Closes: #35968, #36283, #37051
+  * Changed installed size counter to only count unpacked packages. 
+    Closes: #36201
+  * apt-get source support. Closes: #23934, #27190
+  * Renames .debs that fail MD5 checking, provides automatic corruption
+    recovery. Closes: #35931
+  * Fixed autoconf verison. Closes: #37305
+  * Random Segfaulting. Closes: #37312, #37530
+  * Fixed apt-cache man page. Closes: #36904
+  * Added a newline to apt-cache showpkg. Closes: #36903
+  
+ -- Ben Gertzfield <che@debian.org>  Wed, 12 May 1999 09:18:49 -0700
+
+apt (0.3.4) unstable; urgency=low
+
+  * Release for Ben while he is out of town.
+  * Checked the size of partial files. Closes: #33705
+  * apt-get should not print progress on non-tty. Closes: #34944
+  * s/guide.text.gz/users-guide.txt.gz/ debian/control: Closes: #35207
+  * Applied cdrom patches from Torsten.  Closes: #35140, #35141
+  * smbmounted cdrom fix. Closes: #35470
+  * Changed ie to eg.  Closes: #35196
+
+ -- Adam Heath <doogie@debian.org>  Sun,  4 Apr 1999 18:26:44 -0500
+
+apt (0.3.3) unstable; urgency=low
+
+  * Fixes bug with file:/ URIs and multi-CD handling. Closes: #34923
+
+ -- Ben Gertzfield <che@debian.org>  Tue, 23 Mar 1999 12:15:44 -0800
+
+apt (0.3.2) unstable; urgency=low
+
+  * Major release into unstable of v3
+  * These bugs have been fixed, explanations are in the bug system, read
+    the man pages as well..
+    Closes: #21113, #22507, #22675, #22836, #22892, #32883, #33006, #34121,
+    	    #23984, #24685, #24799, #25001, #25019, #34223, #34296, #34355,
+	    #24021, #25022, #25026, #25104, #25176, #31557, #31691, #31853,
+    	    #25458, #26019, #26433, #26592, #26670, #27100, #27100, #27601,
+    	    #28184, #28391, #28778, #29293, #29351, #27841, #28172, #30260,
+    	    #29382, #29441, #29903, #29920, #29983, #30027, #30076, #30112,
+    	    #31009, #31155, #31381, #31883, #32140, #32395, #32584. #34465,
+    	    #30383, #30441, #30472, #30643, #30827, #30324, #36425, #34596
+
+ -- Ben Gertzfield <che@debian.org>  Mon, 15 Mar 1999 19:14:25 -0800
+
+apt (0.3.1) experimental; urgency=low
+
+  * Minor release of cvs version.
+  * Added virtual package libapt-pkgx.x
+
+ -- Mitch Blevins <mblevin@debian.org>  Wed, 10 Mar 1999 07:52:44 -0500
+
+apt (0.3.0) experimental; urgency=low
+
+  * New experimental version.
+
+ -- Ben Gertzfield <che@debian.org>  Tue, 15 Dec 1998 12:53:21 -0800
+
+apt (0.1.9) frozen unstable; urgency=low
+
+  * Return to the wacky numbering for when we build 0.1.8 for hamm
+  * Important bug related to APT on the Alpha fixed
+  * apt-get dist-upgrade problems fixed
+  * tiny patch for http method to fix an endless loop
+  * nice fix from /usr/doc/lintian/ to remove rpath nastiness from
+    libtool and add proper shared lib dependancies
+  * now dh_shlibdeps is called with LD_LIBRARY_PATH=debian/tmp/usr/lib
+    in case an old libpkg is installed while building APT to prevent
+    spurious dependancies
+
+ -- Ben Gertzfield <che@debian.org>  Thu,  5 Nov 1998 17:43:25 -0800
+
+apt (0.1.7) unstable; urgency=low
+
+  * New build with libstdc++2.9.
+  * Various fixes; read the Changelog.
+
+ -- Ben Gertzfield <che@debian.org>  Thu, 15 Oct 1998 18:29:18 -0700
+
+apt (0.1.6) unstable; urgency=low
+
+  * Various fixes in the FTP method for error checking. Fixes: #26188.
+  * Spelling corrections in dselect method. Fixes: #25884
+  * Fixes for compilation on alpha/ppc. Fixes: #25313, #26108.
+  * No more bo releases: we're using a normal numbering system now.
+
+ -- Ben Gertzfield <che@debian.org>  Tue,  8 Sep 1998 19:27:13 -0700
+
+apt (0.1.5) unstable; urgency=low
+
+  * Changed sources.list to point to 'unstable' by default, as
+    'frozen' no longer exists!
+
+ -- Ben Gertzfield <che@debian.org>  Thu, 23 Jul 1998 22:00:18 -0700
+
+apt (0.1.3) unstable; urgency=low
+
+  * New upstreamish version.
+  * ftp method rewritten in C. Removes dependancies on all perl/perl
+    related modules. This fixes many of the ftp method bugs.
+
+ -- Ben Gertzfield <che@debian.org>  Thu, 16 Jul 1998 22:19:00 -0700
+
+apt (0.1.1) unstable; urgency=low
+
+  * Release for unstable.
+
+ -- Ben Gertzfield <che@debian.org>  Tue, 30 Jun 1998 20:48:30 -0700
+
+apt (0.1) unstable; urgency=low
+
+  * Kludge to fix problem in libnet-perl with illegal anonymous
+    FTP passwords.
+  * Moved to unstable; apt is in a useable state now.
+  * Fixed version numbering. From now on, numbering will be:
+    0.1 (no actual release) -> 0.1.0bo (release for libc5) ->
+    0.1.1 (release for unstable). Thanks, Manoj.
+  
+ -- Ben Gertzfield <che@debian.org>  Tue, 30 Jun 1998 20:40:58 -0700
+
+apt (0.0.17-1) experimental; urgency=low
+
+  * Fixed problem with libc6 version compare
+  * Scott's away for a while, so I'll be packaging apt for the time
+    being.
+
+ -- Ben Gertzfield <che@debian.org>  Thu, 25 Jun 1998 19:02:03 -0700
+
+apt (0.0.16-1) experimental; urgency=low
+
+  * Modifications to make apt-get more friendly when backgrounded.
+  * Updated documentation.
+  * Updates to graphic widgets
+
+ -- Scott K. Ellis <scott@debian.org>  Mon,  8 Jun 1998 11:22:02 -0400
+
+apt (0.0.15-0.2bo) experimental; urgency=low
+
+  * Bo compilation
+  * Bob Hilliards crash
+  
+ -- Jason Gunthorpe <jgg@debian.org>  Sun, 31 May 1998 20:18:35 -0600
+
+apt (0.0.15-0.1bo) experimental; urgency=low
+
+  * Bo compilation
+  * libstdc++272 patch
+  
+ -- Jason Gunthorpe <jgg@debian.org>  Sun, 31 May 1998 20:18:35 -0600
+
+apt (0.0.15) experimental; urgency=low
+
+  * Clean up source tarball (no user-visible changes)
+
+ -- Scott K. Ellis <scott@debian.org>  Tue, 26 May 1998 12:23:53 -0400
+
+apt (0.0.14) experimental; urgency=low
+
+  * Updates in ordering code to make sure certain upgrades work correctly.
+  * Made dselect/setup understand ftp as well as http
+
+ -- Scott K. Ellis <scott@debian.org>  Wed, 20 May 1998 13:33:32 -0400
+
+apt (0.0.13-bo1) experimental; urgency=low
+
+  * Bo compilation
+
+ -- Jason Gunthorpe <jgg@debian.org>  Mon, 18 May 1998 15:10:49 -0600 
+
+apt (0.0.13) experimental; urgency=low
+
+  * Remove hardcoded egcc from debian/rules (#21575)
+  * Fixes for ordering logic when system has a number of unpacked
+    but unconfigured packages installed.
+  * Spelling fix in dselect install method (#22556)
+
+ -- Scott K. Ellis <scott@debian.org>  Sun, 17 May 1998 20:08:33 -0400
+
+apt (0.0.12) experimental; urgency=low
+
+  * Fixed problems with package cache corruption.
+  * Made to depend on libc6 >= 2.0.7pre1 due to timezone problems with
+    earlier versions.
+  * Interface and documentation improvements.
+
+ -- Scott K. Ellis <scott@debian.org>  Sat, 16 May 1998 23:17:32 -0400
+
+apt (0.0.11) experimental; urgency=low
+
+  * Change dependancies to pre-depends since breaking your packaging tools
+    in the middle of an installation isn't very good.
+  * Bug fixes to ftp method and general apt-get code
+
+ -- Scott K. Ellis <scott@debian.org>  Fri, 15 May 1998 08:57:38 -0400
+
+apt (0.0.10) experimental; urgency=low
+
+  * Run "dpkg --configure -a" after an aborted dselect install
+  * Fixed problem with install looping
+  * Support for authenticating proxys: (note this isn't terribly secure)
+    http_proxy="http://user:pass@firewall:port/"
+  * Substitute $ARCH in sources.list
+  * Fixes in the resumption code for ftp
+
+ -- Scott K. Ellis <scott@debian.org>  Tue, 12 May 1998 09:14:41 -0400
+
+apt (0.0.9) experimental; urgency=low
+
+  * Added ftp support.
+  * Various other less visible bug fixes.
+  * Fixed problem with segfault when apt-get invoked in a non-existant 
+    directory (Bug #21863)
+  * Bumped policy to 2.4.1
+
+ -- Scott K. Ellis <scott@debian.org>  Fri,  1 May 1998 09:18:19 -0400
+
+apt (0.0.8) experimental; urgency=low
+
+  * Fixed generated available file (Bug #21836)
+  * Added download ETA (Bug #21774).
+  * Fixed hardcoded ARCH (Bug #21751).
+  * Fixed check on http_proxy (Bug #21795).
+  * Added download speed indicator.
+
+ -- Scott K. Ellis <scott@debian.org>  Mon, 27 Apr 1998 10:58:32 -0400
+
+apt (0.0.7) experimental; urgency=low
+
+  * Remove libdeity and apt from package for now, since only apt-get and
+    apt-cache are actually useful right now.
+  * Clean up handling of package installation errors.
+  * Added timeout to http transfers (#21269)
+  * Updated setup for dselect/apt method.
+  * Updated man pages
+  * Long options (added in 0.0.6) 
+
+ -- Scott K. Ellis <scott@debian.org>  Tue, 21 Apr 1998 09:06:49 -0400
+
+apt (0.0.6) experimental; urgency=low
+
+  * Spelling changes.
+  * Revamped download status display.
+  * Call apt-get clean after successful install in dselect.
+  * Added "apt-get clean" which deletes package files from /var/cache/apt
+
+ -- Scott K. Ellis <scott@debian.org>  Thu,  9 Apr 1998 15:13:59 -0400
+
+apt (0.0.5) experimental; urgency=low
+
+  * Ignore signals while dpkg is running so we don't leave dpkg running in
+    the background (#20804)
+  * Check Packages as well as Packages.gz for file URIs (#20784)
+  * Spelling cleanup (#20800) 
+  * Added -m option to permit upgrade to go on in the case of a bad mirror. 
+    This option may result in incomplete upgrades when used with -f.
+
+ -- Scott K. Ellis <scott@debian.org>  Tue,  7 Apr 1998 12:40:29 -0400
+
+apt (0.0.4) experimental; urgency=low
+
+  * New usage guide.
+  * Various documentation updates and cleanup.
+  * Added '-f' option to apt-get attempt to fix broken dependancies.
+
+ -- Scott K. Ellis <scott@debian.org>  Sat,  4 Apr 1998 14:36:00 -0500
+
+apt (0.0.3) experimental; urgency=low
+
+  * Added a shlibs.local file to prevent apt from depending on itself.
+  * Updates to how apt-get handles bad states in installed packages.
+  * Updated rules to make sure build works from a freshly checked out source
+    archive.  Building from CVS needs libtool/automake/autoconf, builds from
+    the distributed source package should have no such dependancy.
+
+ -- Scott K. Ellis <scott@debian.org>  Fri,  3 Apr 1998 11:49:47 -0500
+
+apt (0.0.2) unstable; urgency=low
+
+  * Updates to apt-get and http binding for dselect method (apt).
+  * Updating version number from 0.0.1, which was released only on IRC.
+
+ -- Scott K. Ellis <scott@debian.org>  Fri,  3 Apr 1998 00:35:18 -0500
+
+apt (0.0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Scott K. Ellis <scott@debian.org>  Tue, 31 Mar 1998 12:49:28 -0500
+
+Local variables:
+mode: debian-changelog
+add-log-mailing-address: "che@debian.org"
+End:

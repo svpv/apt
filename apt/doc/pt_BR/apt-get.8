@@ -1,0 +1,338 @@
+.TH "apt-get" "8" "25 Oct 2000" "apt" "" 
+.SH "NAME" 
+apt-get \- APT utilitário de manipulação de pacotes -- interface de linha de comando
+.PP 
+.SH "SYNOPSIS" 
+apt-get [opções] [comando] [pacote \&.\&.\&.]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+apt-get é uma ferramenta em linha de comando para a manipulação de pacotes, e pode ser considerada o "back-end" do usuário\ para o apt(8)\&.
+.PP 
+\fIcommand\fP é um dos:
+.IP o 
+update
+.IP o 
+upgrade
+.IP o 
+dselect-upgrade [1]
+.IP o 
+dist-upgrade
+.IP o 
+install pacote1 [pacote2] [\&.\&.\&.]
+.IP o 
+remove pacote1 [pacote2] [\&.\&.\&.]
+.IP o 
+source pacote1 [pacote2] [\&.\&.\&.]
+.IP o 
+check
+.IP o 
+clean
+.IP o 
+auto-clean
+.PP 
+Ao menos que as opções -h, ou --help sejam dadas um dos comandos acima deve estar presente\&.
+.PP
+Nota:
+[1] Apenas para sistemas Debian
+.PP 
+.IP "\fBupdate\fP" 
+\fBupdate\fP é utilizado para resincronizar os arquivos de sumário dos pacotes de seus
+fontes\&. Os sumários dos pacotes disponíveis são trazidos dos locais especificados em
+\fB/etc/apt/sources\&.list\fP\&.
+Por exemplo, quando utilizar arquivos Debian, este comando recupera e procura por 
+arquivos \fBPackages\&.gz\fP, de forma que as informações de pacotes novos e atualizados 
+esteja disponível\&. Um \fBupdate\fP deve sempre ser realizado antes de um
+\fBupgrade\fP \fBdist-upgrade\fP\&. Esteja ciente de que o medidor de progresso total estará
+incorreto assim como o tamanho dos arquivos não podem ser conhecidos antes\&.
+.IP 
+.IP "\fBupgrade\fP" 
+\fBupgrade\fP é usado para instalar a versão mais nova de todos os pacotes instalados no 
+sistema dos fontes enumerados em \fB/etc/apt/sources\&.list\fP\&. Os pacotes atualmente
+instalados com novas versões disponíveis e atualizados; em nenhuma circunstância os 
+pacotes atualmente instalados são removidos, ou pacotes ainda não instalados recuperados e
+instalados\&. Novas versões de pacotes instalados que não podem ser atualizados sem alterar
+o status da instalação ou outros pacotes serão deixados em sua versão atual\&. 
+Um \fBupdate\fP deve ser realizado antes de forma que o \fBapt-get\fP reconhece que novas
+versões de pacotes estão disponíveis\&.
+.IP 
+.IP "\fBdselect-upgrade\fP" 
+\fBdselect-upgrade\fP
+é usado com o tradicional front-end de empacotamento do Debian GNU/Linux, \fBdselect (8)\fP\&. \fBdselect-upgrade\fP segue as alterações feitas por \fBdselect\fP para o campo de \fIStatus\fP dos pacotes disponíveis, e realiza as ações necessárias para alcançar este estado (por enquanto a remoção de pacotes antigos e a instalação de novos)\&. 
+Este comando esta apenas disponível em sistemas Debian.
+.IP 
+.IP "\fBdist-upgrade\fP" 
+\fBdist-upgrade\fP, além de realizar a função do \fBupgrade\fP,
+também manipula de forma inteligente alterando dependências com as novas versões dos 
+pacotes;  o \fBapt-get\fP possui u sistema "inteligente" de resolução de conflitos, 
+e esta tentará atualizar os pacotes mais importantes e deixando os menos importantes se
+necessário\&. O arquivo \fB/etc/apt/sources\&.list\fP contém uma lista dos
+locais aonde é possível se recuperar os arquivos do pacote\&.
+.IP 
+.IP "\fBinstall\fP" 
+\fBinstall\fP é seguido por um ou mais \fIpackages\fP que se deseja instalar\&. 
+Cada \fIpackage\fP é o nome de uma pacote, não o nome de um arquivo altamente especifico
+(em um sistema Debian GNU/Linux, \fIldso\fP deve ser o argumento fornecido, não
+\fIldso_1\&.9\&.6-2\&.deb\fP)\&. Todos os pacotes solicitados para a instalação serão
+recuperados e instalados\&. O arquivo \fB/etc/apt/sources\&.list\fP é utilizado para
+localizar os pacotes desejados\&. Se um hífen estiver anexado ao nome do pacote (sem nenhum
+espaço), o pacote indicado será removido se estiver instalado\&. Esta função pode ser
+usada mais tarde para corrigir decisões feitas no sistema de resolução de conflitos
+apt-get\\&.
+.IP 
+Caso não haja a expressão dada em nenhum pacote e a expressão possua um 
+dos seguintes símbolos \'\&.\', \'?\' ou \'*\' esta pode ser considerada como sendo uma 
+expressão regular POSIX e será aplicada a todos os nomes dos pacotes no banco de dados\&. 
+Quaisquer correspondências são então instaladas (ou removidas)\&. Note que a correspondência 
+feita pela substring de modo que \'lo*\' corresponde a \'how-lo\'
+e \'lowest\'\&. Caso isto não seja desejado inclua um caractere \'^\'\& como prefixo.
+.IP 
+.IP "\fBremove\fP" 
+\fBremove\fP é idêntico a \fBinstall\fP exceto que os pacotes são removidos ao invés de 
+instalados\&. Se um sinal de adição for incluído no nome do pacote (sem nenhum espaço),
+o pacote identificados será instalado\&.
+.IP 
+.IP "\fBsource\fP" 
+O \fBsource\fP faz com que o apt-get traga os pacotes fonte\&. O APT examinará os pacotes
+disponíveis para decidir qual pacote fonte trazer\&. Este então encontrará e fará o
+download no diretório atual da mais na versão disponível do pacote fonte\&. 
+Os pacotes fonte são colocados separadamente dos pacotes binários via \fBdeb-src\fP ou 
+\fBrpm-src\fP linhas de tipo no arquivo \fB/etc/apt/sources\&.list\fP\&.
+Isto provavelmente significará o mesmo fonte do mesmo pacote que você instalou ou que 
+você poderia instalar\&. Caso a opção --compile seja dada então o pacote será compilado
+com um binário\&.deb utilizando dpkg-buildpackage, ou sob sistemas baseados em RPM, 
+este irá compilar a um binário\&.rpm utilizando-se rpm -ba. Caso --download-only seja 
+utilizado o fonte não será desempacotado\&.
+.IP 
+Note que os pacotes fontes não são pesquisados como pacotes binários, eles existem apenas no 
+diretório atual e são similares quando se faz o download de tarballs\&.
+.IP 
+.IP "\fBcheck\fP" 
+\fBcheck\fP é uma ferramenta de diagnóstico; esta atualiza o cache do pacote e verifica 
+pacotes corrompidos\&.
+.IP 
+.IP "\fBclean\fP" 
+O \fBclean\fP limpa todo o repositório local do pacote de arquivos recuperados\&. 
+Ele remove tudo menos o arquivo de lock em \fB/var/cache/apt/archives/\fP
+e \fB/var/cache/apt/archives/partial/\fP\&.
+Quando o APT é usado como um método \fBdselect(8)\fP, o \fBclean\fP é rodado automaticamente\&.
+Aqueles que não usam dselect irão dessa forma rodar \f(CWapt-get clean\fP
+de tempos em tempos para liberar espaço em disco\&.
+.IP 
+.IP "\fBautoclean\fP" 
+Assim como \fBclean\fP, o \fBautoclean\fP limpa todo o repositório local do
+pacote de arquivos recuperado\&. A diferença é que este apenas remove arquivos 
+do pacote os quais não pode-se mais fazer o download e que são largamente utilizados\&. 
+Este permite que se mantenha um cache por um longo período sem que o mesmo cresça até
+que se perca o controle\&.
+.IP 
+.PP 
+.SH "OPÇÕES"
+Todas as opções de linha de comando podem ser configuradas utilizando-se um arquivo de
+configuração, as descrições indicam a opção de configuração a ser utilizada\&. 
+Para opções booleanas você pode anular o arquivo de configuração utilizando algo como
+\fB-f-\fP, \fB--no-f\fP, \fB-f=no\fP ou ainda outras variações\&.
+.PP 
+.IP "\fB-d, --download-only\fP" 
+Apenas download; os arquivos do pacote são apenas recuperados, não desempacotados nem mesmo
+instalados\&.
+Item de Configuração: \fBAPT::Get::Download-Only\fP\&.
+.IP 
+.IP "\fB-f, --fix-broken\fP"
+Conserta; tenta corrigir um sistema com dependências rompidas em local\&. 
+Esta opção, quando utilizada com install/remove, pode omitir qualquer
+pacote para permitir ao APT deduzir uma provável solução\&. Quaisquer
+pacotes que forem especificados devem corrigir completamente o
+problema\&. A opção é, algumas vezes, necessária ao executar o APT
+pela primeira vez; o próprio APT não permite a existência de dependências de
+pacotes corrompidos em um sistema\&. É possível que a estrutura de
+dependência do sistema pode estar tão corrompida que seja necessária
+intervenção manual (que geralmente significa usar dselect ou dpkg
+--remove para eliminar alguns dos pacotes com problemas)\&. O uso desta
+opção junto com -m pode ocasionar erro em algumas situações\&. O item
+de configuração: \fBAPT::Get::Fix-Broken\fP\&.
+.IP 
+.IP "\fB-h, --help\fP" 
+Ajuda; exibe uma mensagem útil e sai\&.
+.IP 
+.IP "\fB-v, --version\fP" 
+Exibe a versão do programa\&.
+.IP 
+.IP "\fB-m, --ignore-missing, --fix-missing\fP" 
+Ignora pacotes faltantes; se pacotes não puderem ser recuperados ou
+causarem falha no teste de integridade após a restauração (arquivos
+com pacotes corrompidos), retém estes pacotes e processa o
+resultado\&. O uso desta opção junto com -f pode ocasionar um erro em
+algumas situações\&. Se um pacote for selecionado para instalação 
+(particularmente se for mencionado na linha de comando) e não puder
+ser baixado, então este pacote será retido\&.
+Item de configuração: \fBAPT::Get::ignore-missing\fP\&.
+.IP
+.IP "\fB-S, --summary\fP"
+Quando usado com os comandos upgrade ou dist-upgrade, exibe
+informações do que seria atualizado, com importância e um resumo das
+alterações (quando tais dados estiverem disponíveis) e pára.
+Item de configuração: \fBAPT::Get::Show-Upgrade-Summary\fP&.
+.IP 
+.IP "\fB--no-download\fP" 
+Desabilita o download de pacotes\&. Isto é melhor usado com
+--ignore-missing para forçar o APT a usar apenas o \&.debs se tiver
+realmente feito download\&.
+Item de configuração: \fBAPT::Get::No-Download\fP\&.
+.IP 
+.IP "\fB-q, --quiet\fP" 
+Quiet; produz saída adequada para logging, omite indicadores de progresso\&.
+Mais q\'s produzirá mais quiet até um máximo de 2\&. Você também pode usar 
+\fB-q=#\fP para definir o nível de quiet, sobrescrevendo o arquivo de
+configuração\&. Observe que o nível de quiet 2 implica -y, nunca se
+deve usar -qq sem um modificador sem ação como -d, --print-uris ou -s
+porque o APT pode decidir fazer algo não esperado\&.
+Item de configuração: \fBquiet\fP
+.IP 
+.IP "\fB-s, --simulate, --just-print, --dry-run, --recon, --no-act\fP" 
+Nenhuma ação; executa uma simulação de eventos que iriam ocorrer mas
+não altera realmente o sistema\&. 
+Item de configuração: \fBAPT::Get::Simulate\fP\&. 
+.IP 
+Simula a impressão de uma séria de linha, onde cada uma representa uma
+ de linhas representando uma operação dpkg, Configure (Conf), Remove
+(Remv), Unpack (Inst)\&. Os colchetes indicam pacotes corrompidos e
+um conjunto vazio de colchetes significa que não há seqüência (raro)\&.
+.IP 
+.IP "\fB-y, --yes, --assume-yes\fP" 
+Afirmativa automática para os prompts; assume "yes" como resposta para
+todos os prompts e é executado não interativamente\&. Se ocorrer uma situação
+indesejável, como alteração de um pacote retido ou remoção de um
+pacote essencial, então \fBapt-get\fP irá cancelar\&. 
+Item de configuração: \fBAPT::Get::Assume-Yes\fP\&.
+.IP 
+.IP "\fB-u, --show-upgraded\fP" 
+Exibe pacotes com upgrade; imprime uma lista de todos os pacotes devem
+ser atualizados (upgrade)\&. 
+Item de configuração: \fBAPT::Get::Show-Upgraded\fP\&.
+.IP 
+.IP "\fB-b, --compile, --build\fP" 
+Compila pacotes-fonte após baixá-los\&.
+Item de configuração: \fBAPT::Get::Compile\fP\&.
+.IP 
+.IP "\fB--ignore-hold\fP" 
+Ignora pacotes retidos; Isto faz com o \fBapt-get\fP ignore um pacote retido
+colocado em um pacote\&. Isto pode ser útil em conjunto com
+\fBdist-upgrade\fP para sobre sobregravar uma grande quantidade de
+pacotes retidos indesejados\&. 
+Item de configuração: \fBAPT::Ignore-Hold\fP\&.
+.IP 
+.IP "\fB--no-upgrade\fP" 
+Não atualiza pacotes; Quando usado em conjunto com \fBinstall\fP
+\fBno-upgrade\fP irá evitar que os pacotes relacionados sejam
+atualizados se estes já estiverem instalados\&. 
+Item de configuração: \fBAPT::Get::no-upgrade\fP\&.
+.IP 
+.IP "\fB--force-yes\fP" 
+Força sim; esta é uma opção perigosa que que fará com que o APT
+continue sem exibir se estiver fazendo algo potencialmente
+danoso\&. Não deve ser usado exceto em situações especiais\&. O uso de
+\fBforce-yes\fP  pode destruir potencialmente seu sistema!
+Item configuração: \fBAPT::Get::force-yes\fP\&.
+.IP 
+.IP "\fB--print-uris\fP" 
+Em vez de obter os arquivos para serem instalados seus URIs são
+exibidos\&. Cada URI terá o caminho, o nome de arquivo de destino, o
+tamanho e o hash md5 esperado\&. Observe que o nome de arquivo a ser
+escrito nem sempre será igual ao nome de arquivo no site remoto! Isto
+também funciona com o comando \fBsource\fP\&. 
+Item de configuração: \fBAPT::Get::Print-URIs\fP\&.
+.IP 
+.IP "\fB--purge\fP" 
+Use purge em vez de remove para remover qualquer coisa\&.
+Esta opção não tem efeito nos sistemas baseados em RPM.
+Item de configuração: \fBAPT::Get::Purge\fP\&.
+.IP 
+.IP "\fB--reinstall\fP" 
+Reinstala pacotes que já foram instalados e na versão mais nova\&.
+.IP 
+.IP "\fB--list-cleanup\fP" 
+Esta opção é habilitada por padrão, use \fB--no-list-cleanup\fP para
+desabilitá-la\&. Quando habilitada o apt-get irá gerenciar
+automaticamente os conteúdos de /var/state/apt/lists para
+certificar-se de que os arquivos obsoletos serão apagados\&. A única
+razão para desativá-la é se você altera sua lista-fonte com freqüência\&. 
+Item de configuração: \fBAPT::Get::List-Cleanup\fP
+.IP 
+.IP "\fB--trivial-only\fP" 
+Executa apenas as operações consideradas \'triviais\'\&. É lógico que
+isto pode ser relacionado a --assume-yes, onde --assume-yes irá
+responder sim para qualquer prompt, --trivial-only irá responder
+não\&.
+Item de configuração: \fBAPT::Get::Trivial-Only\fP
+.IP 
+.IP "\fB--no-remove\fP" 
+Se nenhum pacote tiver que ser removido o apt-get cancela
+imediatamente sem aviso\&. 
+Item de configuração: \fBAPT::Get::No-Remove\fP
+.IP 
+.IP "\fB--diff-only\fP, \fB--tar-only\fP" 
+Faz download apenas do arquivo diff ou tar de um arquivo-fonte\&. 
+Item de configuração: \fBAPT::Get::Diff-Only\fP
+.IP 
+.IP "\fB-c, --config-file\fP" 
+Arquivo de configuração; Especifica um arquivo de configuração para
+ser usado\&. \fBapt-get\fP irá ler o arquivo de configuração padrão e
+depois este arquivo de configuração\&. Veja
+\fBapt\&.conf(5)\fP para informações sobre sintaxe\&.
+.IP 
+.IP "\fB-o, --option\fP" 
+Configura uma opção de configuração; Isto irá ajustar uma opção de
+configuração arbitrária\&.
+A sintaxe é 
+
+.nf 
+ 
+-o Foo::Bar=bar
+.fi 
+ 
+
+.PP 
+.SH "FILES" 
+.IP o 
+/etc/apt/sources\&.list 
+locais de onde se obtém pacotes
+.IP 
+.IP o 
+/var/cache/apt/archives/
+área de armazenagem para arquivos de pacotes recuperados
+.IP 
+.IP o 
+/var/cache/apt/archives/partial/
+área de armazenagem para arquivos de pacotes em trânsito
+.IP 
+.IP o 
+/var/state/apt/lists/
+área de armazenagem para informação de estado para cada recurso de
+pacote especificado na lista de fontes
+.IP 
+.IP o 
+/var/state/apt/lists/partial/
+área de armazenagem para informação de estado em trânsito
+.PP 
+.SH "SEE ALSO" 
+apt-cache(8),
+dpkg(8),
+dselect(8),
+sources\&.list(5),
+apt\&.conf(5),
+O guia do usuário APT em /usr/doc/apt/
+.PP 
+.SH "DIAGNOSTICS" 
+apt-get retorna zero em operação normal, decimal 100 em erro\&.
+.PP 
+.SH "BUGS" 
+Veja http://bugs\&.debian\&.org/apt\&.  Caso queira reportar um bug em
+\fBapt-get\fP, por favor leia \fB/usr/doc/debian/bug-reporting\&.txt\fP
+ou use o comando \fBbug(1)\fP\&. Se você estiver usando um sistema
+baseado em RPM, por favor use http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTHOR" 
+apt-get foi escrito pelo time APT <apt@packages\&.debian\&.org>
+e portado para os sistemas baseados em RPM pela Conectiva S.A. 
+<kojima@conectiva\&.com\&.br>\&.

@@ -1,0 +1,47 @@
+On Tue, Nov 20, 2001 at 02:28:53PM +0200, Matilainen Panu wrote:
+
+> > I think this is the same bug (if it's a bug of course).
+[...]
+> The sane-split? I got it working by changing sane-frontends to have
+> Provides: sane = %{version}
+> and sane-backends
+> Conflicts: sane < %{version}
+> 
+> With the additional version information it manages to sort this out 
+> correctly.
+
+I managed to find a hack permitting this to work without any
+package modifications: when package scores are calculated 
+(based on package priorities and Depends:), I've added some
+additionnal code to increment the priority of a package which
+obsoletes another. This additionnal 'point' score makes the 
+right package to be selected for installation.
+
+It works for me in simple cases, but it definately needs more
+testing.
+
+Comments ?
+
+Stelian.
+
+
+--- apt-0.3.19cnc53/apt-pkg/algorithms.cc.orig	Wed Nov 21 17:45:34 2001
++++ apt-0.3.19cnc53/apt-pkg/algorithms.cc	Wed Nov 21 17:46:12 2001
+@@ -454,6 +454,8 @@
+       {
+ 	 if (D->Type == pkgCache::Dep::Depends || D->Type == pkgCache::Dep::PreDepends)
+ 	    Scores[D.TargetPkg()->ID]++;
++	 if (D->Type == pkgCache::Dep::Obsoletes)
++	    Scores[I->ID]++;
+       }
+    }   
+    
+-- 
+Stelian Pop <stelian.pop@fr.alcove.com>
+|---------------- Free Software Engineer -----------------|
+| Alcôve - http://www.alcove.com - Tel: +33 1 49 22 68 00 |
+|------------- Alcôve, liberating software ---------------|
+_______________________________________________
+Apt-rpm mailing list
+Apt-rpm@distro.conectiva.com.br
+http://distro.conectiva.com.br/mailman/listinfo/apt-rpm

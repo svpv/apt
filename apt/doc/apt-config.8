@@ -1,0 +1,97 @@
+.TH "apt-config" "8" "25 Oct 2000" "apt" "" 
+.SH "NAME" 
+apt-config \- APT Configuration Query program
+.PP 
+.SH "SYNOPSIS" 
+apt-config command
+.PP 
+.SH "DESCRIPTION" 
+\fBapt-config\fP is an internal program used by various portions of the APT
+suite to provide consistent configurability\&. It accesses the main configuarion
+file /etc/apt/apt\&.conf in a manner that is easy to use by scripted
+applications\&.
+.PP 
+\fIcommand\fP is one of:
+.IP o 
+shell
+.IP o 
+dump
+.PP 
+Unless the -h, or --help option is given one of the above commands
+must be present\&.
+.PP 
+.IP "\fBshell\fP" 
+\fBshell\fP is used to access the configuration information from a shell script\&.
+It is given pairs of arguments, the first being a shell variable and the
+second the configuration value to query\&. As output it lists a series of shell
+assignments commands for each present value\&. In a shell script it should be
+used like:
+.IP 
+
+.nf 
+ 
+
+OPTS="-f"
+
+RES=`apt-config shell OPTS MyApp::Options`
+
+eval $RES
+
+.fi 
+ 
+
+.IP 
+This will set the shell environment variable $OPTS to the value of
+MyApp::Options with a default of -f\&.
+.IP 
+If the configuration item to retrieve is prefixed with a / then it will
+be retrieved using filename mode which prepends base paths\&.
+.IP 
+.IP "\fBdump\fP" 
+Just show the contents of the configuration space\&.
+.IP 
+.PP 
+.SH "OPTIONS" 
+All command line options may be set using the configuration file, the
+descriptions indicate the configuration option to set\&. For boolean
+options you can override the config file by using something like \fB-f-\fP,
+\fB--no-f\fP, \fB-f=no\fP or several other variations\&.
+.PP 
+.IP "\fB-h, --help\fP" 
+Show a short usage summary\&.
+.IP 
+.IP "\fB-v, --version\fP" 
+Show the program verison\&.
+.IP 
+.IP "\fB-c, --config-file\fP" 
+Configuration File; Specify a configuration file to use\&. \fBapt-get\fP will
+read the default configuration file and then this configuration file\&. See
+\fBapt\&.conf(5)\fP for syntax information\&.
+.IP 
+.IP "\fB-o, --option\fP" 
+Set a Configuration Option; This will set an arbitary configuration option\&.
+The syntax is 
+
+.nf 
+ 
+-o Foo::Bar=bar
+.fi 
+ 
+
+.PP 
+.SH "SEE ALSO" 
+apt\&.conf(5)
+.PP 
+.SH "DIAGNOSTICS" 
+apt-config returns zero on normal operation, decimal 100 on error\&.
+.PP 
+.SH "BUGS" 
+See http://bugs\&.debian\&.org/apt\&.  If you wish to report a
+bug in \fBapt-config\fP, please see \fB/usr/doc/debian/bug-reporting\&.txt\fP
+or the \fBbug(1)\fP command\&. If you are using apt on a RPM based
+system, please use http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTHOR" 
+apt-get was written by the APT team <apt@packages\&.debian\&.org>
+and ported to RPM based systems by Conectiva S.A. 
+<kojima@conectiva\&.com\&.br>\&.

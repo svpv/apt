@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+# Get the configuration from /etc/apt/apt.conf
+OPTS="-f"
+APTGET="/usr/bin/apt-get"
+APTCACHE="/usr/bin/apt-cache"
+DPKG="/usr/bin/dpkg"
+CACHEDIR="/var/cache/apt"
+PROMPT="no"
+RES=`apt-config shell OPTS DSelect::UpdateOptions \
+      DPKG Dir::Bin::dpkg APTGET Dir::Bin::apt-get \
+      APTCACHE Dir::Bin::apt-cache CACHEDIR Dir::Cache \
+      PROMPT DSelect::PromptAfterUpdate`
+eval $RES
+
+# It looks slightly ugly to have a double / in the dpkg output
+CACHEDIR=`echo $CACHEDIR | sed -e "s|/$||"`
+
+set +e
+FAILED=0
+$APTGET $OPTS update || FAILED=1
+set -e
+
+echo "Merging Available information"
+rm -f $CACHEDIR/available
+$APTCACHE dumpavail > $CACHEDIR/available
+$DPKG --update-avail $CACHEDIR/available
+rm -f $CACHEDIR/available
+
+if [ $PROMPT = "yes" ]; then
+   echo "Press enter to continue." && read RES;
+fi
+
+exit $FAILED

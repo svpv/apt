@@ -1,0 +1,132 @@
+.TH "apt-cdrom" "8" "25 Oct 2000" "apt" "" 
+.SH "NOME" 
+apt-cdrom \- APT CDROM aplicativo de gerenciamento
+.PP 
+.SH "SINOPSE" 
+apt-cdrom comando
+.PP 
+.SH "DESCRIÇÃO" 
+\fBapt-cdrom\fP é usado para adicionar um novo CDROM na lista APT dos 
+fontes disponíveis\&.
+\fBapt-cdrom\fP cuida de determinar a estrutura do disco bem como corrigir
+vários possíveis problemas e verifica os arquivos de índice\&.
+É necessário usar \fBapt-cdrom\fP para adicionar CDs no sistema APT, isto
+não pode ser feito manualmente\&. Além disso cada disco em um conjunto de
+multi-cd deve ser inserido e examinado separadamente para contabilizar 
+possíveis problemas\&.
+.PP 
+\fIcommand\fP é um dos:
+.IP 
+add 
+.PP 
+A menos que a opção -h, ou --help seja dada em um dos comandos acima
+deve estar presente\&.
+.PP 
+.IP "\fBadd\fP" 
+\fBadd\fP é usado para adicionar um novo disco à lista fonte\&. Irá
+desmontar o CDROM, verificar por um disco a ser inserido e então 
+proceder com a verificação e copiar os arquivos de índice\&. Se o 
+não tive um diretório \fB\&.disk/\fP adequado, você será indagado 
+por um título descritivo\&.
+.IP 
+APT usa uma identificação de CDROM para rastrear qual disco está
+atualmente no drive e mantém uma base de dados destes IDs em
+\fB/var/state/apt/cdroms\&.list\fP
+.IP 
+.PP 
+.SH "OPÇÕES" 
+Todas as opções de linhas de comando podem ser configuradas usando
+o arquivo de configuração, as descrições indicam a opção de configuração
+a ser usada\&. Para opções booleanas você pode ignorar o arquivo de 
+configuração usando algo como \fB-f-\fP,
+\fB--no-f\fP, \fB-f=no\fP ou muitas outras variações\&.
+.PP 
+.IP "\fB-h, --help\fP" 
+Mostra um curto resumo de uso\&.
+.IP 
+.IP "\fB-v, --version\fP" 
+Mostra a versão do programa\&.
+.IP 
+.IP "\fB-d --cdrom\fP" 
+Ponto de montagem; especificar o local a ser montado o cdrom\&. Este ponto
+de montagem deve ser listado em \fB/etc/fstab\fP e configurado adequadamente\&. 
+Item de configuração: \fBAcquire::cdrom::mount\fP\&.
+.IP 
+.IP "\fB-r --rename\fP" 
+Renomear um disco; muda o rótulo de um disco ou ignora o rótulo dados do disco\&.
+Esta opção irá causar \fBapt-cdrom\fP de apontar para um novo rótulo
+Item de configuração: \fBAPT::CDROM::Rename\fP\&.
+.IP 
+.IP "\fB-m, --no-mount\fP" 
+Sem montagem; previne \fBapt-cdrom\fP de montar e desmontar o ponto de montagem\&.
+Item de configuração: \fBAPT::CDROM::NoMount\fP\&.
+.IP 
+.IP "\fB-f, --fast\fP" 
+Cópia rápida; assume que os arquivos do pacote são válidos e não verifica cada pacote\&.
+Esta opção deve ser usada somente se \fBapt-cdrom\fP foi executado previamente no disco e não encontrou nenhum erro\&.
+Item de configuração: \fBAPT::CDROM::Fast\fP\&.
+.IP 
+.IP "\fB-a, --thorough\fP" 
+Através do exame de pacote; esta opção pode ser necessária com algum antigo Debian 1\&.1/1\&.2
+que possui arquivos de pacotes em lugares estranhos\&. Leva muito mais tempo
+para examinar o CD, mas irá obter todas\&.
+.IP 
+.IP "\fB-n --just-print, --recon, --no-act\fP" 
+Sem mudanças; Não alterar os fontes\&.list e não gravar arquivos de pacotes\&. 
+Tudo está verificado\&.
+Item de configuração: \fBAPT::CDROM::NoAct\fP\&.
+.IP 
+.IP "\fB-c, --config-file\fP" 
+Arquivo de configuração; especifica um arquivo de configuração a ser usado\&. \fBapt-get\fP irá fazer a leitura do arquivo de configuração padrão\&. Consulte
+\fBapt\&.conf(5)\fP para informação de sintaxe\&.
+.IP 
+.IP "\fB-o, --option\fP" 
+Ativar a opção de configuração; isto irá configurar uma opção de configuração
+arbitrária\&.
+A sintaxe é 
+
+.nf 
+ 
+-o Foo::Bar=bar
+.fi 
+ 
+
+.PP 
+.SH "FILES" 
+.IP o 
+/etc/apt/sources\&.list 
+locais da onde obter pacotes
+.IP 
+.IP o 
+/var/state/apt/lists/
+área de armazenamento para informação de estado para cada tipo de recurso de
+pacote especificado em
+.IP 
+.IP o 
+/var/state/apt/lists/partial/
+área de armazenamento para informação de estado em trânsito
+.IP 
+.IP o 
+/var/state/apt/cdroms\&.list
+lista de IDs de CDROMs e nomes\&.
+.PP 
+.SH "CONSULTE TAMBÉM" 
+apt-get(8),
+sources\&.list(5),
+apt\&.conf(5)
+.PP 
+.SH "DIAGNÓSTICOS" 
+apt-cdrom retorna zero em operação norma, decimal 100 em erro\&.
+.PP 
+.SH "BUGS" 
+Consultar http://bugs\&.debian\&.org/apt\&.  Se você deseja informar 
+sobre um bug em \fBapt-cache\fP, favor consultar
+\fB/usr/doc/debian/bug-reporting\&.txt\fP
+ou o comando\& \fBbug(1)\fP.  Se você estiver usando o apt em um sistema
+baseado em RPM, favor usar http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTOR" 
+apt-get foi escrito pela equipe do APT <apt@packages\&.debian\&.org>
+e portado para sistemas RPM pela Conectiva S.A. 
+<kojima@conectiva\&.com\&.br>\&.
+

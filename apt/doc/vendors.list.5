@@ -1,0 +1,77 @@
+.TH "vendors\&.list" "5" "25 Oct 2000" "apt" "" 
+.SH "NAME" 
+vendors\&.list \- package vendor list for APT
+.PP 
+.SH "DESCRIPTION" 
+The package vendor list contains a list of all vendors from whom
+you wish to authenticate downloaded packages. For each vendor listed,
+it must contain the corresponding GPG key fingerprint, so that apt
+can perform signature verification of the index hash file (hashfile)
+and subsequent checking of the checksums of each downloaded package\&.
+To have authentication enabled, you must add the vendor identification
+string (see below) enclosed in braces to the \fBsources\&.list\fP line
+for all sites that mirror the repository provided for that vendor\&.
+
+The format of this file is similar to the one used in \fBapt.conf\fP\&.
+It consists of an arbitrary number of blocks of vendors, where each
+block starts with a string telling the
+.RI key_type
+and the
+.RI vendor_id
+\&.
+
+.RI key_type
+is the type of the key of the vendor being defined. Currently,
+there is only one type available, which is \fBsimple-key\fP\&.
+
+.RI vendor_id
+is the vendor identification string. It is an arbitrary string you
+must supply to uniquely identifify a vendor that's listed in this file.
+
+.PP
+.SH "simple-key"
+This key type is composed of two fields,
+\fIFingerprint\fP
+and
+\fIName\fP
+\&. Both are mandatory\&.
+
+
+\fIFingerprint\fP
+is the gpg(1) public key fingerprint for the vendor, enclosed in " and
+in ALL CAPS\&.
+The fingerprint can be obtained with the --fingerprint option of gpg\&.
+
+\fIName\fP
+is a string containing a description of the owner of the key or vendor\&.
+You may put the vendor name and it's email. The string must be quoted
+with "\&.
+
+.PP
+Example:
+.nf
+simple-key "joe"
+{
+	Fingerprint "0987AB4378FSD872343298787ACC";
+	Name "Joe Shmoe <joe@shmoe.com>";
+}
+.fi
+For more information about repository authentication see sources\&.list(5)\&.
+
+.PP 
+.SH "SEE ALSO" 
+gpg (1)
+sources\&.list (5)
+apt-get (8)
+.PP 
+.SH "BUGS" 
+See http://bugs\&.debian\&.org/apt\&.  If you wish to report a
+bug in \fBapt-get\fP, please see \fB/usr/doc/debian/bug-reporting\&.txt\fP
+or the \fBbug(1)\fP command\&. If you are using apt on a RPM based
+system, please use http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTHOR" 
+apt was written by the APT team <apt@packages\&.debian\&.org>
+and updated for RPM based systems by
+Conectiva S.A. <kojima@conectiva\&.com\&.br>
+

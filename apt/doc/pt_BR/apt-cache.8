@@ -1,0 +1,319 @@
+.TH "apt-cache" "8" "25 Oct 2000" "apt" "" 
+.SH "NOME" 
+apt-cache \- APT utilitário de gerenciamento de pacotes --  manipulador de cache
+.PP 
+.SH "SINOPSE" 
+apt-cache comando [argumento \&.\&.\&.]
+.PP 
+.SH "DESCRIÇÃO" 
+\fBapt-cache\fP realiza uma variedade de operações no cache de pacotes do APT\&.
+\fBapt-cache\fP é raramente chamado diretamente; ao invés disso, suas 
+operações são realizadas automaticamente pelos outros utilitários do \fBapt\fP\&.
+.PP 
+\fIcomando\fP é um de:
+.IP o 
+add file1 [file2] [\&.\&.\&.]
+.IP o 
+gencaches
+.IP o 
+showpkg package1 [package2] [\&.\&.\&.]
+.IP o 
+stats
+.IP o 
+dump
+.IP o 
+dumpavail
+.IP o 
+unmet
+.IP o 
+check
+.IP o 
+search
+.IP o 
+show
+.IP o 
+showpkg
+.IP o 
+depends
+.IP o 
+pkgnames
+.IP o 
+dotty
+.PP 
+A menos que -h, ou a opção --help seja dada um dos comandos acima
+deve estar presente\&.
+.PP 
+.IP "\fBadd\fP" 
+\fBadd\fP adiciona os nomes de arquivos de índice de pacotes ao cache de pacotes\&.
+.IP 
+.IP "\fBgencaches\fP" 
+\fBgencaches\fP realiza a mesma operação que \fBapt-get check\fP\&. Constrói
+o cache de pacotes a partir dos fontes em \fB/etc/apt/sources\&.list\f
+e a partir de \fB/var/lib/dpkg/status\fP\&.
+.IP 
+.IP "\fBshowpkg\fP" 
+\fBshowpkg\fP mostra informação sobre os pacotes listados na linha de 
+comando\&. Argumentos restantes são nomes de pacotes\&. As versões 
+disponíveis de retro-dependências de cada pacote listado são listadas,      
+assim como as dependências para cada versão\&. Dependências 
+normais são aqueles pacotes sobre os quais o pacote em questão depende;   
+retro-dependências são aqueles pacotes que dependem sobre o pacote em  
+questão\&. Assim, as demais dependências devem ser satisfeitas por um pacote,  
+porém as retro-dependências não precisam\&.
+Por exemplo, \fBapt-cache showpkg libreadline2\fP iria produzir uma saída 
+semelhante ao que se segue:
+.IP 
+
+.nf 
+ 
+
+Pacote: libreadline2
+
+Versões:
+
+2\&.1-12(/var/state/apt/lists/debian\&.midco\&.net_debian_dists_slink_main_binary-i386_Packages),
+
+Retro-Dependências: 
+
+  libreadlineg2,libreadline2
+
+  libreadline2-altdev,libreadline2
+Dependências:
+
+2\&.1-12 - libc5 (2 5\&.4\&.0-0) ncurses3\&.0 (0 (null)) ldso (2 1\&.9\&.0-1)
+
+Fornece: 
+
+2\&.1-12 - 
+
+Provimentos inversos: 
+
+.fi 
+ 
+			    
+.IP 
+Assim pode ser visto que a versão 2\&.1-8 do libreadline2 depende da libc5,
+ncurses3\&.0  e ldso, que devem estar instalados para ela funcione\&.
+Desta forma, libreadlineg2 e libreadline2-altdev dependem de libreadline2\&. Se
+libreadline2 for instalada, libc5, ncurses3\&.0, e ldso devem também ser
+instaladas; mas libreadlineg2 e libreadline2-altdev não precisam ser
+instaladas\&. Para saber o significado específico do restante de saída é melhor
+consultar o código-fonte do apt\&.
+.IP: 
+.IP "\fBstats\fP" 
+\fBstats\fP mostra algumas estatísticas sobre o \fBcache\fP\&.
+Não são esperados mais argumentos\&. Estatísticas informadas são:
+.IP o 
+\fBTotal de pacotes\fP é o número de nomes de pacotes encontrados no cache\&.
+.IP 
+.IP o 
+\fBPacotes normais\fP é o número de nomes de pacotes normais; estes
+são pacotes que suportam correspondência entre seus nomes e os nomes usados
+por outros pacotes para eles em dependências\&. A maioria dos pacotes entram
+nessa categoria\&.
+.IP 
+.IP o 
+\BPacotes virtuais puros\fP é o número de pacotes que existe apenas como 
+um nome de pacote virtual; isto é, pacotes apenas provêem o nome do 
+pacote virtual, e nenhum pacote realmente usa o nome\&. Por exemplo, 
+"mail-transport-agent" no sistema Debian GNU/Linux é um pacote puramente
+virtual; vários pacotes fornecem "mail-transport-agent", mas não existe 
+nenhum pacote chamado "mail-transport-agent"\&.
+.IP 
+.IP o 
+\fBPacotes virtuais simples\fP é o número de pacotes virtuais providos
+por um único pacote\&. Por exemplo, no sistema 
+Debian GNU/Linux, "X11-text-viewer" é um pacote virtual, mas somente um 
+pacote, xless, fornece "X11-text-viewer"\&.
+.IP 
+.IP o 
+\fBPacotes virtuais mistos\fP é o número de pacotes que fornecem um pacote
+virtual ou possuem o nome do pacote virtual como nome do pacote\&. Por 
+exemplo, no sistema Debian GNU/Linux, e2fsprogs são pacotes reais,  
+fornecidos pelo pacote e2compr\&.
+.IP 
+.IP o 
+\fBFaltando\fP é o número de nomes de pacotes que foram referenciados em uma 
+dependência, mas não foram fornecidos por nenhum pacote\&. Pacotes ausentes 
+podem estar em evidência se uma completa distribuição não for acessada, ou se 
+um pacote (real ou virtual) foi removido da distribuição\&.
+.IP 
+.IP o 
+\fBTotal de versões distintas\fP versões são o número de pacotes encontrados 
+no cache; este valor é então pelo menos igual ao número total de nomes de 
+pacotes\&. Se mais de uma distribuição (ambas "estáveis" e "instáveis", 
+por exemplo), estiver sendo acessada, este valor pode ser consideravelmente 
+maior do que o número total de nomes de pacotes\&.
+.IP 
+.IP o 
+\fBTotal de dependência\fP é o número de relações de dependência reinvidicadas
+por todos os pacotes no cache\&.
+.IP 
+.IP "\fBdump\fP" 
+\fBdump\fP mostra uma lista curta de cada pacote no cache\&. É basicamente
+para depuração\&.
+.IP 
+.IP "\fBdumpavail\fP" 
+\fBdumpavail\fP imprime uma lista de disponíveis para stdout\&. Isto é adequado
+para uso com \fBdpkg\fP e é usado pelo método \fBdselect\fP\&.
+.IP 
+.IP "\fBunmet\fP" 
+\fBunmet\fP mostra um resumo de todas as dependências não satisfeitas no cache 
+de pacotes\&.
+.IP 
+.IP "\fBcheck\fP" 
+\fBcheck\fP é uma função randômica para testar certos aspectos do cache\&.
+Não a use\&.
+.IP 
+.IP "\fBshowpkg\fP" 
+\fBshowpkg\fP lista a estrutura de cache de pacotes dado
+e algumas informações referentes a ela\&. A lista é basicamente direcionada
+para depuração\&.
+.IP 
+.IP "\fBshow\fP" 
+\fBshow\fP realiza uma função semelhante ao dpkg --print-avail ou rpm -qi,
+mostrando os registros do pacote para o pacote nomeado\&.
+.IP 
+.IP "\fBsearch\fP" 
+\fBsearch\fP realiza uma busca completa do padrão dado em todos os arquivos de
+pacotes disponíveis\&. Procura pelos nomes de pacotes
+e as descrições para ocorrência da string e imprime o nome do pacote
+em uma curta descrição\&. Se --full for dado então uma saída idêntica à
+\fBshow\fP é produzida para cada pacote que bater. Se --names-only for
+fornecido a busca irá desconsiderar a descrição comprida\&.
+.IP 
+.IP "\fBdepends\fP"
+\fBdepends\fP mostra uma lista de cada dependência que um pacote possui e
+todos os outros pacotes possíveis que podem completar aquela dependência\&.
+.IP 
+.IP "\fBpkgnames\fP" 
+Este comando mostra o nome de cada pacote no sistema\&. O argumento opcional
+é um prefixo usado para filtrar a lista de nomes\&. A saída é adequada
+para uso em uma função de completamento por tab do shell e geração da saída é
+extremamente rápida\&. Este comando é melhor usado com a 
+opção\& \fB--no-generate\fP.
+.IP 
+.IP "\fBdotty\fP" 
+\fBdotty\fP Toma uma lista de pacotes na linha de comando e gera uma saída
+adequada para uso pelo dotty do pacote\& GraphVis
+(http://www\&.research\&.att\&.com/sw/tools/graphviz/). O resultado será um 
+conjunto de conexões e bordas representando as relações entre pacotes\&.
+Por padrão os pacotes fornecidos irão traçar todos os pacotes dependentes
+que podem produzir um amplo gráfico\&. Isto pode ser desativado configurando a 
+opção\& APT::Cache::GivenOnly.
+.IP 
+As conexões resultantes terão vários formatos. Pacotes normais são caixas, 
+provimentos puros são triângulos, provimentos misturados são losangos, 
+hexágonos são pacotes que faltam\&. Caixas laranjas significam que a recursiva 
+foi parada [leaf packages], linhas azuis são pré-dependentes, linhas verdes
+são conflitos\&.
+.IP 
+Cuidado, dotty não pode representar graficamente conjuntos maiores de pacotes\&.
+.IP 
+.PP.\" XXX
+.SH "OPÇÕES" 
+Todas as opções de linha de comando podem ser configuradas usando o arquivo de
+configuração. As descrições indicam a opção de configuração a ser configurada\&.Para opções Booleanas você pode ignorar o arquivo de configuração usando-se algocomo \fB-f-\fP,
+\fB--no-f\fP, \fB-f=no\fP ou muitas outras variações\&.
+.PP 
+.IP "\fB-h, --help\fP" 
+Mostra um curto resumo de uso\&.
+.IP 
+.IP "\fB-v, --version\fP" 
+Mostra a versão do programa\&.
+.IP 
+.IP "\fB-p --pkg-cache\fP" 
+Selecionar o arquivo a ser armazenado no cache de pacote\&. O cache de pacote
+é o cache primário usado por todas as operações\&.
+Ítem de configuração: \fBDir::Cache::pkgcache\fP\&.
+.IP 
+.IP "\fB-s --src-cache\fP" 
+Selecionar o arquivo a ser armazenado no cache de fonte\&. O fonte é usado 
+somente pelo \fBgencaches\fP e armazena uma versão de parse da informação
+de pacote a partir de fontes remotos\&. Quando construindo o cache de 
+pacote o cache do fonte é usado para evitar reparse de todos os arquivos do
+pacote\&.
+Ítem de configuração: \fBDir::Cache::srcpkgcache\fP\&.
+.IP 
+.IP "\fB-q, --quiet\fP" 
+Quiet; Produz uma saída adequada para registro, omitindo indicadores de
+progresso\&.
+Mais qs produzirão mais "quiet" a um máximo de 2\&. Você pode usar também
+\fB-q=#\fP para configurar o nível de "quiet", ignorando o arquivo de
+configuração\&. Ítem de configuração: \fBquiet\fP\&.
+.IP 
+.IP "\fB-i --important\fP" 
+Mostrar somente dependências importantes;  para uso com unmet causando somente  \fIDepends\fP e 
+\fIPre-Depends\fP relações a serem impressas\&.
+Item de configuração: \fBAPT::Cache::Important\fP\&.
+.IP 
+.IP "\fB-f --full\fP" 
+Mostrar registros de pacotes completos quando em busca\&. Ítem de configuração: \fBAPT::Cache::ShowFull\fP\&.
+.IP 
+.IP "\fB-a --all-versions\fP" 
+Mostrar registros completos para todas as versões disponíveis, isto aplica-se
+somente ao comando mostrado\&. Ítem de configuração: \fBAPT::Cache::AllVersions\\fP
+.IP 
+.IP "\fB-g --no-generate\fP" 
+Não realizar regeneração automática de cache de pacote, usar o cache como ele é
+\&.
+Ítem de configuração: \fBAPT::Cache::NoGenerate\fP\&.
+.IP 
+.IP "\fB--names-only\fP" 
+Pesquisar somente nos nomes de pacotes, não a descrição longa\&. 
+Ítem de configuração: \fBAPT::Cache::NamesOnly\fP\&.
+.IP 
+.IP "\fB--all-names\fP" 
+Fazer \fBpkgnames\fP imprimir todos os nomes, incluindo pacotes virtuais e
+dependências que faltam\&. Ítem de configuração: \fBAPT::Cache::AllNames\fP\&
+.IP 
+.IP "\fB-c, --config-file\fP" 
+Arquivo de configuração; Especificar um arquivo de configuração a ser usado\&. \fBapt-get\fP irá ler o arquivo de configuração padrão e então este arquivo de
+configuração\&. Ver
+\fBapt\&.conf(5)\fP para informação de sintaxe\&.
+.IP 
+.IP "\fB-o, --option\fP" 
+Configurar a opção de configuração; isto irá configurar uma opção de
+configuração arbritária\&.
+A sintaxe é 
+
+.nf 
+ 
+-o Foo::Bar=bar
+.fi 
+ 
+
+.PP 
+.SH "ARQUIVOS" 
+.IP o 
+/etc/apt/sources\&.list 
+locais de onde obter os pacotes
+.IP 
+.IP o 
+/var/state/apt/lists/
+área de armazenamento para exibir informação para cada recurso de pacote
+especificado em
+.IP 
+.IP o 
+/var/state/apt/lists/partial/
+área de armazenamento para exibir informação de estado em trânsito
+.PP 
+.SH "CONSULTE TAMBÉM" 
+apt-get(8),
+sources\&.list(5),
+apt\&.conf(5)
+.PP 
+.SH "DIAGNÓSTICOS" 
+apt-cache retorna zero em operação normal, decimal 100 em erro\&.
+.PP 
+.SH "BUGS" 
+Ver http://bugs\&.debian\&.org/apt\&. Se você deseja informar sobre um
+bug em \fBapt-cache\fP, favor ver \fB/usr/doc/debian/bug-reporting\&.txt\fP
+ou o comando\& \fBbug(1)\fP. Se você está usando apt em um sistema baseado
+em RPM, favor usar http://distro\&.conectiva\&.com\&.br/bugzilla/\&.
+.PP 
+.SH "AUTOR" 
+apt-get foi escrito pela equipe APT <apt@packages\&.debian\&.org>
+e portado para sistemas baseados em RPM pela Conectiva S.A. 
+<kojima@conectiva\&.com\&.br>\&.
+

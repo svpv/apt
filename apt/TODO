@@ -1,0 +1,6 @@
+- check support for installation of packages scattered across multiple CDs
+- port the authentication stuff to the aliencode branch of APT
+- port the RPM support to the aliencode branch of APT
+- rewrite rpm repository maintenance tools
+- package "hold"ing
+- package ignoring (exclude from apt-get check)

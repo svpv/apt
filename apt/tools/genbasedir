@@ -1,0 +1,410 @@
+#!/bin/sh
+#
+# $Id: genbasedir,v 1.21 2001/12/12 14:50:43 kojima Exp $
+#
+# This script generates the contents of the base/ directory, by creating
+# the pkglists and the hash file. Update the components directory to contain
+# the components of your repository.
+#
+# $Log: genbasedir,v $
+# Revision 1.21  2001/12/12 14:50:43  kojima
+# fixed genbasedir for --flat and relative --topdir specifications
+# fixed --flat in gensrclist
+#
+# Revision 1.20  2001/11/30 20:40:27  kojima
+# patched --progress stuff from stelian
+#
+# Revision 1.19  2001/11/09 21:13:25  kojima
+#         * Skips correctly over empty package directories
+#
+#         * Adds the --bz2only argument which makes genbasedir
+#         to generate only the .bz2 compressed versions of pkglist
+#         and srclist (space gain...)
+#
+#         * Doesn't change the timestamps on pkglists/srclists if
+#         the contents are not modified (making possible for example
+#         to make several consecutive runs of genbasedir without
+#         having the apt clients download the indexes again and again).
+#
+#         * Some minor cleanups (remove the temporary files in /tmp
+#         at the end of the script etc).
+#
+# Revision 1.18  2001/03/11 14:36:28  claudio
+# Added appropriate message at the end of script.
+#
+# Revision 1.17  2001/01/04 21:26:14  kojima
+# fixed some mem leaks
+#
+# Revision 1.16  2000/12/10 13:42:58  claudio
+# Added linefeeds to usage message, replaced spaces for tabs
+#
+# Revision 1.15  2000/11/08 21:30:00  kojima
+# fixed bug in release retrieval code
+#
+# Revision 1.14  2000/11/08 20:40:23  kojima
+# fixed compat prob with bash1
+#
+# Revision 1.13  2000/11/06 12:53:49  kojima
+# fixed compile errors for RedHat 6.x (with gcc -Wall -Werror)
+#
+# Revision 1.12  2000/10/31 20:30:42  kojima
+# some updates
+#
+# Revision 1.11  2000/10/30 16:41:18  kojima
+# fixed genbasedir
+#
+# Revision 1.9  2000/10/29 21:49:54  kojima
+# fixed gensrclist/pkglist bug
+#
+# Revision 1.8  2000/10/25 17:17:35  kojima
+# *** empty log message ***
+#
+# Revision 1.7  2000/10/25 15:48:35  kojima
+# *** empty log message ***
+#
+# Revision 1.6  2000/10/23 14:31:57  kojima
+# *** empty log message ***
+#
+# Revision 1.5  2000/10/19 19:32:34  claudio
+# Language setting to generate a consistent pkglist.
+#
+ 
+usage="\
+Usage: genbasedir [<options>] <distribution> <comp1> [<comp2> ... <compN>]\n\
+Options:\n\
+   -s, --sign		Generate and sign hashfile\n\
+   --hashonly		Do hashfile stuff only\n\
+   --listonly		Generate pkglists/srclists and quit\n\
+   --bz2only		Generate only compressed lists\n\
+   --topdir=dir		Top directory of repository\n\
+   --progress		Show progress bars for genpkglist/gensrclist\n\
+   --updateinfo=file	Update information file\n"
+
+basedir=.
+signature=0
+listonly=0
+hashonly=0
+updateinfo=""
+mapi=0
+bz2only=0
+progress=
+
+# bloat is necessary for non-Conectiva distros, at least RH,
+# because they use file dependencies with a non-predictable
+# heuristic. So we can't strip-off paths that will probably
+# never appear in dependencies.
+bloat=""
+
+
+# flat is for repositories where RPMS and SRPMS are kept in the
+# same directory level.
+flat=""
+
+while test $# -gt 0 ; do
+    case "${1}" in
+    -h | --help)
+        echo -e "${usage}"
+        exit 0
+        ;;
+    --mapi)
+    	# hee hee hee..
+        mapi=1
+	;;
+    --listonly)
+        listonly=1
+	;;
+    --hashonly)
+        hashonly=1
+	;;
+    --bz2only)
+        bz2only=1
+        ;;
+    --updateinfo=*)
+	updateinfo=${1}
+	;;
+    --bloat)
+	bloat="--bloat"
+	;;
+    --flat)
+        flat="--flat"
+	;;
+    --topdir=*)
+        topdir="`echo \"${1}\" | sed -e 's/^[^=]*=//'`"
+	if [ ! -d $topdir ]; then
+	     echo "Invalid top directory for distribution ${topdir}" 1>&2
+	     exit 1
+	fi
+        ;;
+    --progress)
+        progress="--progress"
+        ;;
+    -s | --sign)
+	signature=1;
+	;;
+    -*)
+        echo -e "${usage}" 1>&2
+        exit 1
+        ;;
+    *)
+        break
+        ;;
+    esac
+    shift
+done
+
+distro=${1}
+shift
+
+components=$*
+
+if [ -z "$components" ]; then
+    echo -e "${usage}"
+    exit 0
+fi
+
+
+getsize() {
+    tmp=`wc -c $1`
+    echo $tmp|cut -f1 -d\  
+}
+
+
+phashstuff() {
+    size=`getsize ${1}`
+    md5=`md5sum ${1}|cut -f1 -d\  `
+
+    echo " $md5 $size ${2}"
+}
+
+
+
+cd ${topdir}
+
+# this will fix the path if it was relative
+topdir=`pwd`
+
+basedir_=`echo ${distro}/base|tr -s /`
+basedir=${topdir}/$basedir_
+
+
+# release file
+# ------------
+
+#for comp in ${components}; do
+#     true > ${basedir}/release.$comp
+#           
+#done
+
+
+if [ $hashonly -ne 1 ]; then
+# package lists
+# -------------
+
+true > /tmp/srcidx.$$
+
+for comp in ${components}; do
+    echo -n "${comp}: "
+
+    echo -n "pkglist "
+
+    # Save older pkglist
+    if [ -f $basedir/pkglist.$comp ]; then
+        mv -f $basedir/pkglist.$comp $basedir/pkglist.$comp.old
+    fi
+
+    if test x$updateinfo = x; then
+    	(cd $basedir; genpkglist $progress $bloat --index /tmp/srcidx.$comp.$$ $topdir/${distro} $comp)
+    else
+    	(cd $basedir; genpkglist $progress $bloat --index /tmp/srcidx.$comp.$$ --info $updateinfo $topdir/${distro} $comp)
+    fi
+    if [ $? -ne 0 ]; then
+	echo
+	echo "Error executing genpkglist."
+	exit 1
+    fi
+
+    if [ -f $basedir/pkglist.$comp ]; then
+
+        # Compare with older pkglist.
+        if [ -f $basedir/pkglist.$comp.old ]; then
+            if cmp -s $basedir/pkglist.$comp.old $basedir/pkglist.$comp; then
+                mv -f $basedir/pkglist.$comp.old $basedir/pkglist.$comp
+            fi
+        fi
+
+        # Save older compressed pkglist
+        if [ -f $basedir/pkglist.$comp.bz2 ]; then
+            mv -f $basedir/pkglist.$comp.bz2 $basedir/pkglist.$comp.bz2.old
+        fi
+
+        bzip2 -c $basedir/pkglist.$comp > $basedir/pkglist.$comp.bz2
+
+        # Compare with older compressed pkglist.
+        if [ -f $basedir/pkglist.$comp.bz2.old ]; then
+            if cmp -s $basedir/pkglist.$comp.bz2.old $basedir/pkglist.$comp.bz2; then
+                mv -f $basedir/pkglist.$comp.bz2.old $basedir/pkglist.$comp.bz2
+            fi
+        fi
+
+        if [ $bz2only -eq 1 ]; then
+		rm -f $basedir/pkglist.$comp
+        fi
+
+        rm -f $basedir/pkglist.$comp.old
+        rm -f $basedir/pkglist.$comp.bz2.old
+    fi
+
+    cat /tmp/srcidx.$comp.$$ >> /tmp/srcidx.$$
+
+    echo "done"
+done
+
+for comp in ${components}; do
+    echo -n "${comp}: "
+
+    echo -n "srclist "
+
+    # Save older srclist
+    if [ -f $basedir/srclist.$comp ]; then
+        mv -f $basedir/srclist.$comp $basedir/srclist.$comp.old
+    fi
+
+
+    sfix="/.."
+    if test x$flat != x; then
+	sfix=""
+    fi
+
+    if [ $mapi -ne 0 ]; then
+        (cd $basedir; gensrclist $progress $flat --mapi $topdir/${distro}${sfix} $comp /tmp/srcidx.$comp.$$)
+    else
+        (cd $basedir; gensrclist $progress $flat $topdir/${distro}${sfix} $comp /tmp/srcidx.$$)
+    fi
+    if [ $? -ne 0 ]; then
+	echo
+	echo "Error executing gensrclist."
+	exit 1
+    fi
+
+
+
+    if [ -f $basedir/srclist.$comp ]; then
+
+        # Compare with older srclist.
+        if [ -f $basedir/srclist.$comp.old ]; then
+            if cmp -s $basedir/srclist.$comp.old $basedir/srclist.$comp; then
+                mv -f $basedir/srclist.$comp.old $basedir/srclist.$comp
+            fi
+        fi
+
+        # Save older compressed srclist
+        if [ -f $basedir/srclist.$comp.bz2 ]; then
+            mv -f $basedir/srclist.$comp.bz2 $basedir/srclist.$comp.bz2.old
+        fi
+
+        bzip2 -c $basedir/srclist.$comp > $basedir/srclist.$comp.bz2
+
+        # Compare with older compressed srclist.
+        if [ -f $basedir/srclist.$comp.bz2.old ]; then
+            if cmp -s $basedir/srclist.$comp.bz2.old $basedir/srclist.$comp.bz2; then
+                mv -f $basedir/srclist.$comp.bz2.old $basedir/srclist.$comp.bz2
+            fi
+        fi
+
+        if [ $bz2only -eq 1 ]; then
+		rm -f $basedir/srclist.$comp
+        fi
+
+        rm -f $basedir/srclist.$comp.old
+        rm -f $basedir/srclist.$comp.bz2.old
+    fi
+
+    rm -f /tmp/srcidx.$comp.$$
+
+    echo "done"
+done
+
+fi
+
+rm -f /tmp/srcidx.$$
+
+if [ $listonly -eq 0 ]; then
+    # Save older hashfile
+    if [ -f $basedir/hashfile ]; then
+        mv -f $basedir/hashfile $basedir/hashfile.old
+    fi
+    hf=${basedir}/hashfile
+    true > $hf
+else
+    hf=/dev/null
+fi
+
+echo "MD5SUM:" >> $hf
+
+pkglist_=${basedir_}/pkglist
+srclist_=${basedir_}/srclist
+release_=${basedir_}/release
+pkglist=${basedir}/pkglist
+srclist=${basedir}/srclist
+release=${basedir}/release
+
+for comp in ${components}; do
+    echo -n "${comp}: "
+
+    echo -n "hashfile "
+    if [ -f ${pkglist}.$comp ]; then
+        phashstuff ${pkglist}.$comp ${pkglist_}.$comp >> $hf
+    fi
+    if [ -f ${srclist}.$comp ]; then
+        phashstuff ${srclist}.$comp ${srclist_}.$comp >> $hf
+    fi
+
+    if [ -f ${pkglist}.$comp.bz2 ]; then
+        phashstuff ${pkglist}.$comp.bz2 ${pkglist_}.$comp.bz2 >> $hf
+    fi
+    if [ -f ${srclist}.$comp.bz2 ]; then
+        phashstuff ${srclist}.$comp.bz2 ${srclist_}.$comp.bz2 >> $hf
+    fi
+
+    if [ -f ${release}.$comp ]; then
+	phashstuff ${release}.$comp ${release_}.$comp >> $hf
+    fi
+
+    echo "done"
+done
+
+echo >> $hf
+
+if [ $listonly -eq 0 ]; then
+    # Compare with older hashfile.
+    if [ -f $basedir/hashfile.old ]; then
+        if cmp -s $basedir/hashfile.old $basedir/hashfile; then
+            mv -f $basedir/hashfile.old $basedir/hashfile
+        fi
+    fi
+fi
+
+if [ $signature -ne 0 -a $listonly -eq 0 ]; then
+
+    # Save older hashfile.gpg
+    if [ -f $basedir/hashfile.gpg ]; then
+        mv -f $basedir/hashfile.gpg $basedir/hashfile.gpg.old
+    fi
+
+    gpg -armour -qs --yes $basedir/hashfile
+    mv -f $basedir/hashfile.asc $basedir/hashfile.gpg
+    rm -f $basedir/hashfile
+
+    # Compare with older hashfile.gpg
+    if [ -f $basedir/hashfile.gpg.old ]; then
+        if cmp -s $basedir/hashfile.gpg.old $basedir/hashfile.gpg; then
+            mv -f $basedir/hashfile.gpg.old $basedir/hashfile.gpg
+        fi
+    fi
+fi
+
+rm -f $basedir/hashfile.old
+rm -f $basedir/hashfile.gpg.old
+
+echo "All your base are belong to us !!"
+
