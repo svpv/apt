@@ -1,6 +1,54 @@
-diff -uprN apt-0.5.15cnc6.orig/apt-pkg/pkgsystem.h apt-0.5.15cnc6/apt-pkg/pkgsystem.h
---- apt-0.5.15cnc6.orig/apt-pkg/pkgsystem.h	2003-11-25 04:55:37 +1200
-+++ apt-0.5.15cnc6/apt-pkg/pkgsystem.h	2004-04-13 19:35:39 +1300
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc apt-0.5.15cnc6/apt-pkg/acquire-item.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc	2004-03-05 12:02:14 +0000
++++ apt-0.5.15cnc6/apt-pkg/acquire-item.cc	2004-05-16 17:12:43 +0000
+@@ -283,7 +283,7 @@ void pkgAcqIndex::Done(string Message,un
+ 	    ErrorText = _("Size mismatch");
+ 	    Rename(DestFile,DestFile + ".FAILED");
+ 	    if (_config->FindB("Acquire::Verbose",false) == true) 
+-	       _error->Warning("Size mismatch of index file %s: %ul was supposed to be %ul",
++	       _error->Warning("Size mismatch of index file %s: %lu was supposed to be %lu",
+ 			       RealURI.c_str(), Size, FSize);
+ 	    return;
+ 	 }
+@@ -559,7 +559,7 @@ void pkgAcqIndexRel::Done(string Message
+ 	 ErrorText = _("Size mismatch");
+ 	 Rename(DestFile,DestFile + ".FAILED");
+ 	 if (_config->FindB("Acquire::Verbose",false) == true) 
+-	    _error->Warning("Size mismatch of index file %s: %ul was supposed to be %ul",
++	    _error->Warning("Size mismatch of index file %s: %lu was supposed to be %lu",
+ 			    RealURI.c_str(), Size, FSize);
+ 	 return;
+       }
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/luaiface.h apt-0.5.15cnc6/apt-pkg/luaiface.h
+--- apt-0.5.15cnc6.orig/apt-pkg/luaiface.h	2004-03-19 14:56:52 +0000
++++ apt-0.5.15cnc6/apt-pkg/luaiface.h	2004-05-16 17:12:45 +0000
+@@ -54,8 +54,9 @@ class Lua {
+    void RunInteractive(const string &PlaceHint)
+ 	 { RunInteractive(PlaceHint.c_str()); };
+ 
++   //or all of this RunScript should be void?
+    bool RunScript(const string &Script, const string &ChunkCacheKey="")
+-	 { RunScript(Script.c_str(), (ChunkCacheKey.length() == 0) ?
++	 { return RunScript(Script.c_str(), (ChunkCacheKey.length() == 0) ?
+ 				      NULL : ChunkCacheKey.c_str()); };
+    bool RunScript(const char *Script, const char *ChunkCacheKey=NULL);
+    bool RunScripts(const char *ConfListKey, bool CacheChunks=false);
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/pkgrecords.cc apt-0.5.15cnc6/apt-pkg/pkgrecords.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/pkgrecords.cc	2003-11-03 21:25:47 +0000
++++ apt-0.5.15cnc6/apt-pkg/pkgrecords.cc	2004-05-16 17:12:43 +0000
+@@ -56,7 +56,8 @@ pkgRecords::~pkgRecords()
+ {
+    // CNC:2002-11-28
+    // See comments above.
+-   for (unsigned I = 0; I != PackageFileCount; I++)
++   // PackageFileCount is int in apt-pkg/pkgrecords.h
++   for (int I = 0; I != PackageFileCount; I++)
+       delete Files[I];
+    delete [] Files;
+ }
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/pkgsystem.h apt-0.5.15cnc6/apt-pkg/pkgsystem.h
+--- apt-0.5.15cnc6.orig/apt-pkg/pkgsystem.h	2003-11-24 16:55:37 +0000
++++ apt-0.5.15cnc6/apt-pkg/pkgsystem.h	2004-05-16 17:12:41 +0000
 @@ -90,7 +90,7 @@ class pkgSystem
     // Return a list of system index files..
     virtual bool AddStatusFiles(std::vector<pkgIndexFile *> &List) = 0;   
@@ -10,9 +58,9 @@ diff -uprN apt-0.5.15cnc6.orig/apt-pkg/pkgsystem.h apt-0.5.15cnc6/apt-pkg/pkgsys
     virtual bool FindIndex(pkgCache::PkgFileIterator File,
  			  pkgIndexFile *&Found) const = 0;
     
-diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmhandler.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmhandler.cc
---- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmhandler.cc	2004-03-05 23:29:09 +1200
-+++ apt-0.5.15cnc6/apt-pkg/rpm/rpmhandler.cc	2004-04-13 19:36:15 +1300
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmhandler.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmhandler.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmhandler.cc	2004-03-05 11:29:09 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmhandler.cc	2004-05-16 17:12:45 +0000
 @@ -87,7 +87,7 @@ bool RPMFileHandler::Jump(unsigned Offse
  {
     if (FD == NULL)
@@ -22,9 +70,18 @@ diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmhandler.cc apt-0.5.15cnc6/apt-pkg/
        return false;
     return Skip();
  }
-diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpm.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmpm.cc
---- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpm.cc	2004-03-16 10:10:41 +1200
-+++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpm.cc	2004-04-13 19:39:29 +1300
+@@ -343,7 +343,7 @@ string RPMDirHandler::MD5Sum()
+ 
+ 
+ RPMDBHandler::RPMDBHandler(bool WriteLock)
+-   : WriteLock(WriteLock), Handler(0)
++   : Handler(0), WriteLock(WriteLock)
+ {
+ #if RPM_VERSION >= 0x040000
+    RpmIter = NULL;
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpm.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmpm.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpm.cc	2004-03-15 22:10:41 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpm.cc	2004-05-16 17:12:41 +0000
 @@ -393,7 +393,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps o
     
     Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
@@ -61,9 +118,21 @@ diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpm.cc apt-0.5.15cnc6/apt-pkg/rpm/r
     string Dir = _config->Find("RPM::RootDir");
     rpmReadConfigFiles(NULL, NULL);
  
-diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc
---- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc	2004-03-23 04:51:38 +1200
-+++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc	2004-04-13 19:40:14 +1300
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmrecords.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmrecords.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmrecords.cc	2004-03-13 18:21:45 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmrecords.cc	2004-05-16 17:12:43 +0000
+@@ -407,7 +407,7 @@ void rpmRecordParser::GetRec(const char 
+    headerGetEntry(HeaderP, RPMTAG_ARCH, &type, (void **)&str, &count);
+    BufCatTag("\nArchitecture: ", str);
+    
+-   snprintf(buf, sizeof(buf), "%d", Handler->FileSize());
++   snprintf(buf, sizeof(buf), "%lu", Handler->FileSize());
+    BufCatTag("\nSize: ", buf);
+ 
+    BufCatTag("\nMD5Sum: ", Handler->MD5Sum().c_str());
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc	2004-03-22 16:51:38 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc	2004-05-16 17:12:41 +0000
 @@ -251,7 +251,7 @@ bool rpmSystem::AddStatusFiles(vector<pk
  // System::AddSourceFiles - Register aditional source files		/*{{{*/
  // ---------------------------------------------------------------------
@@ -81,9 +150,9 @@ diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-pkg/r
  }
  									/*}}}*/
  #ifdef OLD_FILEDEPS
-diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.h apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.h
---- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.h	2003-11-25 04:55:37 +1200
-+++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.h	2004-04-13 19:40:53 +1300
+diff -uprk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.h apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.h
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.h	2003-11-24 16:55:37 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.h	2004-05-16 17:12:41 +0000
 @@ -60,7 +60,7 @@ class rpmSystem : public pkgSystem
     virtual bool ArchiveSupported(const char *Type);
     virtual signed Score(Configuration const &Cnf);
@@ -93,3 +162,72 @@ diff -uprN apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.h apt-0.5.15cnc6/apt-pkg/rp
     virtual bool FindIndex(pkgCache::PkgFileIterator File,
  			  pkgIndexFile *&Found) const;
     virtual bool ProcessCache(pkgDepCache &Cache,pkgProblemResolver &Fix);
+diff -uprk.orig apt-0.5.15cnc6.orig/cmdline/apt-get.cc apt-0.5.15cnc6/cmdline/apt-get.cc
+--- apt-0.5.15cnc6.orig/cmdline/apt-get.cc	2004-03-22 20:40:03 +0000
++++ apt-0.5.15cnc6/cmdline/apt-get.cc	2004-05-16 17:12:43 +0000
+@@ -1223,7 +1223,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	 // Check if it's a different version of a package already
+ 	 // considered as a good solution.
+ 	 bool AlreadySeen = false;
+-	 for (int i = 0; i != GoodSolutions.size(); i++)
++	 for (unsigned int i = 0; i != GoodSolutions.size(); i++)
+ 	 {
+ 	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+ 	    if (PrvPkg == GoodPkg)
+@@ -1259,7 +1259,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	 }
+       }
+       vector<string> GoodSolutionNames;
+-      for (int i = 0; i != GoodSolutions.size(); i++)
++      for (unsigned int i = 0; i != GoodSolutions.size(); i++)
+       {
+ 	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+ 	 GoodSolutionNames.push_back(GoodPkg.Name());
+@@ -1307,7 +1307,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+       {
+ 	 ioprintf(c1out,_("Package %s is a virtual package provided by:\n"),
+ 		  Pkg.Name());
+-	 for (int i = 0; i != GoodSolutions.size(); i++)
++	 for (unsigned int i = 0; i != GoodSolutions.size(); i++)
+ 	 {
+ 	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+ 	    if (GoodPkg.CurrentVer().end() == false)
+diff -uprk.orig apt-0.5.15cnc6.orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
+--- apt-0.5.15cnc6.orig/cmdline/apt-shell.cc	2004-03-15 22:10:41 +0000
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2004-05-16 17:12:43 +0000
+@@ -1292,7 +1292,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	 // Check if it's a different version of a package already
+ 	 // considered as a good solution.
+ 	 bool AlreadySeen = false;
+-	 for (int i = 0; i != GoodSolutions.size(); i++)
++	 for (unsigned int i = 0; i != GoodSolutions.size(); i++)
+ 	 {
+ 	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+ 	    if (PrvPkg == GoodPkg)
+@@ -1328,7 +1328,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	 }
+       }
+       vector<string> GoodSolutionNames;
+-      for (int i = 0; i != GoodSolutionNames.size(); i++)
++      for (unsigned int i = 0; i != GoodSolutionNames.size(); i++)
+       {
+ 	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[0]);
+ 	 GoodSolutionNames.push_back(GoodPkg.Name());
+@@ -1376,7 +1376,7 @@ bool TryToInstall(pkgCache::PkgIterator 
+       {
+ 	 ioprintf(c1out,_("Package %s is a virtual package provided by:\n"),
+ 		  Pkg.Name());
+-	 for (int i = 0; i != GoodSolutions.size(); i++)
++	 for (unsigned int i = 0; i != GoodSolutions.size(); i++)
+ 	 {
+ 	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+ 	    if (GoodPkg.CurrentVer().end() == false)
+@@ -4439,7 +4439,7 @@ int main(int argc,const char *argv[])
+ 			 _lua->HasScripts("Scripts::AptCache::Command"));
+ #endif
+ 
+-   int largc;
++   unsigned int largc;
+    const char *largv[1024];
+    char *line, *p, *q;
+    largv[0] = "";

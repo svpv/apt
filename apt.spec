@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt2
+Release: alt3
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -18,7 +18,7 @@ Source3: README.rsync
 Source4: apt.ru.po
 Source5: ChangeLog-rpm.old
 
-Patch1: apt-0.5.15cnc6-alt-aclocal-warnings.patch
+Patch9: apt-0.5.15cnc6-alt-aclocal-warnings.patch
 Patch10: apt-0.5.15cnc5-alt-libtool.patch
 Patch11: apt-0.5.15cnc6-alt-fixes.patch
 Patch12: apt-0.5.15cnc5-alt-tinfo.patch
@@ -41,6 +41,7 @@ Patch28: apt-0.5.15cnc5-alt-system-lua5.patch
 Patch29: apt-0.5.15cnc5-alt-findrepos.patch
 Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
+Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -198,7 +199,7 @@ This package contains method 'rsync' for APT.
 
 %prep
 %setup -q
-%patch1 -p1
+%patch9 -p1
 %patch10 -p1
 %patch11 -p1
 %patch12 -p1
@@ -221,6 +222,7 @@ This package contains method 'rsync' for APT.
 %patch29 -p1
 %patch30 -p1
 %patch31 -p1
+%patch32 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -332,6 +334,11 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sat May 15 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt3
+- apt-pkg/pkgcachegen.cc:
+  Remove old sources cache file before creating new one.
+- More fixes reported by compiler, patch by Anton V. Denisov.
+
 * Fri May 14 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt2
 - Fixed aclocal warnings, patch by Anton V. Denisov.
 - Updated russian translation from Anton Denisov.
