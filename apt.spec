@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt6
+Release: alt6.1
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -338,6 +338,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Jan 18 2005 ALT QA Team Robot <qa-robot@altlinux.org> 0.5.15cnc6-alt6.1
+- Rebuilt with libstdc++.so.6.
+
 * Tue Aug 31 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt6
 - %_localstatedir/%name: relocated to libapt subpackage (#4697).
 - UnmountCdrom(): silently ignore subfs and supermount filesystems (#4806).
