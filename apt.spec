@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt1
+Release: alt2
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -18,6 +18,7 @@ Source3: README.rsync
 Source4: apt.ru.po
 Source5: ChangeLog-rpm.old
 
+Patch1: apt-0.5.15cnc6-alt-aclocal-warnings.patch
 Patch10: apt-0.5.15cnc5-alt-libtool.patch
 Patch11: apt-0.5.15cnc6-alt-fixes.patch
 Patch12: apt-0.5.15cnc5-alt-tinfo.patch
@@ -197,6 +198,7 @@ This package contains method 'rsync' for APT.
 
 %prep
 %setup -q
+%patch1 -p1
 %patch10 -p1
 %patch11 -p1
 %patch12 -p1
@@ -330,8 +332,12 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri May 14 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt2
+- Fixed aclocal warnings, patch by Anton V. Denisov.
+- Updated russian translation from Anton Denisov.
+
 * Thu May 13 2004 Kachalov Anton <mouse@altlinux.ru> 0.5.15cnc6-alt1
-- Updated to 0.5.15cnc6
+- Updated to 0.5.15cnc6.
 - New:
   + apt-0.5.15cnc6-alt-rpm-order (fix RPM::Order default value)
 - Updated:
