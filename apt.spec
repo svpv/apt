@@ -1,8 +1,8 @@
 # hey Emacs, its -*- mode: rpm-spec; coding: cyrillic-cp1251; -*-
 
 Name: apt
-Version: 0.5.15cnc5
-Release: alt4
+Version: 0.5.15cnc6
+Release: alt1
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -19,27 +19,27 @@ Source4: apt.ru.po
 Source5: ChangeLog-rpm.old
 
 Patch10: apt-0.5.15cnc5-alt-libtool.patch
-Patch11: apt-0.5.15cnc5-alt-fixes.patch
+Patch11: apt-0.5.15cnc6-alt-fixes.patch
 Patch12: apt-0.5.15cnc5-alt-tinfo.patch
 Patch13: apt-0.5.15cnc5-alt-rpm-build.patch
 Patch14: apt-0.5.15cnc5-alt-distro.patch
 Patch15: apt-0.5.15cnc5-alt-debsystem.patch
-Patch16: apt-0.5.15cnc5-alt-defaults.patch
+Patch16: apt-0.5.15cnc6-alt-defaults.patch
 Patch17: apt-0.5.5cnc5-alt-rsync.patch
 Patch18: apt-0.5.15cnc5-alt-getsrc.patch
 Patch19: apt-0.5.15cnc5-alt-parseargs.patch
 Patch20: apt-0.5.15cnc5-alt-rpm_cmd.patch
-Patch21: apt-0.5.15cnc5-alt-rpm-fancypercent.patch
+Patch21: apt-0.5.15cnc6-alt-rpm-fancypercent.patch
 Patch22: apt-0.5.15cnc5-alt-methods_gpg_homedir.patch
 Patch23: apt-0.5.15cnc5-alt-md5hash-debug.patch
 Patch24: apt-0.5.15cnc5-alt-packagemanager-CheckRConflicts.patch
 Patch25: apt-0.5.5cnc4.1-alt-fixpriorsort.patch
 Patch26: apt-0.5.4cnc9-alt-pkgorderlist_score.patch
-Patch27: apt-0.5.15cnc5-alt-install_virtual.patch
-Patch28: apt-0.5.15cnc5-alt-virtual_scores.patch
-Patch29: apt-0.5.15cnc5-alt-system-lua5.patch
-Patch30: apt-0.5.15cnc5-alt-findrepos.patch
-Patch31: apt-0.5.15cnc5-alt-gettext.patch
+Patch27: apt-0.5.15cnc6-alt-virtual_scores.patch
+Patch28: apt-0.5.15cnc5-alt-system-lua5.patch
+Patch29: apt-0.5.15cnc5-alt-findrepos.patch
+Patch30: apt-0.5.15cnc5-alt-gettext.patch
+Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -330,6 +330,18 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu May 13 2004 Kachalov Anton <mouse@altlinux.ru> 0.5.15cnc6-alt1
+- Updated to 0.5.15cnc6
+- New:
+  + apt-0.5.15cnc6-alt-rpm-order (fix RPM::Order default value)
+- Updated:
+  + apt-0.5.15cnc6-alt-fixes
+  + apt-0.5.15cnc6-alt-defaults
+  + apt-0.5.15cnc6-alt-rpm-fancypercent
+  + apt-0.5.15cnc6-alt-virtual_scores
+- Merged upstream:
+  + apt-0.5.15cnc6-alt-install_virtual
+
 * Fri Feb 27 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt4
 - Fixed build with fresh autotools.
 

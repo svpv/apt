@@ -488,7 +488,8 @@ void ShowDel(ostream &out,CacheFile &Cache,pkgDepCache::State *State=NULL)
 	       List += string(I.Name()) + " ";
 	 }
      
-     VersionsList += string(Cache[I].CandVersion)+ "\n";
+     // CNC:2004-03-09
+     VersionsList += string(I.CurrentVer().VerStr())+ "\n";
       }
    }
    
@@ -1280,49 +1281,117 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 		  pkgProblemResolver &Fix,int Mode,bool BrokenFix,
 		  unsigned int &ExpectedInst,bool AllowFail = true)
 {
-   /* This is a pure virtual package and there is a single available 
-      provides */
-   if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0 &&
-       Pkg.ProvidesList()->NextProvides == 0)
+   // CNC:2004-03-03 - Improved virtual package handling.
+   if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0)
    {
-      pkgCache::PkgIterator Tmp = Pkg.ProvidesList().OwnerPkg();
-      // CNC:2003-11-21 - Check if the current candidate is really
-      //                  providing that dependency
-      ioprintf(c1out,_("Selecting %s for '%s'\n"),
-	       Tmp.Name(),Pkg.Name());
-      pkgCache::VerIterator Ver = Cache[Tmp].CandidateVerIter(Cache);
-      pkgCache::PrvIterator Prv = Ver.ProvidesList();
-      bool Found = false;
-      for (; Prv.end() == false; Prv++) {
-	 if (strcmp(Prv.Name(), Pkg.Name()) == 0) {
-	    Found = true;
-	    break;
-	 }
-      }
-      if (Found == false) {
-	 // The current candidate doesn't provide the needed dependency.
-	 // Look for one that does.
-	 Ver = Tmp.VersionList();
-	 for (; Ver.end() == false; Ver++) {
-	    Prv = Ver.ProvidesList();
-	    Found = false;
-	    for (; Prv.end() == false; Prv++) {
-	       if (strcmp(Prv.Name(), Pkg.Name()) == 0) {
-		  Found = true;
-		  break;
-	       }
-	    }
-	    if (Found) {
-	       Cache.SetCandidateVersion(Ver);
+      vector<pkgCache::Package *> GoodSolutions;
+      for (pkgCache::PrvIterator Prv = Pkg.ProvidesList();
+	   Prv.end() == false; Prv++)
+      {
+	 pkgCache::PkgIterator PrvPkg = Prv.OwnerPkg();
+	 // Check if it's a different version of a package already
+	 // considered as a good solution.
+	 bool AlreadySeen = false;
+	 for (int i = 0; i != GoodSolutions.size(); i++)
+	 {
+	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+	    if (PrvPkg == GoodPkg)
+	    {
+	       AlreadySeen = true;
 	       break;
 	    }
 	 }
-	 if (Found == false) {
-	    ioprintf(c1out,_("Internal error. Package %s doesn't provide %s\n"),Tmp.Name(),Pkg.Name());
-	    return false;
+	 if (AlreadySeen)
+	    continue;
+	 // Is the current version the provides owner?
+	 if (PrvPkg.CurrentVer() == Prv.OwnerVer())
+	 {
+	    // Already installed packages are good solutions, since
+	    // the user might try to install something he already has
+	    // without being aware.
+	    GoodSolutions.push_back(PrvPkg);
+	    continue;
+	 }
+	 pkgCache::VerIterator PrvPkgCandVer =
+				 Cache[PrvPkg].CandidateVerIter(Cache);
+	 if (PrvPkgCandVer.end() == true)
+	 {
+	    // Packages without a candidate version are not good solutions.
+	    continue;
+	 }
+	 // Is the provides pointing to the candidate version?
+	 if (PrvPkgCandVer == Prv.OwnerVer())
+	 {
+	    // Yes, it is. This is a good solution.
+	    GoodSolutions.push_back(PrvPkg);
+	    continue;
 	 }
       }
-      Pkg = Tmp;
+      vector<string> GoodSolutionNames;
+      for (int i = 0; i != GoodSolutionNames.size(); i++)
+      {
+	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[0]);
+	 GoodSolutionNames.push_back(GoodPkg.Name());
+      }
+#ifdef WITH_LUA
+      if (GoodSolutions.size() > 1)
+      {
+	 vector<string> VS;
+	 _lua->SetDepCache(&Cache);
+	 _lua->SetDontFix();
+	 _lua->SetGlobal("packages", GoodSolutions);
+	 _lua->SetGlobal("packagenames", GoodSolutionNames);
+	 _lua->SetGlobal("selected");
+	 _lua->RunScripts("Scripts::AptGet::Install::SelectPackage");
+	 pkgCache::Package *selected = _lua->GetGlobalPkg("selected");
+	 if (selected)
+	 {
+	    GoodSolutions.clear();
+	    GoodSolutions.push_back(selected);
+	 }
+	 else
+	 {
+	    vector<string> Tmp = _lua->GetGlobalStrList("packagenames");
+	    if (Tmp.size() == GoodSolutions.size())
+	       GoodSolutionNames = Tmp;
+	 }
+	 _lua->ResetGlobals();
+	 _lua->ResetCaches();
+      }
+#endif
+      if (GoodSolutions.size() == 1)
+      {
+	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[0]);
+	 ioprintf(c1out,_("Selecting %s for '%s'\n"),
+		  GoodPkg.Name(), Pkg.Name());
+	 Pkg = GoodPkg;
+      }
+      else if (GoodSolutions.size() == 0)
+      {
+	 _error->Error(_("Package %s is a virtual package with no "
+			 "good providers.\n"), Pkg.Name());
+	 return false;
+      }
+      else
+      {
+	 ioprintf(c1out,_("Package %s is a virtual package provided by:\n"),
+		  Pkg.Name());
+	 for (int i = 0; i != GoodSolutions.size(); i++)
+	 {
+	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
+	    if (GoodPkg.CurrentVer().end() == false)
+	       c1out << "  " << GoodSolutionNames[i]
+		     << " "  << Cache[GoodPkg].CandVersion
+		     << _(" [Installed]") << endl;
+	    else
+	       c1out << "  " << GoodSolutionNames[i]
+		     << " "  << Cache[GoodPkg].CandVersion << endl;
+	 }
+	 c1out << _("You should explicitly select one to install.") << endl;
+	 _error->Error(_("Package %s is a virtual package with multiple "
+			 "good providers.\n"), Pkg.Name());
+	 return false;
+      }
    }
    
    // Handle the no-upgrade case
@@ -1357,6 +1426,8 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
       if (AllowFail == false)
 	 return false;
       
+// CNC:2004-03-03 - Improved virtual package handling.
+#if 0
       if (Pkg->ProvidesList != 0)
       {
 	 ioprintf(c1out,_("Package %s is a virtual package provided by:\n"),
@@ -1379,6 +1450,7 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	 c1out << _("You should explicitly select one to install.") << endl;
       }
       else
+#endif
       {
 	 ioprintf(c1out,
 	 _("Package %s has no available version, but exists in the database.\n"
@@ -1650,7 +1722,7 @@ bool DoUpdate(CommandLine &CmdL)
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(*GCache);
-   _lua->RunScripts("Scripts::AptGet::Update::Pre", false);
+   _lua->RunScripts("Scripts::AptGet::Update::Pre");
    _lua->ResetCaches();
 #endif
    
@@ -1722,7 +1794,7 @@ bool DoUpdate(CommandLine &CmdL)
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(*GCache);
-   _lua->RunScripts("Scripts::AptGet::Update::Post", false);
+   _lua->RunScripts("Scripts::AptGet::Update::Post");
    _lua->ResetCaches();
 #endif
    
@@ -1762,7 +1834,7 @@ bool DoUpgrade(CommandLine &CmdL)
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(Cache);
-   _lua->RunScripts("Scripts::AptGet::Upgrade", false);
+   _lua->RunScripts("Scripts::AptGet::Upgrade");
    _lua->ResetCaches();
 #endif
 
@@ -1936,12 +2008,12 @@ bool DoInstall(CommandLine &CmdL)
 	    _lua->SetDontFix();
 	    _lua->SetGlobal("argument", OrigS);
 	    _lua->SetGlobal("translated", VS);
-	    _lua->RunScripts("Scripts::AptGet::Install::TranslateArg", false);
-	    const char *name = _lua->GetGlobal("translated");
+	    _lua->RunScripts("Scripts::AptGet::Install::TranslateArg");
+	    const char *name = _lua->GetGlobalStr("translated");
 	    if (name != NULL) {
 	       VS.push_back(name);
 	    } else {
-	       _lua->GetGlobalVS("translated", VS);
+	       VS = _lua->GetGlobalStrList("translated");
 	    }
 	    _lua->ResetGlobals();
 	    _lua->ResetCaches();
@@ -2026,7 +2098,7 @@ bool DoInstall(CommandLine &CmdL)
 #ifdef WITH_LUA
    _lua->SetDepCache(Cache);
    _lua->SetDontFix();
-   _lua->RunScripts("Scripts::AptGet::Install::PreResolve", false);
+   _lua->RunScripts("Scripts::AptGet::Install::PreResolve");
    _lua->ResetCaches();
 #endif
 
@@ -2061,7 +2133,7 @@ bool DoInstall(CommandLine &CmdL)
    if (Cache->BrokenCount() == 0) {
       _lua->SetDepCache(Cache);
       _lua->SetProblemResolver(&Fix);
-      _lua->RunScripts("Scripts::AptGet::Install::PostResolve", false);
+      _lua->RunScripts("Scripts::AptGet::Install::PostResolve");
       _lua->ResetCaches();
    }
 #endif
@@ -2126,7 +2198,7 @@ bool DoDistUpgrade(CommandLine &CmdL)
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(Cache);
-   _lua->RunScripts("Scripts::AptGet::DistUpgrade", false);
+   _lua->RunScripts("Scripts::AptGet::DistUpgrade");
    _lua->ResetCaches();
 #endif
    
@@ -2604,9 +2676,9 @@ bool DoScript(CommandLine &CmdL)
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(Cache);
-   _lua->RunScripts("Scripts::AptShell::Script", false);
-   _lua->RunScripts("Scripts::AptGet::Script", true);
-   _lua->RunScripts("Scripts::AptCache::Script", true);
+   _lua->RunScripts("Scripts::AptShell::Script");
+   _lua->RunScripts("Scripts::AptGet::Script");
+   _lua->RunScripts("Scripts::AptCache::Script");
    _lua->ResetCaches();
 #endif
 
@@ -4336,6 +4408,15 @@ int main(int argc,const char *argv[])
    // Prepare the cache
    GCache = new CacheFile();
    GCache->Open();
+
+   // CNC:2004-02-18
+   if (_error->empty() == false)
+   {
+      bool Errors = _error->PendingError();
+      _error->DumpErrors();
+      return Errors == true?100:0;
+   }
+
    if (GCache->CheckDeps(true) == false) {
       c1out << _("There are broken packages. ")
 	    << _("Run `check' to see them.") << endl;
@@ -4352,7 +4433,7 @@ int main(int argc,const char *argv[])
 // CNC:2003-03-19
 #ifdef WITH_LUA
    _lua->SetDepCache(*GCache);
-   _lua->RunScripts("Scripts::AptShell::Init", false);
+   _lua->RunScripts("Scripts::AptShell::Init");
    _lua->ResetCaches();
    bool HasCmdScripts = (_lua->HasScripts("Scripts::AptGet::Command") ||
 			 _lua->HasScripts("Scripts::AptCache::Command"));
@@ -4371,8 +4452,10 @@ int main(int argc,const char *argv[])
       }
       
       line = readline(_config->Find("APT::Shell::Prompt", "apt> ").c_str());
-      if (!line || !*line)
+      if (!line || !*line) {
+	 free(line);
 	 continue;
+      }
       add_history(line);
 
       largc = 1; // CommandLine.Parse() ignores the first option.
@@ -4443,7 +4526,7 @@ int main(int argc,const char *argv[])
 	 _lua->SetGlobal("command_consume", 0.0);
 	 _lua->RunScripts("Scripts::AptGet::Command", true);
 	 _lua->RunScripts("Scripts::AptCache::Command", true);
-	 double Consume = _lua->GetGlobalI("command_consume");
+	 double Consume = _lua->GetGlobalNum("command_consume");
 	 _lua->ResetGlobals();
 	 _lua->ResetCaches();
 	 if (Consume == 1) {

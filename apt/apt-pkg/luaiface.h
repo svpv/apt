@@ -11,9 +11,10 @@
 #include <map>
 #include <vector>
 
+#include <apt-pkg/pkgcache.h>
+
 using namespace std;
 
-class pkgCache;
 class pkgDepCache;
 class pkgProblemResolver;
 class lua_State;
@@ -30,15 +31,10 @@ class LuaCacheControl {
 };
 
 class Lua {
+
    protected:
 
-   struct CacheData {
-      int Begin;
-      int End;
-   };
-
    lua_State *L;
-   map<string,CacheData> ChunkCache;
 
    vector<string> Globals;
 
@@ -50,20 +46,36 @@ class Lua {
    pkgProblemResolver *Fix;
    bool DontFix;
 
+   void InternalRunScript();
+
    public:
 
-   bool RunScripts(const char *ConfListKey, bool CacheChunks);
-   bool HasScripts(const char *ConfListKey);
+   void RunInteractive(const char *PlaceHint=NULL);
+   void RunInteractive(const string &PlaceHint)
+	 { RunInteractive(PlaceHint.c_str()); };
 
+   bool RunScript(const string &Script, const string &ChunkCacheKey="")
+	 { RunScript(Script.c_str(), (ChunkCacheKey.length() == 0) ?
+				      NULL : ChunkCacheKey.c_str()); };
+   bool RunScript(const char *Script, const char *ChunkCacheKey=NULL);
+   bool RunScripts(const char *ConfListKey, bool CacheChunks=false);
+   bool HasScripts(const char *ConfListKey);
+   void ResetScript(const string &ChunkCacheKey)
+	 { ResetScript(ChunkCacheKey.c_str()); };
+   void ResetScript(const char *ChunkCacheKey);
+
+   void SetGlobal(const char *Name);
    void SetGlobal(const char *Name, const char *Value);
+   void SetGlobal(const char *Name, bool Value);
    void SetGlobal(const char *Name, double Value);
    void SetGlobal(const char *Name, void *Value);
-   void SetGlobal(const char *Name, string Value)
+   void SetGlobal(const char *Name, const string &Value)
 	 { SetGlobal(Name, Value.c_str()); };
    void SetGlobal(const char *Name, int Value)
 	 { SetGlobal(Name, (double)Value); };
    void SetGlobal(const char *Name, lua_CFunction Value);
    void SetGlobal(const char *Name, const char **Value, int Total=-1);
+   void SetGlobal(const char *Name, pkgCache::Package *Value);
    void SetGlobal(const char *Name, vector<const char *> &Value,
 		  int Total=-1);
    void SetGlobal(const char *Name, vector<string> &Value,
@@ -72,12 +84,13 @@ class Lua {
 		  int Total=-1);
    void ResetGlobals();
 
-   const char *GetGlobal(const char *Name);
-   double GetGlobalI(const char *Name);
-   void *GetGlobalP(const char *Name);
-   void GetGlobalVS(const char *Name, vector<string> &VS);
-
-   static const double NoGlobalI;
+   const char *GetGlobalStr(const char *Name);
+   vector<string> GetGlobalStrList(const char *Name);
+   double GetGlobalNum(const char *Name);
+   bool GetGlobalBool(const char *Name);
+   void *GetGlobalPtr(const char *Name);
+   pkgCache::Package *GetGlobalPkg(const char *Name);
+   vector<pkgCache::Package*> GetGlobalPkgList(const char *Name);
 
    void SetDepCache(pkgDepCache *DepCache_);
    void SetCache(pkgCache *Cache_) { Cache = Cache_; };

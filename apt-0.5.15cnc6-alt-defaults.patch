@@ -1,0 +1,28 @@
+diff -upr apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc	2004-03-09 04:44:08 +1200
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc	2004-04-13 19:47:27 +1300
+@@ -21,7 +21,7 @@ RPMPackageData::RPMPackageData()
+ #endif
+ {
+    // Populate priorities
+-   string FileName = _config->FindFile("Dir::Etc::rpmpriorities");
++   string FileName = _config->FindFile("Dir::Etc") + "pkgpriorities";
+    FileFd F(FileName, FileFd::ReadOnly);
+    if (_error->PendingError()) 
+    {
+diff -upr apt-0.5.15cnc6.orig/buildlib/archtable apt-0.5.15cnc6/buildlib/archtable
+--- apt-0.5.15cnc6.orig/buildlib/archtable	2003-04-15 06:15:31 +1300
++++ apt-0.5.15cnc6/buildlib/archtable	2004-04-13 19:50:20 +1300
+@@ -5,8 +5,10 @@
+ 
+ # The left side is a regex for awk
+ 
+-i.86	i386
+-pentium	i386
++i[34]86	i386
++i.86	i586
++pentium.*	i586
++athlon	i586
+ sparc	sparc
+ sparc64	sparc
+ alpha.*	alpha

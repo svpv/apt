@@ -238,14 +238,14 @@ WORKDIR=
 exit_handler()
 {
 	local rc=$?
-	trap '' EXIT
+	trap - EXIT
 	[ -z "$WORKDIR" ] || rm -rf "$WORKDIR"
 	exit $rc
 }
 
 trap exit_handler SIGHUP SIGPIPE SIGINT SIGQUIT SIGTERM EXIT
 
-WORKDIR="$(mktemp -dt "$PROG.XXXXXXXXXX")"
+WORKDIR="$(mktemp -dt "$PROG.XXXXXXXXXX")" || exit
 
 if [ ! -d "$basedir" ]; then
 	if [ -n "$create" ]; then

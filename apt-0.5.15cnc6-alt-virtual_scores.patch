@@ -1,6 +1,6 @@
 diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/algorithms.cc apt-0.5.5cnc4.1/apt-pkg/algorithms.cc
---- apt-0.5.5cnc4.1.orig/apt-pkg/algorithms.cc	2003-09-29 17:21:22 +0400
-+++ apt-0.5.5cnc4.1/apt-pkg/algorithms.cc	2003-09-29 17:29:26 +0400
+--- apt-0.5.5cnc6.orig/apt-pkg/algorithms.cc	2003-09-29 17:21:22 +0400
++++ apt-0.5.5cnc6/apt-pkg/algorithms.cc	2003-09-29 17:29:26 +0400
 @@ -540,6 +540,9 @@ int pkgProblemResolver::ScoreSort(const 
  // ProblemResolver::MakeScores - Make the score table			/*{{{*/
  // ---------------------------------------------------------------------
@@ -71,8 +71,8 @@ diff -uprk.orig apt-0.5.5cnc4.1.orig/apt-pkg/algorithms.h apt-0.5.5cnc4.1/apt-pk
  
  bool pkgDistUpgrade(pkgDepCache &Cache);
 diff -uprk.orig apt-0.5.15cnc5/apt-pkg/rpm/rpmpackagedata.h.orig apt-0.5.15cnc5/apt-pkg/rpm/rpmpackagedata.h
---- apt-0.5.15cnc5/apt-pkg/rpm/rpmpackagedata.h.orig	2003-12-23 23:19:39 +0300
-+++ apt-0.5.15cnc5/apt-pkg/rpm/rpmpackagedata.h	2004-01-12 18:27:13 +0300
+--- apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.h.orig	2003-12-23 23:19:39 +0300
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.h	2004-01-12 18:27:13 +0300
 @@ -70,7 +70,7 @@
     {
        if (Priorities.find(Package) != Priorities.end())
@@ -82,25 +82,52 @@ diff -uprk.orig apt-0.5.15cnc5/apt-pkg/rpm/rpmpackagedata.h.orig apt-0.5.15cnc5/
     };
     inline pkgCache::Flag::PkgFlags PkgFlags(string Package) 
     	{return Flags[Package];};
-diff -uprk.orig apt-0.5.5cnc4.1.orig/cmdline/apt-get.cc apt-0.5.5cnc4.1/cmdline/apt-get.cc
---- apt-0.5.5cnc4.1.orig/cmdline/apt-get.cc	2003-09-29 17:21:22 +0400
-+++ apt-0.5.5cnc4.1/cmdline/apt-get.cc	2003-09-29 17:27:28 +0400
-@@ -1222,7 +1222,17 @@ bool TryToInstall(pkgCache::PkgIterator 
-       if ((Pkg.ProvidesList()->NextProvides == 0 ||
-         (!Remove && _config->FindB("APT::Install::Virtual", false))))
-       {
--	 pkgCache::PkgIterator Tmp = Pkg.ProvidesList().OwnerPkg();
-+	 unsigned long Size = 0;
-+	 for (pkgCache::PrvIterator I = Pkg.ProvidesList(); I.end() == false; I++)
-+    	   Size++;
-+	 SPtrArray<pkgCache::Package *> PList = new pkgCache::Package *[Size];
-+	 pkgCache::Package **PEnd = PList;
-+	 for (pkgCache::PrvIterator I = Pkg.ProvidesList(); I.end() == false; I++)
-+	   *PEnd++ = I.OwnerPkg();
-+	 Fix.MakeScores();
-+	 qsort(PList,PEnd - PList,sizeof(*PList),&(Fix.ScoreSort));
-+	 pkgCache::PkgIterator Tmp = pkgCache::PkgIterator(*Pkg.Cache(), *PList);
-+
- 	 ioprintf(c1out,_("Note, selecting %s instead of %s\n"),
- 	          Tmp.Name(),Pkg.Name());
  
+diff -uprk.orig apt-0.5.15cnc6.orig/cmdline/apt-get.cc apt-0.5.15cnc6/cmdline/apt-get.cc
+--- apt-0.5.15cnc6.orig/cmdline/apt-get.cc	2003-09-29 17:21:22 +0400
++++ apt-0.5.15cnc6/cmdline/apt-get.cc	2004-05-11 17:27:28 +0400
+@@ -1216,10 +1216,24 @@
+    if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0)
+    {
+       vector<pkgCache::Package *> GoodSolutions;
++      unsigned long Size = 0;
+       for (pkgCache::PrvIterator Prv = Pkg.ProvidesList();
+ 	   Prv.end() == false; Prv++)
+-      {
+-	 pkgCache::PkgIterator PrvPkg = Prv.OwnerPkg();
++	 Size++;
++      SPtrArray<pkgCache::Package *> PList = new pkgCache::Package *[Size];
++      pkgCache::Package **PEnd = PList;
++      for (pkgCache::PrvIterator Prv = Pkg.ProvidesList(); Prv.end() == false; Prv++)
++         *PEnd++ = Prv.OwnerPkg();
++      Fix.MakeScores();
++      qsort(PList,PEnd - PList,sizeof(*PList),&(Fix.ScoreSort));
++
++      for (unsigned int p=0; p<Size; ++p)
++      {
++         bool instVirtual = _config->FindB("APT::Install::Virtual", false);
++         pkgCache::PkgIterator PrvPkg = pkgCache::PkgIterator(*Pkg.Cache(), PList[p]);
++	 pkgCache::PrvIterator Prv = Pkg.ProvidesList();
++         for (; Prv.end() == false && Prv.OwnerPkg() != PrvPkg; Prv++)
++	    ;
+ 	 // Check if it's a different version of a package already
+ 	 // considered as a good solution.
+ 	 bool AlreadySeen = false;
+@@ -1241,6 +1255,8 @@
+ 	    // the user might try to install something he already has
+ 	    // without being aware.
+ 	    GoodSolutions.push_back(PrvPkg);
++	    if (instVirtual)
++		break;
+ 	    continue;
+ 	 }
+ 	 pkgCache::VerIterator PrvPkgCandVer =
+@@ -1255,6 +1271,8 @@
+ 	 {
+ 	    // Yes, it is. This is a good solution.
+ 	    GoodSolutions.push_back(PrvPkg);
++	    if (instVirtual)
++		break;
+ 	    continue;
+ 	 }
+       }

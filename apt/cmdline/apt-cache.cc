@@ -87,7 +87,7 @@ bool Script(CommandLine &CmdL)
       _config->Set("Scripts::AptCache::Script::", *I);
 
    _lua->SetCache(GCache);
-   _lua->RunScripts("Scripts::AptCache::Script", false);
+   _lua->RunScripts("Scripts::AptCache::Script");
    _lua->ResetGlobals();
 
    return true;
@@ -1877,6 +1877,12 @@ bool ShowHelp(CommandLine &Cmd)
       "   dotty - Generate package graphs for GraphVis\n"
       "   xvcg - Generate package graphs for xvcg\n"
       "   policy - Show policy settings\n"
+// CNC:2003-03-16
+      );
+#ifdef WITH_LUA
+      _lua->RunScripts("Scripts::AptCache::Help::Command");
+#endif
+      cout << _(
       "\n"
       "Options:\n"
       "  -h   This help text.\n"
@@ -1972,6 +1978,14 @@ int main(int argc,const char *argv[])
    if (ttyname(STDOUT_FILENO) == 0 && _config->FindI("quiet",0) < 1)
       _config->Set("quiet","1");
 
+   // CNC:2004-02-18
+   if (_system->LockRead() == false)
+   {
+      bool Errors = _error->PendingError();
+      _error->DumpErrors();
+      return Errors == true?100:0;
+   }
+
    if (CmdL.DispatchArg(CmdsA,false) == false && _error->PendingError() == false)
    { 
       MMap *Map = 0;
@@ -2004,8 +2018,8 @@ int main(int argc,const char *argv[])
 	 {
 	    _lua->SetGlobal("command_args", CmdL.FileList);
 	    _lua->SetGlobal("command_consume", 0.0);
-	    _lua->RunScripts("Scripts::AptCache::Command", false);
-	    Consume = _lua->GetGlobalI("command_consume");
+	    _lua->RunScripts("Scripts::AptCache::Command");
+	    Consume = _lua->GetGlobalNum("command_consume");
 	    _lua->ResetGlobals();
 	    _lua->ResetCaches();
 	 }

@@ -271,8 +271,14 @@ bool rpmListParser::UsePackage(pkgCache::PkgIterator Pkg,
       Pkg->Section = UniqFindTagWrite(RPMTAG_GROUP);
    if (_error->PendingError()) 
        return false;
-   Ver->Priority = RpmData->VerPriority(Pkg.Name());
-   Pkg->Flags |= RpmData->PkgFlags(Pkg.Name());
+   string PkgName = Pkg.Name();
+   string::size_type HashPos = PkgName.find('#');
+   if (HashPos != string::npos)
+      PkgName = PkgName.substr(0, HashPos);
+   Ver->Priority = RpmData->VerPriority(PkgName);
+   Pkg->Flags |= RpmData->PkgFlags(PkgName);
+   if (HashPos != string::npos && (Pkg->Flags & pkgCache::Flag::Essential))
+      Pkg->Flags = pkgCache::Flag::Important;
    if (ParseStatus(Pkg,Ver) == false)
        return false;
    return true;
@@ -313,10 +319,10 @@ unsigned short rpmListParser::VersionHash()
       int Len;
       int type, count;
       int res;
-      char **strings;
+      char **strings = NULL;
       
       res = headerGetEntry(header, *sec, &type, (void **)&strings, &count);
-      if (res != 1 || count == 0)
+      if (res != 1)
 	 continue;
       
       switch (type) 
@@ -335,6 +341,7 @@ unsigned short rpmListParser::VersionHash()
 	    
 	    Result = AddCRC16(Result,Str,Len);
 	 }
+	 free(strings);
 	 break;
 	 
       case RPM_STRING_TYPE:
@@ -490,6 +497,9 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
    }
    
    ParseDepends(Ver, namel, verl, flagl, count, Type);
+
+   free(namel);
+   free(verl);
    
    return true;
 }
@@ -520,6 +530,7 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 {
    const char **names = NULL;
    int_32 count = 0;
+   bool ret = true;
    rpmHeaderGetEntry(header, RPMTAG_OLDFILENAMES,
 		     NULL, (void **) &names, &count);
    while (count--) 
@@ -536,12 +547,14 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 	       break;
 	    }
 	 }
-	 if (Found == false && NewProvides(Ver, FileName, "") == false)
-	    return false;
+	 if (Found == false && NewProvides(Ver, FileName, "") == false) {
+	    ret = false;
+	    break;
+	 }
       }
    }
-
-   return true;
+   free(names);
+   return ret;
 }
 
 // ListParser::ParseProvides - Parse the provides list			/*{{{*/
@@ -553,13 +566,6 @@ bool rpmListParser::ParseProvides(pkgCache::VerIterator Ver)
    char **namel = NULL;
    char **verl = NULL;
    int res;
-
-   if (Duplicated == true) 
-   {
-      char *name;
-      headerGetEntry(header, RPMTAG_NAME, &type, (void **)&name, &count);
-      NewProvides(Ver, string(name), Version());
-   }
 
    res = headerGetEntry(header, RPMTAG_PROVIDENAME, &type,
 			(void **)&namel, &count);
@@ -576,21 +582,29 @@ bool rpmListParser::ParseProvides(pkgCache::VerIterator Ver)
    if (res != 1)
 	verl = NULL;
 
+   bool ret = true;
    for (int i = 0; i < count; i++) 
    {      
       if (verl && *verl[i]) 
       {
-	 if (NewProvides(Ver,namel[i],verl[i]) == false) 
-	    return false;
+	 if (NewProvides(Ver,namel[i],verl[i]) == false) {
+	    ret = false;
+	    break;
+	 }
       } 
       else 
       {
-	 if (NewProvides(Ver,namel[i],"") == false) 
-	    return false;
+	 if (NewProvides(Ver,namel[i],"") == false) {
+	    ret = false;
+	    break;
+	 }
       }
    }
+
+   free(namel);
+   free(verl);
     
-   return true;
+   return ret;
 }
                                                                         /*}}}*/
 // ListParser::Step - Move to the next section in the file		/*{{{*/

@@ -319,7 +319,7 @@ bool pkgRPMPM::Go()
       _lua->SetGlobal("pkgs_install", pkgs_install);
       _lua->SetGlobal("pkgs_remove", pkgs_uninstall);
       _lua->SetDepCache(&Cache);
-      _lua->RunScripts("Scripts::PM::Pre", false);
+      _lua->RunScripts("Scripts::PM::Pre");
       _lua->ResetCaches();
       _lua->ResetGlobals();
       if (_error->PendingError() == true) {
@@ -338,8 +338,9 @@ bool pkgRPMPM::Go()
       _lua->SetGlobal("names_remove", uninstall);
       _lua->SetGlobal("pkgs_install", pkgs_install);
       _lua->SetGlobal("pkgs_remove", pkgs_uninstall);
+      _lua->SetGlobal("transaction_success", Ret);
       _lua->SetDepCache(&Cache);
-      _lua->RunScripts("Scripts::PM::Post", false);
+      _lua->RunScripts("Scripts::PM::Post");
       _lua->ResetCaches();
       _lua->ResetGlobals();
       if (_error->PendingError() == true) {
@@ -493,7 +494,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
       }	 
    }
 
-   if (_config->FindB("RPM::Order",false) == false)
+   if (_config->FindB("RPM::Order", false) == false)
       Args[n++] = "--noorder";
     
    bool FilesInArgs = true;
@@ -619,7 +620,9 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
       
       return _error->Error(_("Sub-process %s exited unexpectedly"),Args[0]);
    }
-   cout << _("Done.") << endl;
+
+   if (Interactive == true)
+      cout << _("Done.") << endl;
 
    return true;
 }
@@ -735,6 +738,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
 {
    int rc = 0;
    bool Success = false;
+   bool Interactive = _config->FindB("RPM::Interactive",true);
    int debug = _config->FindB("Debug::pkgRPMPM", false);
    string Dir = _config->Find("RPM::RootDir");
    rpmReadConfigFiles(NULL, NULL);
@@ -783,7 +787,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       probFilter |= RPMPROB_FILTER_REPLACENEWFILES;
    }
 
-   if (_config->FindB("RPM::Interactive", true))
+   if (Interactive == true)
        notifyFlags |= INSTALL_LABEL | INSTALL_HASH;
    else
        notifyFlags |= INSTALL_LABEL | INSTALL_PERCENT;
@@ -799,13 +803,15 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    packagesTotal = install.size()+upgrade.size();
 
 #if RPM_VERSION >= 0x040100
-   rc = rpmtsCheck(TS);
-   probs = rpmtsProblems(TS);
-   if (rc || probs->numProblems > 0) {
-      rpmpsPrint(NULL, probs);
-      rpmpsFree(probs);
-      _error->Error(_("Transaction set check failed"));
-      goto exit;
+   if (_config->FindB("RPM::NoDeps", false) == false) {
+      rc = rpmtsCheck(TS);
+      probs = rpmtsProblems(TS);
+      if (rc || probs->numProblems > 0) {
+	 rpmpsPrint(NULL, probs);
+	 rpmpsFree(probs);
+	 _error->Error(_("Transaction set check failed"));
+	 goto exit;
+      }
    }
 #else
 #if RPM_VERSION < 0x040000
@@ -813,25 +819,25 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
 #else
    rpmDependencyConflict conflicts;
 #endif
-   int numConflicts;
-   if (_config->FindB("RPM::NoDeps", false) == false &&
-       rpmdepCheck(TS, &conflicts, &numConflicts)) 
-   {
-      _error->Error(_("Transaction set check failed"));
-      if (conflicts) {
-	 printDepProblems(stderr, conflicts, numConflicts);
-	 rpmdepFreeConflicts(conflicts, numConflicts);
+   if (_config->FindB("RPM::NoDeps", false) == false) {
+      int numConflicts;
+      if (rpmdepCheck(TS, &conflicts, &numConflicts)) {
+	 _error->Error(_("Transaction set check failed"));
+	 if (conflicts) {
+	    printDepProblems(stderr, conflicts, numConflicts);
+	    rpmdepFreeConflicts(conflicts, numConflicts);
+	 }
+	 goto exit;
       }
-      goto exit;
    }
 #endif
 
    rc = 0;
 #if RPM_VERSION >= 0x040100
-   if (_config->FindB("RPM::Order", true) == true)
+   if (_config->FindB("RPM::Order", false) == true)
       rc = rpmtsOrder(TS);
 #else
-   if (_config->FindB("RPM::Order", true) == true)
+   if (_config->FindB("RPM::Order", false) == true)
       rc = rpmdepOrder(TS);
 #endif
 
@@ -863,7 +869,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       Success = true;
       if (rc < 0)
 	 _error->Warning(_("Some errors occurred while running transaction"));
-      else
+      else if (Interactive == true)
 	 cout << _("Done.") << endl;
    }
    rpmpsFree(probs);
@@ -902,6 +908,8 @@ bool pkgRPMLibPM::ParseRpmOpts(const char *Cnf, int *tsFlags, int *probFilter)
 	    *tsFlags |= RPMTRANS_FLAG_ALLFILES;
 	 else if (Opts->Value == "--justdb")
 	    *tsFlags |= RPMTRANS_FLAG_JUSTDB;
+	 else if (Opts->Value == "--test")
+	    *tsFlags |= RPMTRANS_FLAG_TEST;
 #if RPM_VERSION >= 0x040000
 	 else if (Opts->Value == "--nomd5")
 	    *tsFlags |= RPMTRANS_FLAG_NOMD5;

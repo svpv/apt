@@ -71,6 +71,8 @@ RPMDBHandler *rpmSystem::GetDBHandler()
 bool rpmSystem::LockRead()
 {
    GetDBHandler();
+   if (_error->PendingError() == true)
+      return false;
    return true;
 }
 
@@ -173,7 +175,7 @@ bool rpmSystem::Initialize(Configuration &Cnf)
       if (Cnf.FindB("RPM::Force",false))
 	 Cnf.Set("RPM::Options::", "--force");
    }
-   if (Cnf.Exists("RPM::Force"))
+   if (Cnf.Exists("RPM::NoDeps"))
    {
       _error->Warning("RPM::NoDeps is obsoleted. Add \"--nodeps\" to RPM::Options and RPM::Erase-Options instead.");
       if (Cnf.FindB("RPM::NoDeps",false))
@@ -189,10 +191,10 @@ bool rpmSystem::Initialize(Configuration &Cnf)
       NULL,
    };
    int NoPromote = 1;
-   const char *Opt = *RPMOptions;
+   const char **Opt = RPMOptions;
    while (*Opt && NoPromote)
    {
-      Top = _config->Tree(Opt);
+      Top = _config->Tree(*Opt);
       if (Top != 0)
       {
 	 for (Top = Top->Child; Top != 0; Top = Top->Next)
@@ -516,12 +518,20 @@ static void HashOptionTree(unsigned long &Hash, const char *Name)
       for (Top = Top->Child; Top != 0; Top = Top->Next)
 	 HashString(Hash, Top->Value.c_str());
 }
+static void HashOptionFile(unsigned long &Hash, const char *Name)
+{
+   string FileName = _config->FindFile(Name);
+   struct stat st;
+   stat(FileName.c_str(), &st);
+   Hash += st.st_mtime;
+}
 unsigned long rpmSystem::OptionsHash() const
 {
    unsigned long Hash = 0;
    HashOption(Hash, "RPM::Architecture");
    HashOptionTree(Hash, "RPM::Allow-Duplicated");
    HashOptionTree(Hash, "RPM::Ignore");
+   HashOptionFile(Hash, "Dir::Etc::rpmpriorities");
    return Hash;
 }
 									/*}}}*/

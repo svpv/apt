@@ -23,15 +23,6 @@ extern "C" {
 #include "lposix.h"
 #include "lrexlib.h"
 #include "linit.h"
-
-// For the interactive interpreter.
-#define main lua_c_main
-#define readline lua_c_readline
-#define L lua_c_L
-#include "../lua/lua/lua.c"
-#undef main
-#undef readline
-#undef L
 }
 
 #include <apt-pkg/depcache.h>
@@ -50,6 +41,7 @@ extern "C" {
 #include <limits.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <assert.h>
 
 #define pushudata(ctype, value) \
    do { \
@@ -76,7 +68,10 @@ Lua *_GetLuaObj()
 
 static int luaopen_apt(lua_State *L);
 
-const double Lua::NoGlobalI = INT_MIN;
+static int AptLua_vercomp(lua_State *L);
+static int AptLua_pkgcomp(lua_State *L);
+
+#define CACHE_KEY "ChunkCache"
 
 Lua::Lua()
       : DepCache(0), Cache(0), CacheControl(0), Fix(0), DontFix(0)
@@ -104,8 +99,17 @@ Lua::Lua()
       lua_settop(L, 0);  /* discard any results */
    }
    luaL_newmetatable(L, "pkgCache::Package*");
+   lua_pushstring(L, "__eq");
+   lua_pushcfunction(L, AptLua_pkgcomp);
+   lua_settable(L, -3);
    luaL_newmetatable(L, "pkgCache::Version*");
+   lua_pushstring(L, "__eq");
+   lua_pushcfunction(L, AptLua_vercomp);
+   lua_settable(L, -3);
    lua_pop(L, 2);
+   lua_pushstring(L, CACHE_KEY);
+   lua_newtable(L);
+   lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 Lua::~Lua()
@@ -125,30 +129,35 @@ bool Lua::HasScripts(const char *ConfListKey)
 
 bool Lua::RunScripts(const char *ConfListKey, bool CacheChunks)
 {
-   lua_pushstring(L, "script_slot");
-   lua_pushstring(L, ConfListKey);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_pushstring(L, CACHE_KEY);
+   lua_rawget(L, LUA_REGISTRYINDEX);
+   assert(lua_istable(L, -1));
 
-   CacheData Data;
-   if (ChunkCache.find(ConfListKey) == ChunkCache.end()) {
+   int CacheIndex = lua_gettop(L);
+
+   lua_pushstring(L, ConfListKey);
+   lua_rawget(L, CacheIndex);
+
+   if (lua_isnil(L, -1)) {
       string File, Dir = _config->FindDir("Dir::Bin::scripts", "");
-      Data.Begin = lua_gettop(L)+1;
+      lua_pop(L, 1);
+      lua_newtable(L);
+      int Count = 0;
       const Configuration::Item *Top = _config->Tree(ConfListKey);
       for (Top = (Top == 0?0:Top->Child); Top != 0; Top = Top->Next) {
 	 const string &Value = Top->Value;
 	 if (Value.empty() == true)
 	    continue;
 	 if (Value == "interactive") {
-	    lua_pushstring(L, "script_filename");
-	    lua_pushstring(L, "<interactive>");
+	    lua_pushstring(L, "script_slot");
+	    lua_pushstring(L, ConfListKey);
 	    lua_rawset(L, LUA_GLOBALSINDEX);
-	    cout << endl
-	         << "APT Interactive " << LUA_VERSION << " Interpreter"
-		 << endl << "[" << ConfListKey << "]" << endl;
-	    int OldTop = lua_gettop(L);
-	    lua_c_L = L;
-	    manual_input();
-	    lua_settop(L, OldTop);
+
+	    RunInteractive(ConfListKey);
+
+	    lua_pushstring(L, "script_slot");
+	    lua_pushnil(L);
+	    lua_rawset(L, LUA_GLOBALSINDEX);
 	    continue;
 	 }
 	 if (Value[0] == '.' || Value[0] == '/') {
@@ -161,36 +170,173 @@ bool Lua::RunScripts(const char *ConfListKey, bool CacheChunks)
 	    if (FileExists(File) == false)
 	       continue;
 	 }
-	 lua_pushstring(L, "script_filename");
-	 lua_pushstring(L, File.c_str());
-	 lua_rawset(L, LUA_GLOBALSINDEX);
 	 if (luaL_loadfile(L, File.c_str()) != 0) {
 	    _error->Warning(_("Error loading script: %s"),
+			    lua_tostring(L, -1));
+	    lua_pop(L, 1);
+	 }
+	 lua_rawseti(L, -2, ++Count);
+      }
+      if (Count == 0) {
+	 lua_pop(L, 2); // Script table and cache table.
+	 return false;
+      }
+      if (CacheChunks == true) {
+	 lua_pushstring(L, ConfListKey);
+	 lua_pushvalue(L, -2);
+	 lua_rawset(L, CacheIndex);
+      }
+   }
+
+   lua_pushstring(L, "script_slot");
+   lua_pushstring(L, ConfListKey);
+   lua_rawset(L, LUA_GLOBALSINDEX);
+
+   InternalRunScript();
+
+   lua_pushstring(L, "script_slot");
+   lua_pushnil(L);
+   lua_rawset(L, LUA_GLOBALSINDEX);
+
+   lua_pop(L, 1);
+
+   return true;
+}
+
+bool Lua::RunScript(const char *Script, const char *ChunkCacheKey)
+{
+   lua_pushstring(L, CACHE_KEY);
+   lua_rawget(L, LUA_REGISTRYINDEX);
+   assert(lua_istable(L, -1));
+
+   int CacheIndex = lua_gettop(L);
+
+   if (Script == NULL || *Script == '\0')
+      return false;
+   
+   bool Cached = false;
+   if (ChunkCacheKey) {
+      lua_pushstring(L, ChunkCacheKey);
+      lua_rawget(L, 1);
+      if (!lua_isnil(L, -1))
+	 Cached = true;
+      else
+	 lua_pop(L, 1);
+   }
+
+   if (Cached == false) {
+      if (luaL_loadbuffer(L, Script, strlen(Script), "<lua>") != 0) {
+	 _error->Warning(_("Error loading script: %s"),
+			 lua_tostring(L, -1));
+	 lua_pop(L, 2); // Error and cache table
+	 assert(lua_gettop(L) == 0);
+	 return false;
+      }
+
+      if (ChunkCacheKey) {
+	 lua_pushstring(L, ChunkCacheKey);
+	 lua_pushvalue(L, -2);
+	 lua_rawset(L, CacheIndex);
+      }
+   }
+
+   InternalRunScript();
+
+   lua_pop(L, 1);
+
+   return true;
+}
+
+void Lua::InternalRunScript()
+{
+   // Script or script list must be at the top, and will be poped.
+   if (lua_istable(L, -1)) {
+      int t = lua_gettop(L);
+      lua_pushnil(L);
+      while (lua_next(L, t)) {
+	 if (lua_pcall(L, 0, 0, 0) != 0) {
+	    _error->Warning(_("Error running script: %s"),
 			    lua_tostring(L, -1));
 	    lua_remove(L, -1);
 	 }
       }
-      Data.End = lua_gettop(L)+1;
-      if (Data.Begin == Data.End)
-	 return false;
-      if (CacheChunks == true)
-	 ChunkCache[ConfListKey] = Data;
+      lua_pop(L, 1);
    } else {
-      Data = ChunkCache[ConfListKey];
-   }
-   for (int i = Data.Begin; i != Data.End; i++) {
-      lua_pushvalue(L, i);
       if (lua_pcall(L, 0, 0, 0) != 0) {
 	 _error->Warning(_("Error running script: %s"),
 			 lua_tostring(L, -1));
 	 lua_remove(L, -1);
       }
    }
-   if (CacheChunks == false) {
-      for (int i = Data.Begin; i != Data.End; i++)
-	 lua_remove(L, Data.Begin);
+}
+
+/* From lua.c */
+static int AptAux_readline(lua_State *l, const char *prompt) {
+   static char buffer[1024];
+   if (prompt) {
+      fputs(prompt, stdout);
+      fflush(stdout);
    }
-   return true;
+   if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+      return 0;  /* read fails */
+   } else {
+      lua_pushstring(l, buffer);
+      return 1;
+   }
+}
+
+/* Based on lua.c */
+void Lua::RunInteractive(const char *PlaceHint)
+{
+   cout << endl
+	<< "APT Interactive " << LUA_VERSION << " Interpreter" << endl;
+   if (PlaceHint)
+	cout << "[" << PlaceHint << "]" << endl;
+   for (;;) {
+      if (AptAux_readline(L, "> ") == 0)
+	 break;
+      if (lua_tostring(L, -1)[0] == '=') {
+	 lua_pushfstring(L, "print(%s)", lua_tostring(L, -1)+1);
+	 lua_remove(L, -2);
+      }
+      int rc = 0;
+      for (;;) {
+	 rc = luaL_loadbuffer(L, lua_tostring(L, -1),
+			      lua_strlen(L, -1), "<lua>");
+	 if (rc == LUA_ERRSYNTAX &&
+	     strstr(lua_tostring(L, -1), "near `<eof>'") != NULL) {
+	    if (AptAux_readline(L, ">> ") == 0)
+	       break;
+	    lua_remove(L, -2); // Remove error
+	    lua_concat(L, 2);
+	    continue;
+	 }
+	 break;
+      }
+      if (rc == 0)
+	 rc = lua_pcall(L, 0, 0, 0);
+      if (rc != 0) {
+	 fprintf(stderr, "%s\n", lua_tostring(L, -1));
+	 lua_pop(L, 1);
+      }
+      lua_pop(L, 1); // Remove line
+   }
+   fputs("\n", stdout);
+}
+
+void Lua::ResetScript(const char *ChunkCacheKey)
+{
+   lua_pushstring(L, ChunkCacheKey);
+   lua_pushnil(L);
+   lua_rawset(L, 1);
+}
+
+void Lua::SetGlobal(const char *Name)
+{
+   lua_pushstring(L, Name);
+   lua_pushnil(L);
+   lua_rawset(L, LUA_GLOBALSINDEX);
+   Globals.push_back(Name);
 }
 
 void Lua::SetGlobal(const char *Name, const char *Value)
@@ -198,6 +344,16 @@ void Lua::SetGlobal(const char *Name, const char *Value)
    if (Value != NULL) {
       lua_pushstring(L, Name);
       lua_pushstring(L, Value);
+      lua_rawset(L, LUA_GLOBALSINDEX);
+   }
+   Globals.push_back(Name);
+}
+
+void Lua::SetGlobal(const char *Name, pkgCache::Package *Value)
+{
+   if (Value != NULL) {
+      lua_pushstring(L, Name);
+      pushudata(pkgCache::Package*, Value);
       lua_rawset(L, LUA_GLOBALSINDEX);
    }
    Globals.push_back(Name);
@@ -262,6 +418,14 @@ void Lua::SetGlobal(const char *Name, vector<pkgCache::Package*> &Value,
    Globals.push_back(Name);
 }
 
+void Lua::SetGlobal(const char *Name, bool Value)
+{
+   lua_pushstring(L, Name);
+   lua_pushboolean(L, Value);
+   lua_rawset(L, LUA_GLOBALSINDEX);
+   Globals.push_back(Name);
+}
+
 void Lua::SetGlobal(const char *Name, double Value)
 {
    lua_pushstring(L, Name);
@@ -301,7 +465,7 @@ void Lua::ResetGlobals()
    }
 }
 
-const char *Lua::GetGlobal(const char *Name)
+const char *Lua::GetGlobalStr(const char *Name)
 {
    lua_pushstring(L, Name);
    lua_rawget(L, LUA_GLOBALSINDEX);
@@ -312,18 +476,45 @@ const char *Lua::GetGlobal(const char *Name)
    return Ret;
 }
 
-double Lua::GetGlobalI(const char *Name)
+vector<string> Lua::GetGlobalStrList(const char *Name)
+{
+   vector<string> Ret;
+   lua_pushstring(L, Name);
+   lua_rawget(L, LUA_GLOBALSINDEX);
+   int t = lua_gettop(L);
+   if (lua_istable(L, t)) {
+      lua_pushnil(L);
+      while (lua_next(L, t) != 0) {
+	 if (lua_isstring(L, -1))
+	    Ret.push_back(lua_tostring(L, -1));
+	 lua_pop(L, 1);
+      }
+   }
+   lua_remove(L, -1);
+   return Ret;
+}
+
+double Lua::GetGlobalNum(const char *Name)
 {
    lua_pushstring(L, Name);
    lua_rawget(L, LUA_GLOBALSINDEX);
-   double Ret = NoGlobalI;
+   double Ret = 0;
    if (lua_isnumber(L, -1))
       Ret = lua_tonumber(L, -1);
    lua_remove(L, -1);
    return Ret;
 }
 
-void *Lua::GetGlobalP(const char *Name)
+bool Lua::GetGlobalBool(const char *Name)
+{
+   lua_pushstring(L, Name);
+   lua_rawget(L, LUA_GLOBALSINDEX);
+   bool Ret = lua_toboolean(L, -1);
+   lua_remove(L, -1);
+   return Ret;
+}
+
+void *Lua::GetGlobalPtr(const char *Name)
 {
    lua_pushstring(L, Name);
    lua_rawget(L, LUA_GLOBALSINDEX);
@@ -334,20 +525,34 @@ void *Lua::GetGlobalP(const char *Name)
    return Ret;
 }
 
-void Lua::GetGlobalVS(const char *Name, vector<string> &VS)
+pkgCache::Package *Lua::GetGlobalPkg(const char *Name)
 {
+   lua_pushstring(L, Name);
+   lua_rawget(L, LUA_GLOBALSINDEX);
+   pkgCache::Package *Ret;
+   checkudata(pkgCache::Package*, Ret, -1);
+   lua_remove(L, -1);
+   return Ret;
+}
+
+vector<pkgCache::Package*> Lua::GetGlobalPkgList(const char *Name)
+{
+   vector<pkgCache::Package*> Ret;
    lua_pushstring(L, Name);
    lua_rawget(L, LUA_GLOBALSINDEX);
    int t = lua_gettop(L);
    if (lua_istable(L, t)) {
       lua_pushnil(L);
       while (lua_next(L, t) != 0) {
-	 if (lua_isstring(L, -1))
-	    VS.push_back(lua_tostring(L, -1));
+	 pkgCache::Package *Pkg;
+	 checkudata(pkgCache::Package*, Pkg, -1);
+	 if (Pkg)
+	    Ret.push_back(Pkg);
 	 lua_pop(L, 1);
       }
    }
    lua_remove(L, -1);
+   return Ret;
 }
 
 void Lua::SetDepCache(pkgDepCache *DepCache_)
@@ -628,6 +833,15 @@ static int AptLua_pkgname(lua_State *L)
    return AptAux_PushCacheString(L, Pkg->Name);
 }
 
+static int AptLua_pkgid(lua_State *L)
+{
+   pkgCache::Package *Pkg = AptAux_ToPackage(L, 1);
+   if (Pkg == NULL)
+      return 0;
+   lua_pushnumber(L, Pkg->ID);
+   return 1;
+}
+
 static int AptLua_pkgsummary(lua_State *L)
 {
    SPtr<pkgCache::PkgIterator> PkgI = AptAux_ToPkgIterator(L, 1);
@@ -659,8 +873,7 @@ static int AptLua_pkgdescr(lua_State *L)
       if (Cache == NULL)
 	 return 0;
       pkgRecords Recs(*Cache);
-      pkgRecords::Parser &Parse = 
-			      Recs.Lookup(PkgI->VersionList().FileList());
+      pkgRecords::Parser &Parse = Recs.Lookup(PkgI->VersionList().FileList());
       lua_pushstring(L, Parse.LongDesc().c_str());
    }
    return 1;
@@ -732,22 +945,47 @@ static int AptLua_pkgverlist(lua_State *L)
    return 1;
 }
 
+static int AptLua_verpkg(lua_State *L)
+{
+   pkgCache::VerIterator *VerI = AptAux_ToVerIterator(L, 1);
+   if (VerI == NULL)
+      return 0;
+   pushudata(pkgCache::Package*, VerI->ParentPkg());
+   return 1;
+}
+
 static int AptLua_verstr(lua_State *L)
 {
    pkgCache::Version *Ver = AptAux_ToVersion(L, 1);
+   if (Ver == NULL)
+      return 0;
    return AptAux_PushCacheString(L, Ver->VerStr);
 }
 
 static int AptLua_verarch(lua_State *L)
 {
    pkgCache::Version *Ver = AptAux_ToVersion(L, 1);
+   if (Ver == NULL)
+      return 0;
    return AptAux_PushCacheString(L, Ver->Arch);
+   
+}
+
+static int AptLua_verid(lua_State *L)
+{
+   pkgCache::Version *Ver = AptAux_ToVersion(L, 1);
+   if (Ver == NULL)
+      return 0;
+   lua_pushnumber(L, Ver->ID);
+   return 1;
    
 }
 
 static int AptLua_verisonline(lua_State *L)
 {
    pkgCache::VerIterator *VerI = AptAux_ToVerIterator(L, 1);
+   if (VerI == NULL)
+      return 0;
    return AptAux_PushBool(L, VerI->Downloadable());
 }
 
@@ -759,17 +997,70 @@ static int AptLua_verprovlist(lua_State *L)
    pkgCache::PrvIterator PrvI = VerI->ProvidesList();
    lua_newtable(L);
    int i = 1;
-   for (; PrvI.end() == false; PrvI++)
-   {
+   for (; PrvI.end() == false; PrvI++) {
       lua_newtable(L);
       lua_pushstring(L, "name");
       lua_pushstring(L, PrvI.Name());
       lua_settable(L, -3);
+#ifndef DEAD
       lua_pushstring(L, "version");
       if (PrvI.ProvideVersion())
          lua_pushstring(L, PrvI.ProvideVersion());
       else
          lua_pushstring(L, "");
+      lua_settable(L, -3);
+#endif
+      lua_pushstring(L, "verstr");
+      if (PrvI.ProvideVersion())
+         lua_pushstring(L, PrvI.ProvideVersion());
+      else
+         lua_pushstring(L, "");
+      lua_settable(L, -3);
+      lua_rawseti(L, -2, i++);
+   }
+   return 1;
+}
+
+static int AptLua_verdeplist(lua_State *L)
+{
+   const char *TypeStr[] = {
+      "", "depends", "predepends", "suggests", "recommends",
+      "conflicts", "replaces", "obsoletes"
+   };
+   pkgCache::VerIterator *VerI = AptAux_ToVerIterator(L, 1);
+   if (VerI == NULL)
+      return 0;
+   pkgCache::DepIterator DepI = VerI->DependsList();
+   lua_newtable(L);
+   int i = 1;
+   for (; DepI.end() == false; DepI++) {
+      lua_newtable(L);
+      lua_pushstring(L, "pkg");
+      pushudata(pkgCache::Package*, DepI.TargetPkg());
+      lua_settable(L, -3);
+      lua_pushstring(L, "name");
+      lua_pushstring(L, DepI.TargetPkg().Name());
+      lua_settable(L, -3);
+      lua_pushstring(L, "verstr");
+      if (DepI.TargetVer())
+         lua_pushstring(L, DepI.TargetVer());
+      else
+         lua_pushstring(L, "");
+      lua_settable(L, -3);
+      lua_pushstring(L, "operator");
+      lua_pushstring(L, DepI.CompType());
+      lua_settable(L, -3);
+      lua_pushstring(L, "type");
+      lua_pushstring(L, TypeStr[DepI->Type]);
+      lua_settable(L, -3);
+      lua_pushstring(L, "verlist");
+      lua_newtable(L);
+      pkgCache::Version **VerList = DepI.AllTargets();
+      for (int j = 0; VerList[j]; j++) {
+	 pushudata(pkgCache::Version*, VerList[j]);
+	 lua_rawseti(L, -2, j+1);
+      }
+      delete[] VerList;
       lua_settable(L, -3);
       lua_rawseti(L, -2, i++);
    }
@@ -1012,6 +1303,22 @@ static int AptLua_aptwarning(lua_State *L)
    return 0;
 }
 
+static int AptLua_gettext(lua_State *L)
+{
+   const char *str = luaL_checkstring(L, 1);
+   if (str != NULL) {
+      lua_pushliteral(L, "TEXTDOMAIN");
+      lua_rawget(L, LUA_GLOBALSINDEX);
+      if (lua_isstring(L, -1))
+	 lua_pushstring(L, dgettext(lua_tostring(L, -1), str));
+      else
+	 lua_pushstring(L, gettext(str));
+      lua_remove(L, -2);
+      return 1;
+   }
+   return 0;
+}
+
 static const luaL_reg aptlib[] = {
    {"confget",		AptLua_confget},
    {"confgetlist",	AptLua_confgetlist},
@@ -1021,6 +1328,7 @@ static const luaL_reg aptlib[] = {
    {"pkgfind",		AptLua_pkgfind},
    {"pkglist",		AptLua_pkglist},
    {"pkgname",		AptLua_pkgname},
+   {"pkgid",		AptLua_pkgid},
    {"pkgsummary",	AptLua_pkgsummary},
    {"pkgdescr",		AptLua_pkgdescr},
    {"pkgisvirtual",	AptLua_pkgisvirtual},
@@ -1028,10 +1336,13 @@ static const luaL_reg aptlib[] = {
    {"pkgverinst",	AptLua_pkgverinst},
    {"pkgvercand",	AptLua_pkgvercand},
    {"pkgverlist",	AptLua_pkgverlist},
+   {"verpkg",		AptLua_verpkg},
    {"verstr",		AptLua_verstr},
    {"verarch",		AptLua_verarch},
+   {"verid",		AptLua_verid},
    {"verisonline",	AptLua_verisonline},
    {"verprovlist",   	AptLua_verprovlist},
+   {"verdeplist",   	AptLua_verdeplist},
    {"verstrcmp",	AptLua_verstrcmp},
    {"markkeep",		AptLua_markkeep},
    {"markinstall",	AptLua_markinstall},
@@ -1050,13 +1361,34 @@ static const luaL_reg aptlib[] = {
    {"statstr",		AptLua_statstr},
    {"apterror",		AptLua_apterror},
    {"aptwarning",	AptLua_aptwarning},
+   {"_",		AptLua_gettext},
    {NULL, NULL}
 };
+
+static int AptLua_vercomp(lua_State *L)
+{
+   pkgCache::Version *v1, *v2;
+   checkudata(pkgCache::Version*, v1, 1);
+   checkudata(pkgCache::Version*, v2, 2);
+   lua_pushboolean(L, (!v1 || v1 != v2) ? 0 : 1);
+   return 1;
+}
+
+static int AptLua_pkgcomp(lua_State *L)
+{
+   pkgCache::Package *p1, *p2;
+   checkudata(pkgCache::Package*, p1, 1);
+   checkudata(pkgCache::Package*, p2, 2);
+   lua_pushboolean(L, (!p1 || p1 != p2) ? 0 : 1);
+   return 1;
+}
+
 
 static int luaopen_apt(lua_State *L)
 {
    lua_pushvalue(L, LUA_GLOBALSINDEX);
    luaL_openlib(L, NULL, aptlib, 0);
+   return 0;
 }
 
 pkgDepCache *LuaCacheControl::Open()
