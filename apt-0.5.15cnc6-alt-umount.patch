@@ -1,0 +1,28 @@
+--- apt-0.5.15cnc6/apt-pkg/contrib/cdromutl.cc~	2004-07-20 15:12:54 +0400
++++ apt-0.5.15cnc6/apt-pkg/contrib/cdromutl.cc	2004-07-20 15:23:42 +0400
+@@ -34,6 +34,7 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <stdio.h>
++#include <mntent.h>
+ 									/*}}}*/
+ 
+ // IsMounted - Returns true if the mount point is mounted		/*{{{*/
+@@ -100,6 +102,17 @@ bool UnmountCdrom(string Path)
+       }
+       else
+       {
++        FILE *f;
++        if ((f = setmntent (MOUNTED, "r")) != NULL)
++        {
++          struct mntent *mnt;
++          while ((mnt = getmntent (f)) != NULL)
++            if (strcmp (Path.c_str(), mnt->mnt_fsname) == 0)
++              if ((strcmp ("subfs", mnt->mnt_type) == 0) || (strcmp ("supermount", mnt->mnt_type) != 0))
++                _exit(0);
++          endmntent (f);
++        }
++
+ 	 const char *Args[10];
+ 	 Args[0] = "umount";
+ 	 Args[1] = Path.c_str();

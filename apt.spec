@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt5
+Release: alt6
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -43,6 +43,7 @@ Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
+Patch34: apt-0.5.15cnc6-alt-umount.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -225,6 +226,7 @@ This package contains method 'rsync' for APT.
 %patch31 -p1
 %patch32 -p1
 %patch33 -p1
+%patch34 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -301,7 +303,6 @@ fi
 %config(noreplace) %_sysconfdir/%name/%name.conf
 %dir %_sysconfdir/%name/*.d
 %_mandir/man?/*
-%_localstatedir/%name
 %doc README* TODO COPYING AUTHORS* ChangeLog-rpm.old.bz2 doc/examples contrib
 
 %defattr(2770,root,rpm,2770)
@@ -316,6 +317,7 @@ fi
 
 %files -n libapt
 %_libdir/*.so.*
+%_localstatedir/%name
 
 %defattr(2770,root,rpm,2770)
 %dir %_cachedir/%name
@@ -336,6 +338,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Aug 31 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt6
+- %_localstatedir/%name: relocated to libapt subpackage (#4697).
+- UnmountCdrom(): silently ignore subfs and supermount filesystems (#4806).
+
 * Mon Jul 05 2004 Kachalov Anton <mouse@altlinux.ru> 0.5.15cnc6-alt5
 - apt-shell fixes (#3091)
 
