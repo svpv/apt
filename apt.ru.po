@@ -1,15 +1,15 @@
 # Russian translation for APT.
-# Copyright (C) 2001-2003 Free Software Foundation, Inc.
+# Copyright (C) 2001-2003, 2004 Free Software Foundation, Inc.
 # Alexander Bokovoy <ab@altlinux.ru>, 2001.
 # Dmitry V. Levin <ldv@altlinux.ru>, 2002-2003.
 # Vyacheslav Dikonov <slava@altlinux.ru>, 2003.
-# Anton V. Denisov <avd@altlinux.org>, 2003.
+# Anton V. Denisov <avd@altlinux.org>, 2003, 2004.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: apt-0.5.15cnc4-alt0.1\n"
-"POT-Creation-Date: 2003-12-08 16:50+1200\n"
-"PO-Revision-Date: 2003-12-08 17:41+1200\n"
+"Project-Id-Version: apt-0.5.15cnc5-alt0.1\n"
+"POT-Creation-Date: 2004-01-05 18:25+1200\n"
+"PO-Revision-Date: 2004-01-04 15:26+1200\n"
 "Last-Translator: Anton V. Denisov <avd@altlinux.org>\n"
 "Language-Team: ALT Linux Team <devel@altlinux.org>\n"
 "MIME-Version: 1.0\n"
@@ -335,8 +335,11 @@ msgid " source indexes."
 msgstr " индексов исходных пакетов."
 
 #: cmdline/apt-cdrom.cc:670
-msgid "Unable to locate any package files, perhaps this is not an APT enabled disc"
-msgstr "Невозможно найти ни одного файла пакетов, возможно этот диск не предназначен для APT"
+msgid ""
+"Unable to locate any package files, perhaps this is not an APT enabled disc"
+msgstr ""
+"Невозможно найти ни одного файла пакетов, возможно этот диск не предназначен "
+"для APT"
 
 #: cmdline/apt-cdrom.cc:694
 msgid "Found label '"
@@ -344,7 +347,8 @@ msgstr "Найдена метка '"
 
 #: cmdline/apt-cdrom.cc:703
 msgid "Please provide a name for this Disc, such as 'ALT Linux Disk 1'"
-msgstr "Пожалуйста, задайте имя для этого диска, например, 'ALT Linux Disk 1'"
+msgstr ""
+"Пожалуйста, задайте имя для этого диска, например, 'ALT Linux Disk 1'"
 
 #: cmdline/apt-cdrom.cc:712
 msgid "That is not a valid name, try again "
@@ -587,7 +591,8 @@ msgstr " Завершено"
 
 #: cmdline/apt-get.cc:825
 msgid "You might want to run `apt-get -f install' to correct these."
-msgstr "Возможно, Вам потребуется запустить `apt-get -f install' для исправления."
+msgstr ""
+"Возможно, Вам потребуется запустить `apt-get -f install' для исправления."
 
 #: cmdline/apt-get.cc:828 cmdline/apt-shell.cc:935
 msgid "Unmet dependencies. Try using -f."
@@ -623,7 +628,8 @@ msgstr "Необходимо получить %sB архивов.\n"
 #: cmdline/apt-get.cc:950 cmdline/apt-shell.cc:836 cmdline/apt-shell.cc:1057
 #, c-format
 msgid "After unpacking %sB of additional disk space will be used.\n"
-msgstr "После распаковки потребуется дополнительно %sB дискового пространства.\n"
+msgstr ""
+"После распаковки потребуется дополнительно %sB дискового пространства.\n"
 
 #: cmdline/apt-get.cc:953 cmdline/apt-shell.cc:839 cmdline/apt-shell.cc:1060
 #, c-format
@@ -694,7 +700,8 @@ msgstr ""
 
 #: cmdline/apt-get.cc:1115 cmdline/apt-shell.cc:1224
 msgid "--fix-missing and media swapping is not currently supported"
-msgstr "Параметр --fix-missing и смена носителей с архивами сейчас не поддерживаются."
+msgstr ""
+"Параметр --fix-missing и смена носителей с архивами сейчас не поддерживаются."
 
 #: cmdline/apt-get.cc:1120 cmdline/apt-shell.cc:1229
 msgid "Unable to correct missing packages."
@@ -723,7 +730,8 @@ msgstr "Внутренняя ошибка. Пакет %s не предоставляет %s\n"
 #: cmdline/apt-get.cc:1259 cmdline/apt-shell.cc:1333
 #, c-format
 msgid "Skipping %s, it is already installed and upgrade is not set.\n"
-msgstr "Пакет %s пропущен, так как он уже установлен, а команды обновления не было.\n"
+msgstr ""
+"Пакет %s пропущен, так как он уже установлен, а команды обновления не было.\n"
 
 #: cmdline/apt-get.cc:1277 cmdline/apt-shell.cc:1351
 #, c-format
@@ -847,7 +855,8 @@ msgstr "Невозможно найти пакет %s"
 
 #: cmdline/apt-get.cc:1960
 msgid "You might want to run `apt-get -f install' to correct these:"
-msgstr "Возможно, Вам потребуется запустить `apt-get -f install' для исправления:"
+msgstr ""
+"Возможно, Вам потребуется запустить `apt-get -f install' для исправления:"
 
 #: cmdline/apt-get.cc:1963
 msgid ""
@@ -1157,7 +1166,8 @@ msgstr "Понадобится получить %sB архивов.\n"
 
 #: cmdline/apt-shell.cc:849
 msgid "Unrequested changes are needed to execute this operation."
-msgstr "Чтобы выполнить эту операцию необходимы изменения, которые не были запрошены."
+msgstr ""
+"Чтобы выполнить эту операцию необходимы изменения, которые не были запрошены."
 
 #: cmdline/apt-shell.cc:932
 msgid "You might want to run `install -f' to correct these."
@@ -1643,7 +1653,7 @@ msgid "Unable to change to %s"
 msgstr "Невозможно перейти к %s"
 
 #: apt-pkg/contrib/cdromutl.cc:153 apt-pkg/contrib/configuration.cc:735
-#: apt-pkg/acquire.cc:412 apt-pkg/clean.cc:38 apt-pkg/sourcelist.cc:423
+#: apt-pkg/acquire.cc:412 apt-pkg/clean.cc:38 apt-pkg/sourcelist.cc:424
 #, c-format
 msgid "Unable to read %s"
 msgstr "Невозможно прочитать %s"
@@ -1676,7 +1686,8 @@ msgstr "Параметр %s нуждается в аргументе."
 #: apt-pkg/contrib/cmndline.cc:201 apt-pkg/contrib/cmndline.cc:207
 #, c-format
 msgid "Option %s: Configuration item specification must have an =<val>."
-msgstr "Параметр %s: Запись параметра настройки должна оканчиваться на =<значение>."
+msgstr ""
+"Параметр %s: Запись параметра настройки должна оканчиваться на =<значение>."
 
 #: apt-pkg/contrib/cmndline.cc:237
 #, c-format
@@ -1855,17 +1866,21 @@ msgstr "Строк, соответствующих %s, не найдено."
 msgid "could not rewind RPMFileHandler"
 msgstr "откат RPMFileHandler невозможен"
 
-#: apt-pkg/rpm/rpmhandler.cc:159 apt-pkg/rpm/rpmhandler.cc:166
+#: apt-pkg/rpm/rpmhandler.cc:160 apt-pkg/rpm/rpmhandler.cc:167
 #: apt-pkg/rpm/rpmpm.cc:688 apt-pkg/rpm/rpmpm.cc:693
 #, c-format
 msgid "Failed reading file %s"
 msgstr "Ошибка чтения файла %s"
 
-#: apt-pkg/rpm/rpmhandler.cc:369 apt-pkg/rpm/rpmhandler.cc:378
+#: apt-pkg/rpm/rpmhandler.cc:327
+msgid "Unable to determine the file size"
+msgstr "Невозможно определить размер файла"
+
+#: apt-pkg/rpm/rpmhandler.cc:372 apt-pkg/rpm/rpmhandler.cc:381
 msgid "could not open RPM database"
 msgstr "невозможно открыть базу данных RPM"
 
-#: apt-pkg/rpm/rpmhandler.cc:385
+#: apt-pkg/rpm/rpmhandler.cc:388
 msgid "could not create RPM database iterator"
 msgstr "невозможно создать итератор базы данных RPM"
 
@@ -1874,28 +1889,37 @@ msgstr "невозможно создать итератор базы данных RPM"
 msgid "Problem with SelectFile %s"
 msgstr "Ошибка SelectFile %s"
 
+#: apt-pkg/rpm/rpmindexfile.cc:383 apt-pkg/rpm/rpmindexfile.cc:570
+#, c-format
+msgid "Failed to stat %s"
+msgstr "Невозможно получить сведения о %s"
+
 #: apt-pkg/rpm/rpmindexfile.cc:392 apt-pkg/rpm/rpmindexfile.cc:428
 #, c-format
 msgid "Problem opening %s"
 msgstr "Ошибка открытия %s"
 
-#: apt-pkg/rpm/rpmindexfile.cc:398 apt-pkg/rpm/rpmindexfile.cc:571
+#: apt-pkg/rpm/rpmindexfile.cc:398 apt-pkg/rpm/rpmindexfile.cc:575
 #, c-format
 msgid "Problem with MergeList %s"
 msgstr "Ошибка с MergeList %s"
 
-#: apt-pkg/rpm/rpmindexfile.cc:433 apt-pkg/rpm/rpmindexfile.cc:589
+#: apt-pkg/rpm/rpmindexfile.cc:433 apt-pkg/rpm/rpmindexfile.cc:593
 #, c-format
 msgid "Problem with MergeFileProvides %s"
 msgstr "Ошибка с MergeFileProvides %s"
 
-#: apt-pkg/rpm/rpmindexfile.cc:556 apt-pkg/rpm/rpmindexfile.cc:585
+#: apt-pkg/rpm/rpmindexfile.cc:560 apt-pkg/rpm/rpmindexfile.cc:589
 msgid "Problem opening RPM database"
 msgstr "Ошибка открытия базы данных RPM"
 
-#: apt-pkg/rpm/rpmindexfile.cc:560
+#: apt-pkg/rpm/rpmindexfile.cc:564
 msgid "Problem with SelectFile RPM Database"
 msgstr "Ошибка SelectFile базы данных RPM."
+
+#: apt-pkg/rpm/rpmlistparser.cc:111
+msgid "Corrupt pkglist: no RPMTAG_NAME in header entry"
+msgstr "Повреждённый pkglist: отсутсвует RPMTAG_NAME в заголовке"
 
 #: apt-pkg/rpm/rpmlistparser.cc:130
 #, c-format
@@ -1928,6 +1952,10 @@ msgstr ""
 "\n"
 "RPM::Allow-Duplicated-Warning \"false\";\n"
 
+#: apt-pkg/rpm/rpmlistparser.cc:666
+msgid "Bad NotAutomatic flag"
+msgstr "Плохой NotAutomatic флаг"
+
 #: apt-pkg/rpm/rpmpackagedata.cc:28
 #, c-format
 msgid "could not open package priority file %s"
@@ -1946,7 +1974,8 @@ msgstr "Недопустимое регулярное выражение '%s' в параметре RPM::Hold."
 #: apt-pkg/rpm/rpmpackagedata.cc:107
 #, c-format
 msgid "Bad regular expression '%s' in option RPM::Allow-Duplicated."
-msgstr "Недопустимое регулярное выражение '%s' в параметре RPM::Allow-Duplicated."
+msgstr ""
+"Недопустимое регулярное выражение '%s' в параметре RPM::Allow-Duplicated."
 
 #: apt-pkg/rpm/rpmpackagedata.cc:124
 #, c-format
@@ -1972,19 +2001,39 @@ msgstr "Ошибка выполнения скриптов %s '%s'"
 msgid "Sub-process returned an error code"
 msgstr "Подпроцесс завершился с ошибкой"
 
+#: apt-pkg/rpm/rpmpm.cc:177 methods/rsh.cc:94
+msgid "Failed to create IPC pipe to subprocess"
+msgstr "Невозможно создать IPC канал для подпроцесса"
+
 #: apt-pkg/rpm/rpmpm.cc:221 apt-pkg/rpm/rpmpm.cc:228
 #, c-format
 msgid "Failure running script %s"
 msgstr "Ошибка выполнения скрипта %s"
 
+#: apt-pkg/rpm/rpmpm.cc:309
+msgid "Unknown pkgRPMPM operation."
+msgstr "Неизвестная pkgRPMPM операция."
+
 #: apt-pkg/rpm/rpmpm.cc:554
 msgid "Executing RPM ("
 msgstr "Запуск RPM ("
+
+#: apt-pkg/rpm/rpmpm.cc:594
+msgid "Could not exec "
+msgstr "Невозможно выполнить"
+
+#: apt-pkg/rpm/rpmpm.cc:609
+msgid "Couldn't wait for subprocess"
+msgstr "Невозможно дождаться подпроцесса"
 
 #: apt-pkg/rpm/rpmpm.cc:625
 #, c-format
 msgid "Sub-process %s recieved a segmentation fault."
 msgstr "Подпроцесс %s выполнил недопустимую операцию."
+
+#: apt-pkg/rpm/rpmpm.cc:633 apt-pkg/rpm/rpmpm.cc:878
+msgid "Done."
+msgstr "Завершено."
 
 #: apt-pkg/rpm/rpmpm.cc:684
 #, c-format
@@ -1996,32 +2045,36 @@ msgstr "Ошибка открытия %s"
 msgid "Failed adding %s to transaction %s"
 msgstr "Ошибка добавления %s в транзакцию %s"
 
-#: apt-pkg/rpm/rpmpm.cc:771 apt-pkg/rpm/rpmpm.cc:781
+#: apt-pkg/rpm/rpmpm.cc:772 apt-pkg/rpm/rpmpm.cc:782
 msgid "Could not open RPM database"
 msgstr "Невозможно открыть базу данных RPM"
 
-#: apt-pkg/rpm/rpmpm.cc:817 apt-pkg/rpm/rpmpm.cc:830
+#: apt-pkg/rpm/rpmpm.cc:818 apt-pkg/rpm/rpmpm.cc:831
 msgid "Transaction set check failed"
 msgstr "Проверка группы транзакций не удалась"
 
-#: apt-pkg/rpm/rpmpm.cc:849
+#: apt-pkg/rpm/rpmpm.cc:850
 #, c-format
 msgid "Ordering failed for %d packages"
 msgstr "Упорядочивание не удалось для %d пакетов"
 
-#: apt-pkg/rpm/rpmpm.cc:853
+#: apt-pkg/rpm/rpmpm.cc:854
 msgid "Committing changes..."
 msgstr "Совершаем изменения..."
 
-#: apt-pkg/rpm/rpmpm.cc:869
+#: apt-pkg/rpm/rpmpm.cc:870
 msgid "Error while running transaction"
 msgstr "Ошибка во время исполнения транзакции"
 
-#: apt-pkg/rpm/rpmpm.cc:875
+#: apt-pkg/rpm/rpmpm.cc:876
 msgid "Some errors occurred while running transaction"
 msgstr "Произошли ошибки при выполнении транзакции"
 
-#: apt-pkg/rpm/rpmsrcrecords.cc:146 apt-pkg/rpm/rpmsrcrecords.cc:153
+#: apt-pkg/rpm/rpmrecords.cc:206 apt-pkg/rpm/rpmsrcrecords.cc:229
+msgid "Could not allocate buffer for record text"
+msgstr "Невозможно выделить буфер для записи текста"
+
+#: apt-pkg/rpm/rpmsrcrecords.cc:160 apt-pkg/rpm/rpmsrcrecords.cc:167
 #, c-format
 msgid "error parsing source list %s"
 msgstr "ошибка обработки списка источников %s"
@@ -2103,7 +2156,8 @@ msgstr ""
 
 #: apt-pkg/acquire-item.cc:709
 #, c-format
-msgid "The package index files are corrupted. No Filename: field for package %s."
+msgid ""
+"The package index files are corrupted. No Filename: field for package %s."
 msgstr "Повреждены индексные файлы. Отсутствует поле Filename: для пакета %s."
 
 #: apt-pkg/acquire-worker.cc:112
@@ -2118,8 +2172,10 @@ msgstr "Программа обработки метода %s не смогла правильно запуститься"
 
 #: apt-pkg/algorithms.cc:251
 #, c-format
-msgid "The package %s needs to be reinstalled, but I can't find an archive for it."
-msgstr "Необходимо переустановить пакет %s, но найти его архивную копию невозможно."
+msgid ""
+"The package %s needs to be reinstalled, but I can't find an archive for it."
+msgstr ""
+"Необходимо переустановить пакет %s, но найти его архивную копию невозможно."
 
 #: apt-pkg/algorithms.cc:1152
 msgid ""
@@ -2342,7 +2398,8 @@ msgstr "Тип индексного файла '%s' не поддерживается"
 
 #: apt-pkg/policy.cc:312
 msgid "Invalid record in the preferences file, no Package header"
-msgstr "Ошибочная запись в конфигурационном файле. Отсутствует заголовок пакета."
+msgstr ""
+"Ошибочная запись в конфигурационном файле. Отсутствует заголовок пакета."
 
 #: apt-pkg/policy.cc:334
 #, c-format
@@ -2386,39 +2443,41 @@ msgstr "Неправильная строка %lu в списке источников %s (обработка URI)"
 #: apt-pkg/sourcelist.cc:109
 #, c-format
 msgid "Malformed line %lu in source list %s (Absolute dist)"
-msgstr "Неправильная строка %lu в списке источников %s (абсолютный дистрибутив)"
+msgstr ""
+"Неправильная строка %lu в списке источников %s (абсолютный дистрибутив)"
 
 #: apt-pkg/sourcelist.cc:116
 #, c-format
 msgid "Malformed line %lu in source list %s (dist parse)"
-msgstr "Неправильная строка %lu в списке источников %s (обработка дистрибутива)"
+msgstr ""
+"Неправильная строка %lu в списке источников %s (обработка дистрибутива)"
 
 #: apt-pkg/sourcelist.cc:206 apt-pkg/sourcelist.cc:230
 #, c-format
 msgid "Vendor block %s is invalid"
 msgstr "Неверный блок данных поставщика %s."
 
-#: apt-pkg/sourcelist.cc:313
+#: apt-pkg/sourcelist.cc:314
 #, c-format
 msgid "Line %u too long in source list %s."
 msgstr "Слишком длинная запись %u в списке источников %s."
 
-#: apt-pkg/sourcelist.cc:333
+#: apt-pkg/sourcelist.cc:334
 #, c-format
 msgid "Malformed line %u in source list %s (type)"
 msgstr "Ошибочная запись в строке %u в списке источников %s (тип источника)"
 
-#: apt-pkg/sourcelist.cc:337
+#: apt-pkg/sourcelist.cc:338
 #, c-format
 msgid "Type '%s' is not known in on line %u in source list %s"
 msgstr "Неизвестный тип '%s' в строке %u списка источников %s."
 
-#: apt-pkg/sourcelist.cc:346 apt-pkg/sourcelist.cc:349
+#: apt-pkg/sourcelist.cc:347 apt-pkg/sourcelist.cc:350
 #, c-format
 msgid "Malformed line %u in source list %s (vendor id)"
 msgstr "Неправильная строка %u в списке источников %s (ID поставщика)"
 
-#: apt-pkg/sourcelist.cc:363
+#: apt-pkg/sourcelist.cc:364
 #, c-format
 msgid "Unknown vendor ID '%s' in line %u of source list %s"
 msgstr "Неизвестный ID поставщика '%s' в строке %u списка источников %s."
@@ -2452,7 +2511,8 @@ msgstr "Неправильный CD"
 #: methods/cdrom.cc:210
 #, c-format
 msgid "Unable to unmount the CD-ROM in %s, it may still be in use."
-msgstr "Невозможно размонтировать CD-ROM в %s, наверное он все еще используется"
+msgstr ""
+"Невозможно размонтировать CD-ROM в %s, наверное он все еще используется"
 
 #: methods/cdrom.cc:233 methods/file.cc:82
 msgid "File not found"
@@ -2757,17 +2817,13 @@ msgstr "Соединение завершилось неудачно"
 msgid "Internal error"
 msgstr "Внутренняя ошибка"
 
-#: methods/rsh.cc:94
-msgid "Failed to create IPC pipe to subprocess"
-msgstr "Невозможно создать IPC канал для подпроцесса"
-
 #: methods/rsh.cc:267
 msgid "File Not Found"
 msgstr "Файл не найден"
 
 #: methods/rsh.cc:333
 msgid "Connection closed prematurely"
-msgstr "Соединение закрылось prematurely"
+msgstr "Соединение закрылось неожиданно"
 
 #~ msgid "Note, selecting %s instead of %s\n"
 #~ msgstr "Обратите внимание: пакет %s выбран вместо %s.\n"
@@ -2810,4 +2866,3 @@ msgstr "Соединение закрылось prematurely"
 
 #~ msgid "Collecting File Provides"
 #~ msgstr "Создание списка имён"
-

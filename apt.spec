@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc5
-Release: alt2
+Release: alt3
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -268,6 +268,8 @@ find %buildroot%_includedir -type f -name rpmshowprogress.h -print -delete
 
 %find_lang %name
 
+unset RPM_PYTHON
+
 %triggerun -- apt < 0:0.5.4
 CONF=/etc/apt/apt.conf
 if [ -s "$CONF" ]; then
@@ -292,7 +294,7 @@ fi
 %dir %_sysconfdir/%name/*.d
 %_mandir/man?/*
 %_localstatedir/%name
-%doc README* TODO COPYING AUTHORS* doc/examples ChangeLog-rpm.old.bz2
+%doc README* TODO COPYING AUTHORS* ChangeLog-rpm.old.bz2 doc/examples contrib
 
 %defattr(2770,root,rpm,2770)
 %_cachedir/%name/archives
@@ -326,6 +328,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed Jan 21 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt3
+- Readded contrib to documentation.
+- Updated russian translation from Anton Denisov.
+
 * Mon Jan 19 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt2
 - Added one more %%triggerun to correct apt.conf,
   due to apt methods migration.
