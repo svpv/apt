@@ -1,0 +1,108 @@
+--- apt-0.5.15cnc5~/lua/Makefile.am	2003-12-23 20:14:06 +0000
++++ apt-0.5.15cnc5/lua/Makefile.am	2004-01-16 18:25:47 +0000
+@@ -1,7 +1,6 @@
+ 
+ if WITH_LUA
+-noinst_LTLIBRARIES = liblua.la
+-noinst_PROGRAMS = lua/lua luac/luac
++noinst_LTLIBRARIES = libluapt.la
+ endif
+ 
+ EXTRA_DIST = \
+@@ -11,75 +10,19 @@ EXTRA_DIST = \
+ 	local/userconfig.c \
+ 	local/linit.lua
+ 
+-LDADD = liblua.la
+-INCLUDES = -I$(srcdir)/include -I$(srcdir)/local
+-
+-lua_lua_SOURCES = lua/lua.c
+-lua_lua_CFLAGS = -DLUA_USERCONFIG='"$(srcdir)/local/userconfig.c"'
+-#lua_lua_LDADD = $(LDADD) -lreadline -lhistory -lncurses
+-luac_luac_SOURCES = luac/luac.c luac/print.c lopcodes.c
+-luac_luac_CFLAGS = -DLUA_OPNAMES
++LDADD = libluapt.la
++INCLUDES = -I$(srcdir)/local
+ 
+-liblua_la_CFLAGS = -DUSE_DLOPEN -DWITH_POSIX
+-liblua_la_LIBADD = -lm -ldl
+-liblua_la_SOURCES = \
++libluapt_la_LIBADD = -llua -llualib
++libluapt_la_CFLAGS = -DWITH_POSIX
++libluapt_la_SOURCES = \
+ 		local/linit.c \
+ 		local/linit.h \
+ 		local/linit.lch \
+ 		local/lposix.h \
+ 		local/lposix.c \
+ 		local/lrexlib.h \
+-		local/lrexlib.c \
+-		include/lauxlib.h \
+-		include/lua.h \
+-		include/lualib.h \
+-		lib/lauxlib.c \
+-		lib/lbaselib.c \
+-		lib/ldblib.c \
+-		lib/liolib.c \
+-		lib/lmathlib.c \
+-		lib/loadlib.c \
+-		lib/lstrlib.c \
+-		lib/ltablib.c \
+-		lapi.c \
+-		lapi.h \
+-		lcode.c \
+-		lcode.h \
+-		ldebug.c \
+-		ldebug.h \
+-		ldo.c \
+-		ldo.h \
+-		ldump.c \
+-		lfunc.c \
+-		lfunc.h \
+-		lgc.c \
+-		lgc.h \
+-		llex.c \
+-		llex.h \
+-		llimits.h \
+-		lmem.c \
+-		lmem.h \
+-		lobject.c \
+-		lobject.h \
+-		lopcodes.c \
+-		lopcodes.h \
+-		lparser.c \
+-		lparser.h \
+-		lstate.c \
+-		lstate.h \
+-		lstring.c \
+-		lstring.h \
+-		ltable.c \
+-		ltable.h \
+-		ltests.c \
+-		ltm.c \
+-		ltm.h \
+-		lundump.c \
+-		lundump.h \
+-		lvm.c \
+-		lvm.h \
+-		lzio.c \
+-		lzio.h
++		local/lrexlib.c
+ 
+ local/linit.lch: local/linit.lua
+ 	bin2c local/linit.lua > local/linit.lch
+--- apt-0.5.15cnc5~/apt-pkg/Makefile.am	2003-12-23 20:23:17 +0000
++++ apt-0.5.15cnc5/apt-pkg/Makefile.am	2004-01-16 19:06:12 +0000
+@@ -6,10 +6,10 @@ libapt_pkg_la_LDFLAGS = -version-info 1:
+ 
+ AM_CPPFLAGS = -DLIBDIR=\"$(libdir)\"
+ 
+-INCLUDES = -I$(top_srcdir)/lua/include -I$(top_srcdir)/lua/local
++INCLUDES = -I$(top_srcdir)/lua/local
+ 
+ if WITH_LUA
+-libapt_pkg_la_LIBADD += $(top_builddir)/lua/liblua.la
++libapt_pkg_la_LIBADD += $(top_builddir)/lua/libluapt.la
+ endif
+ 
+ libapt_pkg_la_SOURCES = \

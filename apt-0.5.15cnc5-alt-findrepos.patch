@@ -1,0 +1,13 @@
+diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmindexfile.cc apt-0.5.15cnc5/apt-pkg/rpm/rpmindexfile.cc
+--- apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmindexfile.cc	2003-12-23 23:19:55 +0300
++++ apt-0.5.15cnc5/apt-pkg/rpm/rpmindexfile.cc	2004-01-19 16:13:47 +0300
+@@ -638,7 +638,8 @@ class rpmSLTypeGen : public pkgSourceLis
+ 	 {	 
+ 	    // The registered object has no vendor, but the new one does
+ 	    // so, we make the previous one have the vendor too.
+-	    if ((*iter)->Vendor == NULL && Vendor != NULL)
++	    if (Vendor != NULL
++			&& ((*iter)->Vendor == NULL || (*iter)->Vendor != Vendor))
+ 	       (*iter)->Vendor = Vendor;
+ 	    return *iter;
+ 	 }

@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc5
-Release: alt1
+Release: alt2
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -18,8 +18,7 @@ Source3: README.rsync
 Source4: apt.ru.po
 Source5: ChangeLog-rpm.old
 
-Patch1: apt-0.5.15cnc5-alt-libtool.patch
-
+Patch10: apt-0.5.15cnc5-alt-libtool.patch
 Patch11: apt-0.5.15cnc5-alt-fixes.patch
 Patch12: apt-0.5.15cnc5-alt-tinfo.patch
 Patch13: apt-0.5.15cnc5-alt-rpm-build.patch
@@ -38,6 +37,8 @@ Patch25: apt-0.5.5cnc4.1-alt-fixpriorsort.patch
 Patch26: apt-0.5.4cnc9-alt-pkgorderlist_score.patch
 Patch27: apt-0.5.15cnc5-alt-install_virtual.patch
 Patch28: apt-0.5.15cnc5-alt-virtual_scores.patch
+Patch29: apt-0.5.15cnc5-alt-system-lua5.patch
+Patch30: apt-0.5.15cnc5-alt-findrepos.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -52,6 +53,9 @@ BuildPreReq: librpm-devel >= 4.0.4-alt28
 
 # for docs.
 BuildPreReq: docbook-utils
+
+# lua5.
+BuildPreReq: liblua5-devel
 
 %def_disable static
 %{?_enable_static:BuildPreReq: glibc-devel-static}
@@ -189,7 +193,7 @@ This package contains method 'rsync' for APT.
 
 %prep
 %setup -q
-%patch1 -p1
+%patch10 -p1
 %patch11 -p1
 %patch12 -p1
 %patch13 -p1
@@ -208,6 +212,14 @@ This package contains method 'rsync' for APT.
 %patch26 -p1
 %patch27 -p1
 %patch28 -p1
+%patch29 -p1
+%patch30 -p1
+
+# Use system-wide lua5
+pushd lua
+# keep only local/ and lua/
+%__rm -rfv include lib luac *.[ch]
+popd
 
 # Turn it on only if you want to see the debugging messages:
 #%patch101 -p1 -b .getsrc-debug
@@ -256,10 +268,16 @@ find %buildroot%_includedir -type f -name rpmshowprogress.h -print -delete
 
 %find_lang %name
 
-%triggerun -- apt < 0.5.4
+%triggerun -- apt < 0:0.5.4
 CONF=/etc/apt/apt.conf
 if [ -s "$CONF" ]; then
-	%__subst 's/HoldPkgs/Hold/;s/AllowedDupPkgs/Allow-Duplicated/;s/IgnorePkgs/Ignore/;s/PostInstall/Post-Install/;s|Methods .*|Methods "/usr/lib/apt";|;s|PubringPath *"\([^"]*\)"|Pubring "\1/pubring.gpg"|g' "$CONF"
+	%__subst 's/HoldPkgs/Hold/;s/AllowedDupPkgs/Allow-Duplicated/;s/IgnorePkgs/Ignore/;s/PostInstall/Post-Install/;s|Methods .*|Methods "/usr/lib/apt/methods";|;s|PubringPath *"\([^"]*\)"|Pubring "\1/pubring.gpg"|g' "$CONF"
+fi
+
+%triggerun -- apt < 0:0.5.15cnc5-alt2
+CONF=/etc/apt/apt.conf
+if [ -s "$CONF" ]; then
+	%__subst -p 's,"/usr/lib/apt","/usr/lib/apt/methods",g' "$CONF"
 fi
 
 %post -n libapt -p %post_ldconfig
@@ -308,6 +326,12 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Jan 19 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt2
+- Added one more %%triggerun to correct apt.conf,
+  due to apt methods migration.
+- Applied patch from Alexey Tourbin to use systemwide lua5.
+- Applied patch from Sviatoslav Sviridov to workaround VendorList bug.
+
 * Fri Jan 16 2004 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc5-alt1
 - Specfile cleanup.
 - Rediffed patches.
