@@ -1,6 +1,5 @@
-// -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: dpkgpm.cc,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: dpkgpm.cc,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
 
    DPKG Package Manager - Provide an interface to dpkg
@@ -14,6 +13,8 @@
 #include <apt-pkg/dpkgpm.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/depcache.h>
+#include <apt-pkg/strutl.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -23,12 +24,15 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include <iostream>
 									/*}}}*/
+
+using namespace std;
 
 // DPkgPM::pkgDPkgPM - Constructor					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-pkgDPkgPM::pkgDPkgPM(pkgDepCache &Cache) : pkgPackageManager(Cache)
+pkgDPkgPM::pkgDPkgPM(pkgDepCache *Cache) : pkgPackageManager(Cache)
 {
 }
 									/*}}}*/
@@ -139,8 +143,91 @@ bool pkgDPkgPM::RunScripts(const char *Cnf)
    
    return true;
 }
-
                                                                         /*}}}*/
+// DPkgPM::SendV2Pkgs - Send version 2 package info			/*{{{*/
+// ---------------------------------------------------------------------
+/* This is part of the helper script communication interface, it sends
+   very complete information down to the other end of the pipe.*/
+bool pkgDPkgPM::SendV2Pkgs(FILE *F)
+{
+   fprintf(F,"VERSION 2\n");
+   
+   /* Write out all of the configuration directives by walking the 
+      configuration tree */
+   const Configuration::Item *Top = _config->Tree(0);
+   for (; Top != 0;)
+   {
+      if (Top->Value.empty() == false)
+      {
+	 fprintf(F,"%s=%s\n",
+		 QuoteString(Top->FullTag(),"=\"\n").c_str(),
+		 QuoteString(Top->Value,"\n").c_str());
+      }
+
+      if (Top->Child != 0)
+      {
+	 Top = Top->Child;
+	 continue;
+      }
+      
+      while (Top != 0 && Top->Next == 0)
+	 Top = Top->Parent;
+      if (Top != 0)
+	 Top = Top->Next;
+   }   
+   fprintf(F,"\n");
+ 
+   // Write out the package actions in order.
+   for (vector<Item>::iterator I = List.begin(); I != List.end(); I++)
+   {
+      pkgDepCache::StateCache &S = Cache[I->Pkg];
+      
+      fprintf(F,"%s ",I->Pkg.Name());
+      // Current version
+      if (I->Pkg->CurrentVer == 0)
+	 fprintf(F,"- ");
+      else
+	 fprintf(F,"%s ",I->Pkg.CurrentVer().VerStr());
+      
+      // Show the compare operator
+      // Target version
+      if (S.InstallVer != 0)
+      {
+	 int Comp = 2;
+	 if (I->Pkg->CurrentVer != 0)
+	    Comp = S.InstVerIter(Cache).CompareVer(I->Pkg.CurrentVer());
+	 if (Comp < 0)
+	    fprintf(F,"> ");
+	 if (Comp == 0)
+	    fprintf(F,"= ");
+	 if (Comp > 0)
+	    fprintf(F,"< ");
+	 fprintf(F,"%s ",S.InstVerIter(Cache).VerStr());
+      }
+      else
+	 fprintf(F,"> - ");
+      
+      // Show the filename/operation
+      if (I->Op == Item::Install)
+      {
+	 // No errors here..
+	 if (I->File[0] != '/')
+	    fprintf(F,"**ERROR**\n");
+	 else
+	    fprintf(F,"%s\n",I->File.c_str());
+      }      
+      if (I->Op == Item::Configure)
+	 fprintf(F,"**CONFIGURE**\n");
+      if (I->Op == Item::Remove ||
+	  I->Op == Item::Purge)
+	 fprintf(F,"**REMOVE**\n");
+      
+      if (ferror(F) != 0)
+	 return false;
+   }
+   return true;
+}
+									/*}}}*/
 // DPkgPM::RunScriptsWithPkgs - Run scripts with package names on stdin /*{{{*/
 // ---------------------------------------------------------------------
 /* This looks for a list of scripts to run from the configuration file
@@ -158,7 +245,16 @@ bool pkgDPkgPM::RunScriptsWithPkgs(const char *Cnf)
    {
       if (Opts->Value.empty() == true)
          continue;
-		
+
+      // Determine the protocol version
+      string OptSec = Opts->Value;
+      string::size_type Pos;
+      if ((Pos = OptSec.find(' ')) == string::npos || Pos == 0)
+	 Pos = OptSec.length();
+      OptSec = "DPkg::Tools::Options::" + string(Opts->Value.c_str(),Pos);
+      
+      unsigned int Version = _config->FindI(OptSec+"::Version",1);
+      
       // Create the pipes
       int Pipes[2];
       if (pipe(Pipes) != 0)
@@ -185,31 +281,38 @@ bool pkgDPkgPM::RunScriptsWithPkgs(const char *Cnf)
 	 _exit(100);
       }
       close(Pipes[0]);
-      FileFd Fd(Pipes[1]);
-
+      FILE *F = fdopen(Pipes[1],"w");
+      if (F == 0)
+	 return _error->Errno("fdopen","Faild to open new FD");
+      
       // Feed it the filenames.
-      for (vector<Item>::iterator I = List.begin(); I != List.end(); I++)
+      bool Die = false;
+      if (Version <= 1)
       {
-	 // Only deal with packages to be installed from .deb
-	 if (I->Op != Item::Install)
-	    continue;
-
-	 // No errors here..
-	 if (I->File[0] != '/')
-	    continue;
-	 
-	 /* Feed the filename of each package that is pending install
-	    into the pipe. */
-	 if (Fd.Write(I->File.begin(),I->File.length()) == false || 
-	     Fd.Write("\n",1) == false)
+	 for (vector<Item>::iterator I = List.begin(); I != List.end(); I++)
 	 {
-	    kill(Process,SIGINT);	    
-	    Fd.Close();   
-	    ExecWait(Process,Opts->Value.c_str(),true);
-	    return _error->Error("Failure running script %s",Opts->Value.c_str());
+	    // Only deal with packages to be installed from .deb
+	    if (I->Op != Item::Install)
+	       continue;
+
+	    // No errors here..
+	    if (I->File[0] != '/')
+	       continue;
+	    
+	    /* Feed the filename of each package that is pending install
+	       into the pipe. */
+	    fprintf(F,"%s\n",I->File.c_str());
+	    if (ferror(F) != 0)
+	    {
+	       Die = true;
+	       break;
+	    }
 	 }
       }
-      Fd.Close();
+      else
+	 Die = !SendV2Pkgs(F);
+
+      fclose(F);
       
       // Clean up the sub process
       if (ExecWait(Process,Opts->Value.c_str()) == false)
@@ -218,13 +321,15 @@ bool pkgDPkgPM::RunScriptsWithPkgs(const char *Cnf)
 
    return true;
 }
-
 									/*}}}*/
 // DPkgPM::Go - Run the sequence					/*{{{*/
 // ---------------------------------------------------------------------
 /* This globs the operations and calls dpkg */
 bool pkgDPkgPM::Go()
 {
+   unsigned int MaxArgs = _config->FindI("Dpkg::MaxArgs",350);   
+   unsigned int MaxArgBytes = _config->FindI("Dpkg::MaxArgBytes",1024);
+
    if (RunScripts("DPkg::Pre-Invoke") == false)
       return false;
 
@@ -237,13 +342,14 @@ bool pkgDPkgPM::Go()
       for (; J != List.end() && J->Op == I->Op; J++);
 
       // Generate the argument list
-      const char *Args[400];
-      if (J - I > 350)
-	 J = I + 350;
+      const char *Args[MaxArgs + 50];
+      if (J - I > (signed)MaxArgs)
+	 J = I + MaxArgs;
       
       unsigned int n = 0;
       unsigned long Size = 0;
-      Args[n++] = _config->Find("Dir::Bin::dpkg","dpkg").c_str();
+      string Tmp = _config->Find("Dir::Bin::dpkg","dpkg");
+      Args[n++] = Tmp.c_str();
       Size += strlen(Args[n-1]);
       
       // Stick in any custom dpkg options
@@ -294,7 +400,7 @@ bool pkgDPkgPM::Go()
       // Write in the file or package names
       if (I->Op == Item::Install)
       {
-	 for (;I != J && Size < 1024; I++)
+	 for (;I != J && Size < MaxArgBytes; I++)
 	 {
 	    if (I->File[0] != '/')
 	       return _error->Error("Internal Error, Pathname to install is not absolute '%s'",I->File.c_str());
@@ -304,7 +410,7 @@ bool pkgDPkgPM::Go()
       }      
       else
       {
-	 for (;I != J && Size < 1024; I++)
+	 for (;I != J && Size < MaxArgBytes; I++)
 	 {
 	    Args[n++] = I->Pkg.Name();
 	    Size += strlen(Args[n-1]);
@@ -384,8 +490,8 @@ bool pkgDPkgPM::Go()
       {
 	 RunScripts("DPkg::Post-Invoke");
 	 if (WIFSIGNALED(Status) != 0 && WTERMSIG(Status) == SIGSEGV)
-	    return _error->Error("Sub-process %s recieved a segmentation fault.",Args[0]);
-	    
+	    return _error->Error("Sub-process %s received a segmentation fault.",Args[0]);
+
 	 if (WIFEXITED(Status) != 0)
 	    return _error->Error("Sub-process %s returned an error code (%u)",Args[0],WEXITSTATUS(Status));
 	 

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: mmap.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: mmap.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    MMap Class - Provides 'real' mmap or a faked mmap using read().
@@ -31,6 +31,8 @@
 
 #include <string>
 #include <apt-pkg/fileutl.h>
+
+using std::string;
 
 /* This should be a 32 bit type, larger tyes use too much ram and smaller
    types are too small. Where ever possible 'unsigned long' should be used
@@ -92,7 +94,7 @@ class DynamicMMap : public MMap
    unsigned long RawAllocate(unsigned long Size,unsigned long Aln = 0);
    unsigned long Allocate(unsigned long ItemSize);
    unsigned long WriteString(const char *String,unsigned long Len = (unsigned long)-1);
-   inline unsigned long WriteString(string S) {return WriteString(S.begin(),S.size());};
+   inline unsigned long WriteString(string S) {return WriteString(S.c_str(),S.length());};
    void UsePools(Pool &P,unsigned int Count) {Pools = &P; PoolCount = Count;};
    
    DynamicMMap(FileFd &F,unsigned long Flags,unsigned long WorkSpace = 2*1024*1024);

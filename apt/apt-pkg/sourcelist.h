@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: sourcelist.h,v 1.9 2001/11/12 16:34:00 kojima Exp $
+// $Id: sourcelist.h,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
 
    SourceList - Manage a list of sources
@@ -13,19 +13,28 @@
    of the archive. The exact format of the file is documented in
    files.sgml.
 
-   ##################################################################### 
- */
+   The types are mapped through a list of type definitions which handle
+   the actual construction of the back end type. After loading a source 
+   list all you have is a list of package index files that have the ability
+   to be Acquired.
+   
+   The vendor machanism is similar, except the vendor types are hard 
+   wired. Before loading the source list the vendor list is loaded.
+   This doesn't load key data, just the checks to preform.
+   
+   ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_SOURCELIST_H
 #define PKGLIB_SOURCELIST_H
 
 #include <string>
 #include <vector>
-#include <map>
-#include <iostream.h>
 #include <apt-pkg/pkgcache.h>
+#include <apt-pkg/indexfile.h>
 
+using std::string;
+using std::vector;
+    
 #ifdef __GNUG__
 #pragma interface "apt-pkg/sourcelist.h"
 #endif
@@ -34,107 +43,74 @@ class pkgAquire;
 class pkgSourceList
 {
    public:
-
-   struct Item;
-
-   struct VendorItem 
+   
+   // An available vendor
+   struct Vendor
    {
       string VendorID;
-      string Fingerprint;
-      string Name;
+      string FingerPrint;
+      string Description;
+
+      /* Lets revisit these..
+      bool MatchFingerPrint(string FingerPrint);
+      string FingerPrintDescr();*/
    };
    
-   enum RepositoryType {Deb, DebSrc, Rpm, RpmSrc};
-
-   struct FileData 
+   // List of supported source list types
+   class Type
    {
-       string md5_hash;
-       unsigned int size;
+      public:
+      
+      // Global list of Items supported
+      static Type **GlobalList;
+      static unsigned long GlobalListLen;
+      static Type *GetType(const char *Type);
+
+      const char *Name;
+      const char *Label;
+
+      bool FixupURI(string &URI) const;
+      virtual bool ParseLine(vector<pkgIndexFile *> &List,
+			     Vendor const *Vendor,
+			     const char *Buffer,
+			     unsigned long CurLine,string File) const;
+      virtual bool CreateItem(vector<pkgIndexFile *> &List,string URI,
+			      string Dist,string Section,
+			      Vendor const *Vendor) const = 0;
+
+      Type();
+      virtual ~Type() {};
    };
-    
-   struct RepositoryItem 
-   {
-      RepositoryType Type;
-      map<string,FileData> HashIndex; // filename -> filedata
-
-      VendorItem *Vendor;
-
-      string URI;
-      string Dist;
-      
-      bool SetType(string S);
-      bool SetURI(string S);
-      bool SetVendor(vector<VendorItem*> vendors, string S);
-      
-      bool AuthSucceeded() { HashIndex.size() > 0; };
-       
-      bool MD5HashForFile(string file, string &hash, unsigned int &size);
-      
-      string SiteOnly(string URI);
-
-      string HashesURI();
-      string HashesInfo();
-
-      bool UpdateHashes(string File);
-            
-      bool ParseHashData(string str, string &hash, unsigned long &size, 
-			 string &file);
-   };
-   typedef vector<RepositoryItem*>::iterator rep_iterator;
    
-
-   /* Each item in the source list, each line can have more than one
-      item */
-   struct Item
-   {
-      RepositoryItem *Repository;
-      string Section;
-
-      inline RepositoryType Type() const { return Repository->Type; };
-      inline string URI() const { return Repository->URI; };
-      string Dist;
-      
-      string PackagesURI(bool PathOnly = false) const;
-      string PackagesInfo() const;
-
-      string ReleaseURI(bool PathOnly = false) const;
-      string ReleaseInfo() const;
-      
-      string SourceInfo(string Pkg,string Ver,string Comp) const;
-
-      string ArchiveInfo(pkgCache::VerIterator Ver) const;
-      string ArchiveURI(string File) const;
-   };
-   typedef vector<Item>::const_iterator const_iterator;
-
+   typedef vector<pkgIndexFile *>::const_iterator const_iterator;
    
- protected:
+   protected:
 
-   vector<RepositoryItem*> Repositories;
-   vector<VendorItem*> Vendors;
-   vector<Item> List;
+   vector<pkgIndexFile *> SrcList;
+   vector<Vendor const *> VendorList;
    
- public:
+   public:
 
    bool ReadMainList();
    bool Read(string File);
+   bool ReadVendors();
    
-   bool ReadVendors(string File);
-
-   // Repository accessors
-   inline rep_iterator rep_begin() {return Repositories.begin();};
-   inline rep_iterator rep_end() {return Repositories.end();};
-
    // List accessors
-   inline const_iterator begin() const {return List.begin();};
-   inline const_iterator end() const {return List.end();};
-   inline unsigned int size() const {return List.size();};
-   inline bool empty() const {return List.empty();};
+   inline const_iterator begin() const {return SrcList.begin();};
+   inline const_iterator end() const {return SrcList.end();};
+   inline unsigned int size() const {return SrcList.size();};
+   inline bool empty() const {return SrcList.empty();};
+
+   bool FindIndex(pkgCache::PkgFileIterator File,
+		  pkgIndexFile *&Found) const;
+   bool GetIndexes(pkgAcquire *Owner) const;
+
+   // CNC:2002-07-04
+   bool GetReleases(pkgAcquire *Owner) const;
    
    pkgSourceList();
-//   pkgSourceList(string File);   
+   pkgSourceList(string File);
+   ~pkgSourceList();      
 };
-
-ostream &operator <<(ostream &O,pkgSourceList::Item &Itm);
 
 #endif

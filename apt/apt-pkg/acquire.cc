@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire.cc,v 1.3 2001/06/16 01:50:22 kojima Exp $
+// $Id: acquire.cc,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
 
    Acquire - File Acquiration
@@ -23,14 +23,17 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/strutl.h>
 
+#include <apti18n.h>
+
+#include <iostream>
+    
 #include <dirent.h>
 #include <sys/time.h>
 #include <errno.h>
 #include <sys/stat.h>
-
-#include <i18n.h>
-
 									/*}}}*/
+
+using namespace std;
 
 // Acquire::pkgAcquire - Constructor					/*{{{*/
 // ---------------------------------------------------------------------
@@ -110,10 +113,15 @@ void pkgAcquire::Remove(Item *Itm)
 {
    Dequeue(Itm);
    
-   for (vector<Item *>::iterator I = Items.begin(); I < Items.end(); I++)
+   for (ItemIterator I = Items.begin(); I != Items.end();)
    {
       if (*I == Itm)
+      {
 	 Items.erase(I);
+	 I = Items.begin();
+      }      
+      else 
+	 I++;
    }
 }
 									/*}}}*/
@@ -365,7 +373,7 @@ pkgAcquire::RunResult pkgAcquire::Run()
       I->Shutdown(false);
 
    // Shut down the items
-   for (Item **I = Items.begin(); I != Items.end(); I++)
+   for (ItemIterator I = Items.begin(); I != Items.end(); I++)
       (*I)->Finished(); 
    
    if (_error->PendingError())
@@ -401,13 +409,13 @@ bool pkgAcquire::Clean(string Dir)
 {
    DIR *D = opendir(Dir.c_str());   
    if (D == 0)
-      return _error->Errno("opendir","Unable to read %s",Dir.c_str());
+      return _error->Errno("opendir",_("Unable to read %s"),Dir.c_str());
    
    string StartDir = SafeGetCWD();
    if (chdir(Dir.c_str()) != 0)
    {
       closedir(D);
-      return _error->Errno("chdir","Unable to change to ",Dir.c_str());
+      return _error->Errno("chdir",_("Unable to change to %s"),Dir.c_str());
    }
    
    for (struct dirent *Dir = readdir(D); Dir != 0; Dir = readdir(D))
@@ -420,7 +428,7 @@ bool pkgAcquire::Clean(string Dir)
 	 continue;
       
       // Look in the get list
-      vector<Item *>::iterator I = Items.begin();
+      ItemCIterator I = Items.begin();
       for (; I != Items.end(); I++)
 	 if (flNotDir((*I)->DestFile) == Dir->d_name)
 	    break;
@@ -438,10 +446,10 @@ bool pkgAcquire::Clean(string Dir)
 // Acquire::TotalNeeded - Number of bytes to fetch			/*{{{*/
 // ---------------------------------------------------------------------
 /* This is the total number of bytes needed */
-unsigned long pkgAcquire::TotalNeeded()
+double pkgAcquire::TotalNeeded()
 {
-   unsigned long Total = 0;
-   for (pkgAcquire::Item **I = ItemsBegin(); I != ItemsEnd(); I++)
+   double Total = 0;
+   for (ItemCIterator I = ItemsBegin(); I != ItemsEnd(); I++)
       Total += (*I)->FileSize;
    return Total;
 }
@@ -449,10 +457,10 @@ unsigned long pkgAcquire::TotalNeeded()
 // Acquire::FetchNeeded - Number of bytes needed to get			/*{{{*/
 // ---------------------------------------------------------------------
 /* This is the number of bytes that is not local */
-unsigned long pkgAcquire::FetchNeeded()
+double pkgAcquire::FetchNeeded()
 {
-   unsigned long Total = 0;
-   for (pkgAcquire::Item **I = ItemsBegin(); I != ItemsEnd(); I++)
+   double Total = 0;
+   for (ItemCIterator I = ItemsBegin(); I != ItemsEnd(); I++)
       if ((*I)->Local == false)
 	 Total += (*I)->FileSize;
    return Total;
@@ -461,10 +469,10 @@ unsigned long pkgAcquire::FetchNeeded()
 // Acquire::PartialPresent - Number of partial bytes we already have	/*{{{*/
 // ---------------------------------------------------------------------
 /* This is the number of bytes that is not local */
-unsigned long pkgAcquire::PartialPresent()
+double pkgAcquire::PartialPresent()
 {
-   unsigned long Total = 0;
-   for (pkgAcquire::Item **I = ItemsBegin(); I != ItemsEnd(); I++)
+  double Total = 0;
+   for (ItemCIterator I = ItemsBegin(); I != ItemsEnd(); I++)
       if ((*I)->Local == false)
 	 Total += (*I)->PartialSize;
    return Total;
@@ -729,7 +737,7 @@ bool pkgAcquireStatus::Pulse(pkgAcquire *Owner)
    // Compute the total number of bytes to fetch
    unsigned int Unknown = 0;
    unsigned int Count = 0;
-   for (pkgAcquire::Item **I = Owner->ItemsBegin(); I != Owner->ItemsEnd(); 
+   for (pkgAcquire::ItemCIterator I = Owner->ItemsBegin(); I != Owner->ItemsEnd();
 	I++, Count++)
    {
       TotalItems++;
@@ -739,7 +747,7 @@ bool pkgAcquireStatus::Pulse(pkgAcquire *Owner)
       // Totally ignore local items
       if ((*I)->Local == true)
 	 continue;
-      
+
       TotalBytes += (*I)->FileSize;
       if ((*I)->Complete == true)
 	 CurrentBytes += (*I)->FileSize;

@@ -1,20 +1,18 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: http.cc,v 1.3 2001/02/20 18:20:02 kojima Exp $
+// $Id: http.cc,v 1.3 2003/01/29 15:25:05 niemeyer Exp $
 /* ######################################################################
 
    HTTP Aquire Method - This is the HTTP aquire method for APT.
    
    It uses HTTP/1.1 and many of the fancy options there-in, such as
-   pipelining, range, if-range and so on. It accepts on the command line
-   a list of url destination pairs and writes to stdout the status of the
-   operation as defined in the APT method spec.
-   
-   It is based on a doubly buffered select loop. All the requests are 
+   pipelining, range, if-range and so on. 
+
+   It is based on a doubly buffered select loop. A groupe of requests are 
    fed into a single output buffer that is constantly fed out the 
    socket. This provides ideal pipelining as in many cases all of the
    requests will fit into a single packet. The input socket is buffered 
-   the same way and fed into the fd for the file.
+   the same way and fed into the fd for the file (may be a pipe in future).
    
    This double buffering provides fairly substantial transfer rates,
    compared to wget the http method is about 4% faster. Most importantly,
@@ -30,7 +28,7 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/acquire-method.h>
 #include <apt-pkg/error.h>
-#include <apt-pkg/md5.h>
+#include <apt-pkg/hashes.h>
 
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -39,6 +37,8 @@
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
+#include <iostream>
 
 // Internet stuff
 #include <netdb.h>
@@ -48,6 +48,7 @@
 #include "http.h"
 
 									/*}}}*/
+using namespace std;
 
 string HttpMethod::FailFile;
 int HttpMethod::FailFd = -1;
@@ -59,7 +60,7 @@ bool Debug = false;
 // CircleBuf::CircleBuf - Circular input buffer				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-CircleBuf::CircleBuf(unsigned long Size) : Size(Size), MD5(0)
+CircleBuf::CircleBuf(unsigned long Size) : Size(Size), Hash(0)
 {
    Buf = new unsigned char[Size];
    Reset();
@@ -75,10 +76,10 @@ void CircleBuf::Reset()
    StrPos = 0;
    MaxGet = (unsigned int)-1;
    OutQueue = string();
-   if (MD5 != 0)
+   if (Hash != 0)
    {
-      delete MD5;
-      MD5 = new MD5Summation;
+      delete Hash;
+      Hash = new Hashes;
    }   
 };
 									/*}}}*/
@@ -140,7 +141,7 @@ void CircleBuf::FillOut()
       unsigned long Sz = LeftRead();
       if (OutQueue.length() - StrPos < Sz)
 	 Sz = OutQueue.length() - StrPos;
-      memcpy(Buf + (InP%Size),OutQueue.begin() + StrPos,Sz);
+      memcpy(Buf + (InP%Size),OutQueue.c_str() + StrPos,Sz);
       
       // Advance
       StrPos += Sz;
@@ -184,8 +185,8 @@ bool CircleBuf::Write(int Fd)
 	 return false;
       }
       
-      if (MD5 != 0)
-	 MD5->Add(Buf + (OutP%Size),Res);
+      if (Hash != 0)
+	 Hash->Add(Buf + (OutP%Size),Res);
       
       OutP += Res;
    }
@@ -258,9 +259,6 @@ ServerState::ServerState(URI Srv,HttpMethod *Owner) : Owner(Owner),
 // ServerState::Open - Open a connection to the server			/*{{{*/
 // ---------------------------------------------------------------------
 /* This opens a connection to the server. */
-string LastHost;
-int LastPort = 0;
-struct addrinfo *LastHostAddr = 0;
 bool ServerState::Open()
 {
    // Use the already open connection if possible.
@@ -270,7 +268,8 @@ bool ServerState::Open()
    Close();
    In.Reset();
    Out.Reset();
-
+   Persistent = true;
+   
    // Determine the proxy setting
    if (getenv("http_proxy") == 0)
    {
@@ -289,32 +288,13 @@ bool ServerState::Open()
    else
       Proxy = getenv("http_proxy");
    
-   // Parse no_proxy, a , seperated list of domains
+   // Parse no_proxy, a , separated list of domains
    if (getenv("no_proxy") != 0)
    {
-      const char *Start = getenv("no_proxy");
-      const char *ServerEnd = ServerName.Host.end();
-      
-      for (const char *Cur = Start; true ; Cur++)
-      {
-	 if (*Cur != ',' && *Cur != 0)
-	    continue;
-
-	 // match end of the string
-	 if ((ServerName.Host.size() >= (Cur - Start))
-	     && stringcasecmp(ServerEnd - (Cur - Start),
-			      ServerEnd,Start,Cur) == 0)
-	 {
-	    Proxy = "";
-	    break;
-	 }
-	 
-	 Start = Cur + 1;
-	 if (*Cur == 0)
-	    break;
-      }	 
+      if (CheckDomainList(ServerName.Host,getenv("no_proxy")) == true)
+	 Proxy = "";
    }
-
+   
    // Determine what host and port to use based on the proxy settings
    int Port = 0;
    string Host;   
@@ -380,14 +360,23 @@ int ServerState::RunHeaders()
       {
 	 string::const_iterator J = I;
 	 for (; J != Data.end() && *J != '\n' && *J != '\r';J++);
-	 if (HeaderLine(string(I,J-I)) == false)
+	 if (HeaderLine(string(I,J)) == false)
 	    return 2;
 	 I = J;
       }
+
+      // 100 Continue is a Nop...
+      if (Result == 100)
+	 continue;
+      
+      // Tidy up the connection persistance state.
+      if (Encoding == Closes && HaveContent == true)
+	 Persistent = false;
+      
       return 0;
    }
    while (Owner->Go(false,this) == true);
-
+   
    return 1;
 }
 									/*}}}*/
@@ -513,7 +502,7 @@ bool ServerState::HeaderLine(string Line)
    string Tag = string(Line,0,Pos);
    string Val = string(Line,Pos2);
    
-   if (stringcasecmp(Tag.begin(),Tag.begin()+4,"HTTP") == 0)
+   if (stringcasecmp(Tag.c_str(),Tag.c_str()+4,"HTTP") == 0)
    {
       // Evil servers return no version
       if (Line[4] == '/')
@@ -529,7 +518,19 @@ bool ServerState::HeaderLine(string Line)
 	 if (sscanf(Line.c_str(),"HTTP %u %[^\n]",&Result,Code) != 2)
 	    return _error->Error("The http server sent an invalid reply header");
       }
-      
+
+      /* Check the HTTP response header to get the default persistance
+         state. */
+      if (Major < 1)
+	 Persistent = false;
+      else
+      {
+	 if (Major == 1 && Minor <= 0)
+	    Persistent = false;
+	 else
+	    Persistent = true;
+      }
+
       return true;
    }      
       
@@ -569,11 +570,19 @@ bool ServerState::HeaderLine(string Line)
    {
       HaveContent = true;
       if (stringcasecmp(Val,"chunked") == 0)
-	 Encoding = Chunked;
-      
+	 Encoding = Chunked;      
       return true;
    }
 
+   if (stringcasecmp(Tag,"Connection:") == 0)
+   {
+      if (stringcasecmp(Val,"close") == 0)
+	 Persistent = false;
+      if (stringcasecmp(Val,"keep-alive") == 0)
+	 Persistent = true;
+      return true;
+   }
+   
    if (stringcasecmp(Tag,"Last-Modified:") == 0)
    {
       if (StrToTime(Val,Date) == false)
@@ -660,10 +669,15 @@ void HttpMethod::SendReq(FetchItem *Itm,CircleBuf &Out)
       Req += string("Proxy-Authorization: Basic ") + 
           Base64Encode(Proxy.User + ":" + Proxy.Password) + "\r\n";
 
-   if (0)//akk
-       Req += "User-Agent: Debian APT-HTTP/1.2\r\n\r\n";
-   else
-       Req += "User-Agent: Conectiva APT-HTTP/1.2\r\n\r\n";
+   if (Uri.User.empty() == false || Uri.Password.empty() == false)
+      Req += string("Authorization: Basic ") + 
+          Base64Encode(Uri.User + ":" + Uri.Password) + "\r\n";
+
+   // CNC:2003-01-29
+   string UserAgent = _config->Find("Acquire::http::User-Agent");
+   if (UserAgent.empty() == true) 
+	  UserAgent = "RPM APT-HTTP/1.3";
+   Req += string("User-Agent: ") + UserAgent + "\r\n\r\n";
    
    if (Debug == true)
       cerr << Req << endl;
@@ -686,10 +700,12 @@ bool HttpMethod::Go(bool ToFile,ServerState *Srv)
    FD_ZERO(&rfds);
    FD_ZERO(&wfds);
    
-   // Add the server
-   if (Srv->Out.WriteSpace() == true && Srv->ServerFd != -1) 
+   /* Add the server. We only send more requests if the connection will 
+      be persisting */
+   if (Srv->Out.WriteSpace() == true && Srv->ServerFd != -1 
+       && Srv->Persistent == true)
       FD_SET(Srv->ServerFd,&wfds);
-   if (Srv->In.ReadSpace() == true && Srv->ServerFd != -1) 
+   if (Srv->In.ReadSpace() == true && Srv->ServerFd != -1)
       FD_SET(Srv->ServerFd,&rfds);
    
    // Add the file
@@ -714,7 +730,11 @@ bool HttpMethod::Go(bool ToFile,ServerState *Srv)
    tv.tv_usec = 0;
    int Res = 0;
    if ((Res = select(MaxFd+1,&rfds,&wfds,0,&tv)) < 0)
+   {
+      if (errno == EINTR)
+	 return true;
       return _error->Errno("select","Select failed");
+   }
    
    if (Res == 0)
    {
@@ -883,14 +903,14 @@ int HttpMethod::DealWithHeaders(FetchResult &Res,ServerState *Srv)
    // Set the start point
    lseek(File->Fd(),0,SEEK_END);
 
-   delete Srv->In.MD5;
-   Srv->In.MD5 = new MD5Summation;
+   delete Srv->In.Hash;
+   Srv->In.Hash = new Hashes;
    
-   // Fill the MD5 Hash if the file is non-empty (resume)
+   // Fill the Hash if the file is non-empty (resume)
    if (Srv->StartPos > 0)
    {
       lseek(File->Fd(),0,SEEK_SET);
-      if (Srv->In.MD5->AddFD(File->Fd(),Srv->StartPos) == false)
+      if (Srv->In.Hash->AddFD(File->Fd(),Srv->StartPos) == false)
       {
 	 _error->Errno("read","Problem hashing file");
 	 return 5;
@@ -1007,7 +1027,15 @@ int HttpMethod::Loop()
 	 delete Server;
 	 Server = new ServerState(Queue->Uri,this);
       }
-            
+      
+      /* If the server has explicitly said this is the last connection
+         then we pre-emptively shut down the pipeline and tear down 
+	 the connection. This will speed up HTTP/1.0 servers a tad
+	 since we don't have to wait for the close sequence to
+         complete */
+      if (Server->Persistent == false)
+	 Server->Close();
+      
       // Reset the pipeline
       if (Server->ServerFd == -1)
 	 QueueBack = Queue;	 
@@ -1035,6 +1063,7 @@ int HttpMethod::Loop()
 	 {
 	    _error->Error("Bad header Data");
 	    Fail(true);
+	    RotateDNS();
 	    continue;
 	 }
 	 
@@ -1053,6 +1082,7 @@ int HttpMethod::Loop()
 	       FailCounter = 0;
 	    }
 	    
+	    RotateDNS();
 	    continue;
 	 }
       };
@@ -1070,6 +1100,11 @@ int HttpMethod::Loop()
 	    // Run the data
 	    bool Result =  Server->RunData();
 
+	    /* If the server is sending back sizeless responses then fill in
+	       the size now */
+	    if (Res.Size == 0)
+	       Res.Size = File->Size();
+	    
 	    // Close the file, destroy the FD object and timestamp it
 	    FailFd = -1;
 	    delete File;
@@ -1085,12 +1120,12 @@ int HttpMethod::Loop()
 	    // Send status to APT
 	    if (Result == true)
 	    {
-	       Res.MD5Sum = Server->In.MD5->Result();
+	       Res.TakeHashes(*Server->In.Hash);
 	       URIDone(Res);
 	    }
 	    else
 	       Fail(true);
-
+	    
 	    break;
 	 }
 	 
@@ -1111,7 +1146,11 @@ int HttpMethod::Loop()
 	 // Hard internal error, kill the connection and fail
 	 case 5:
 	 {
+	    delete File;
+	    File = 0;
+
 	    Fail();
+	    RotateDNS();
 	    Server->Close();
 	    break;
 	 }
@@ -1147,3 +1186,5 @@ int main()
    
    return Mth.Loop();
 }
+
+

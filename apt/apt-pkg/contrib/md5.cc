@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: md5.cc,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: md5.cc,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    MD5Sum - MD5 Message Digest Algorithm.
@@ -191,7 +191,7 @@ MD5SumValue::MD5SumValue()
 /* Converts the hex string into a set of chars */
 bool MD5SumValue::Set(string Str)
 {
-   return Hex2Num(Str.begin(),Str.end(),Sum,sizeof(Sum));
+   return Hex2Num(Str,Sum,sizeof(Sum));
 }
 									/*}}}*/
 // MD5SumValue::Value - Convert the number into a string		/*{{{*/

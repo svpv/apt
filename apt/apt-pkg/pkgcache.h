@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: pkgcache.h,v 1.2 2000/09/18 18:34:42 kojima Exp $
+// $Id: pkgcache.h,v 1.2 2003/01/29 13:04:48 niemeyer Exp $
 /* ######################################################################
    
    Cache - Structure definitions for the cache file
@@ -16,7 +16,6 @@
    
    ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_PKGCACHE_H
 #define PKGLIB_PKGCACHE_H
 
@@ -28,6 +27,9 @@
 #include <time.h>
 #include <apt-pkg/mmap.h>
 
+using std::string;
+    
+class pkgVersioningSystem;
 class pkgCache
 {
    public:
@@ -48,12 +50,14 @@ class pkgCache
    class PrvIterator;
    class PkgFileIterator;
    class VerFileIterator;
-   friend PkgIterator;
-   friend VerIterator;
-   friend DepIterator;
-   friend PrvIterator;
-   friend PkgFileIterator;
-   friend VerFileIterator;
+   friend class PkgIterator;
+   friend class VerIterator;
+   friend class DepIterator;
+   friend class PrvIterator;
+   friend class PkgFileIterator;
+   friend class VerFileIterator;
+   
+   class Namespace;
    
    // These are all the constants used in the cache structures
    struct Dep
@@ -78,6 +82,25 @@ class pkgCache
       enum PkgFlags {Auto=(1<<0),Essential=(1<<3),Important=(1<<4)};
       enum PkgFFlags {NotSource=(1<<0),NotAutomatic=(1<<1)};
    };
+
+   /* Unnested structures for SWIG. Don't use them for APT internal
+    * purposes as this will be dropped as soon as SWIG starts
+    * supporting nested structures. Use definitions above instead. */
+   enum _DepType {DepDepends=1,DepPreDepends=2,DepSuggests=3,DepRecommends=4,
+      DepConflicts=5,DepReplaces=6,DepObsoletes=7};
+   enum _DepCompareOp {DepOr=0x10,DepNoOp=0,DepLessEq=0x1,DepGreaterEq=0x2,
+      DepLess=0x3,DepGreater=0x4,DepEquals=0x5,DepNotEquals=0x6};
+   enum _VerPriority {StateImportant=1,StateRequired=2,StateStandard=3,
+      StateOptional=4,StateExtra=5};
+   enum _PkgSelectedState {StateUnknown=0,StateInstall=1,StateHold=2,
+      StateDeInstall=3,StatePurge=4};
+   enum _PkgInstState {StateOk=0,StateReInstReq=1,StateHoldInst=2,
+      StateHoldReInstReq=3};
+   enum _PkgCurrentState {StateNotInstalled=0,StateUnPacked=1,
+      StateHalfConfigured=2,StateHalfInstalled=4,StateConfigFiles=5,
+      StateInstalled=6};
+   enum _PkgFlags {FlagAuto=(1<<0),FlagEssential=(1<<3),FlagImportant=(1<<4)};
+   enum _PkgFFlags {FlagNotSource=(1<<0),FlagNotAutomatic=(1<<1)};
    
    protected:
    
@@ -104,7 +127,8 @@ class pkgCache
    virtual bool ReMap();
    inline bool Sync() {return Map.Sync();};
    inline MMap &GetMap() {return Map;};
-   
+   inline void *DataEnd() {return ((unsigned char *)Map.Data()) + Map.Size();};
+      
    // String hashing function (512 range)
    inline unsigned long Hash(string S) const {return sHash(S);};
    inline unsigned long Hash(const char *S) const {return sHash(S);};
@@ -119,9 +143,16 @@ class pkgCache
    inline PkgIterator PkgEnd();
    inline PkgFileIterator FileBegin();
    inline PkgFileIterator FileEnd();
-   VerIterator GetCandidateVer(PkgIterator Pkg,bool AllowCurrent = true);
+
+   // Make me a function
+   pkgVersioningSystem *VS;
    
-   pkgCache(MMap &Map);
+   // Converters
+   static const char *CompTypeDeb(unsigned char Comp);
+   static const char *CompType(unsigned char Comp);
+   static const char *DepType(unsigned char Dep);
+   
+   pkgCache(MMap *Map,bool DoMap = true);
    virtual ~pkgCache() {};
 };
 
@@ -154,6 +185,8 @@ struct pkgCache::Header
    // Offsets
    map_ptrloc FileList;              // struct PackageFile
    map_ptrloc StringList;            // struct StringItem
+   map_ptrloc VerSysName;            // StringTable
+   map_ptrloc Architecture;          // StringTable
    unsigned long MaxVerFileSize;
 
    /* Allocation pools, there should be one of these for each structure
@@ -172,9 +205,7 @@ struct pkgCache::Package
    // Pointers
    map_ptrloc Name;              // Stringtable
    map_ptrloc VersionList;       // Version
-   map_ptrloc TargetVer;         // Version
    map_ptrloc CurrentVer;        // Version
-   map_ptrloc TargetDist;        // StringTable (StringItem)
    map_ptrloc Section;           // StringTable (StringItem)
       
    // Linked list 
@@ -201,6 +232,8 @@ struct pkgCache::PackageFile
    map_ptrloc Origin;          // Stringtable
    map_ptrloc Label;           // Stringtable
    map_ptrloc Architecture;    // Stringtable
+   map_ptrloc Site;            // Stringtable
+   map_ptrloc IndexType;       // Stringtable
    unsigned long Size;            
    unsigned long Flags;
    
@@ -247,9 +280,9 @@ struct pkgCache::Dependency
    map_ptrloc ParentVer;       // Version
    
    // Specific types of depends
+   map_ptrloc ID;   
    unsigned char Type;
    unsigned char CompareOp;
-   unsigned short ID;
 };
 
 struct pkgCache::Provides
@@ -274,8 +307,26 @@ inline pkgCache::PkgIterator pkgCache::PkgBegin()
 inline pkgCache::PkgIterator pkgCache::PkgEnd() 
        {return PkgIterator(*this,PkgP);};
 inline pkgCache::PkgFileIterator pkgCache::FileBegin()
-       {return PkgFileIterator(*this);};
+       {return PkgFileIterator(*this,PkgFileP + HeaderP->FileList);};
 inline pkgCache::PkgFileIterator pkgCache::FileEnd()
        {return PkgFileIterator(*this,PkgFileP);};
+
+// Oh I wish for Real Name Space Support
+class pkgCache::Namespace
+{   
+   public:
+
+   typedef pkgCache::PkgIterator PkgIterator;
+   typedef pkgCache::VerIterator VerIterator;
+   typedef pkgCache::DepIterator DepIterator;
+   typedef pkgCache::PrvIterator PrvIterator;
+   typedef pkgCache::PkgFileIterator PkgFileIterator;
+   typedef pkgCache::VerFileIterator VerFileIterator;   
+   typedef pkgCache::Version Version;
+   typedef pkgCache::Package Package;
+   typedef pkgCache::Header Header;
+   typedef pkgCache::Dep Dep;
+   typedef pkgCache::Flag Flag;
+};
 
 #endif

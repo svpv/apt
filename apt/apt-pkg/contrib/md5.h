@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: md5.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: md5.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    MD5SumValue - Storage for a MD5Sum
@@ -29,11 +29,13 @@
 
 #include <string>
 
+using std::string;
+
 class MD5Summation;
 
 class MD5SumValue
 {
-   friend MD5Summation;
+   friend class MD5Summation;
    unsigned char Sum[4*4];
    
    public:

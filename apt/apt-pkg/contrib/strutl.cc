@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: strutl.cc,v 1.3 2000/10/30 18:49:49 kojima Exp $
+// $Id: strutl.cc,v 1.3 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
 
    String Util - Some useful string functions.
@@ -23,12 +23,19 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/error.h>
 
+#include <apti18n.h>
+    
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <regex.h>
 #include <errno.h>
+#include <stdarg.h>
+
+#include "config.h"
+
+using namespace std;
 									/*}}}*/
 
 // strstrip - Remove white space from the front and back of a string	/*{{{*/
@@ -216,7 +223,7 @@ string QuoteString(string Str,const char *Bad)
 string DeQuoteString(string Str)
 {
    string Res;
-   for (string::iterator I = Str.begin(); I != Str.end(); I++)
+   for (string::const_iterator I = Str.begin(); I != Str.end(); I++)
    {
       if (*I == '%' && I + 2 < Str.end())
       {
@@ -435,6 +442,43 @@ int stringcmp(const char *A,const char *AEnd,const char *B,const char *BEnd)
       return -1;
    return 1;
 }
+
+#if __GNUC__ >= 3
+int stringcmp(string::const_iterator A,string::const_iterator AEnd,
+	      const char *B,const char *BEnd)
+{
+   for (; A != AEnd && B != BEnd; A++, B++)
+      if (*A != *B)
+	 break;
+   
+   if (A == AEnd && B == BEnd)
+      return 0;
+   if (A == AEnd)
+      return 1;
+   if (B == BEnd)
+      return -1;
+   if (*A < *B)
+      return -1;
+   return 1;
+}
+int stringcmp(string::const_iterator A,string::const_iterator AEnd,
+	      string::const_iterator B,string::const_iterator BEnd)
+{
+   for (; A != AEnd && B != BEnd; A++, B++)
+      if (*A != *B)
+	 break;
+   
+   if (A == AEnd && B == BEnd)
+      return 0;
+   if (A == AEnd)
+      return 1;
+   if (B == BEnd)
+      return -1;
+   if (*A < *B)
+      return -1;
+   return 1;
+}
+#endif
 									/*}}}*/
 // stringcasecmp - Arbitary case insensitive string compare		/*{{{*/
 // ---------------------------------------------------------------------
@@ -455,6 +499,42 @@ int stringcasecmp(const char *A,const char *AEnd,const char *B,const char *BEnd)
       return -1;
    return 1;
 }
+#if __GNUC__ >= 3
+int stringcasecmp(string::const_iterator A,string::const_iterator AEnd,
+		  const char *B,const char *BEnd)
+{
+   for (; A != AEnd && B != BEnd; A++, B++)
+      if (toupper(*A) != toupper(*B))
+	 break;
+
+   if (A == AEnd && B == BEnd)
+      return 0;
+   if (A == AEnd)
+      return 1;
+   if (B == BEnd)
+      return -1;
+   if (toupper(*A) < toupper(*B))
+      return -1;
+   return 1;
+}
+int stringcasecmp(string::const_iterator A,string::const_iterator AEnd,
+		  string::const_iterator B,string::const_iterator BEnd)
+{
+   for (; A != AEnd && B != BEnd; A++, B++)
+      if (toupper(*A) != toupper(*B))
+	 break;
+
+   if (A == AEnd && B == BEnd)
+      return 0;
+   if (A == AEnd)
+      return 1;
+   if (B == BEnd)
+      return -1;
+   if (toupper(*A) < toupper(*B))
+      return -1;
+   return 1;
+}
+#endif
 									/*}}}*/
 // LookupTag - Lookup the value of a tag in a taged string		/*{{{*/
 // ---------------------------------------------------------------------
@@ -476,7 +556,7 @@ string LookupTag(string Message,const char *Tag,const char *Default)
 	 for (J = I; *J != '\n' && J < Message.end(); J++);
 	 for (; J > I && isspace(J[-1]) != 0; J--);
 	 
-	 return string(I,J-I);
+	 return string(I,J);
       }
       
       for (; *I != '\n' && I < Message.end(); I++);
@@ -492,7 +572,7 @@ string LookupTag(string Message,const char *Tag,const char *Default)
 // ---------------------------------------------------------------------
 /* This inspects the string to see if it is true or if it is false and
    then returns the result. Several varients on true/false are checked. */
-int StringToBool(string Text,int Default = -1)
+int StringToBool(string Text,int Default)
 {
    char *End;
    int Res = strtol(Text.c_str(),&End,0);   
@@ -544,7 +624,7 @@ string TimeRFC1123(time_t Date)
    fancy buffering is used. */
 bool ReadMessages(int Fd, vector<string> &List)
 {
-   char Buffer[4000];
+   char Buffer[64000];
    char *End = Buffer;
    
    while (1)
@@ -634,7 +714,11 @@ static int MonthConv(char *Month)
    
    Contributed by Roger Beeman <beeman@cisco.com>, with the help of
    Mark Baushke <mdb@cisco.com> and the rest of the Gurus at CISCO. */
-#ifndef __USE_MISC        // glib sets this
+
+/* Turned it into an autoconf check, because GNU is not the only thing which
+   can provide timegm. -- 2002-09-22, Joel Baker */
+
+#ifndef HAVE_TIMEGM // Now with autoconf!
 static time_t timegm(struct tm *t)
 {
    time_t tl, tb;
@@ -741,15 +825,14 @@ static int HexDigit(int c)
 // Hex2Num - Convert a long hex number into a buffer			/*{{{*/
 // ---------------------------------------------------------------------
 /* The length of the buffer must be exactly 1/2 the length of the string. */
-bool Hex2Num(const char *Start,const char *End,unsigned char *Num,
-	     unsigned int Length)
+bool Hex2Num(string Str,unsigned char *Num,unsigned int Length)
 {
-   if (End - Start != (signed)(Length*2))
+   if (Str.length() != Length*2)
       return false;
    
    // Convert each digit. We store it in the same order as the string
    int J = 0;
-   for (const char *I = Start; I < End;J++, I += 2)
+   for (string::const_iterator I = Str.begin(); I != Str.end();J++, I += 2)
    {
       if (isxdigit(*I) == 0 || isxdigit(I[1]) == 0)
 	 return false;
@@ -855,10 +938,49 @@ unsigned long RegexChoice(RxChoiceList *Rxs,const char **ListBegin,
 	 regfree(&Pattern);
       
       if (Done == false)
-	 _error->Warning("Selection %s not found",*ListBegin);
+	 _error->Warning(_("Selection %s not found"),*ListBegin);
    }
    
    return Hits;
+}
+									/*}}}*/
+// ioprintf - C format string outputter to C++ iostreams		/*{{{*/
+// ---------------------------------------------------------------------
+/* This is used to make the internationalization strinc easier to translate
+ and to allow reordering of parameters */
+void ioprintf(ostream &out,const char *format,...) 
+{
+   va_list args;
+   va_start(args,format);
+   
+   // sprintf the description
+   char S[400];
+   vsnprintf(S,sizeof(S),format,args);
+   out << S;
+}
+									/*}}}*/
+
+// CheckDomainList - See if Host is in a , seperate list		/*{{{*/
+// ---------------------------------------------------------------------
+/* The domain list is a comma seperate list of domains that are suffix
+   matched against the argument */
+bool CheckDomainList(string Host,string List)
+{
+   string::const_iterator Start = List.begin();
+   for (string::const_iterator Cur = List.begin(); Cur <= List.end(); Cur++)
+   {
+      if (Cur < List.end() && *Cur != ',')
+	 continue;
+      
+      // Match the end of the string..
+      if ((Host.size() >= (unsigned)(Cur - Start)) &&
+	  Cur - Start != 0 &&
+	  stringcasecmp(Host.end() - (Cur - Start),Host.end(),Start,Cur) == 0)
+	 return true;
+      
+      Start = Cur + 1;
+   }
+   return false;
 }
 									/*}}}*/
 

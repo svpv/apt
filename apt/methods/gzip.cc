@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: gzip.cc,v 1.2 2001/03/22 12:01:47 kojima Exp $
+// $Id: gzip.cc,v 1.1 2002/07/23 17:54:53 niemeyer Exp $
 /* ######################################################################
 
    GZip method - Take a file URI in and decompress it into the target 
@@ -13,7 +13,7 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/acquire-method.h>
 #include <apt-pkg/strutl.h>
-#include <apt-pkg/md5.h>
+#include <apt-pkg/hashes.h>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -22,13 +22,15 @@
 #include <errno.h>
 									/*}}}*/
 
+const char *Prog;
+
 class GzipMethod : public pkgAcqMethod
 {
    virtual bool Fetch(FetchItem *Itm);
    
    public:
    
-   GzipMethod() : pkgAcqMethod("1.0",SingleInstance | SendConfig) {};
+   GzipMethod() : pkgAcqMethod("1.1",SingleInstance | SendConfig) {};
 };
 
 
@@ -40,31 +42,24 @@ bool GzipMethod::Fetch(FetchItem *Itm)
    URI Get = Itm->Uri;
    string Path = Get.Host + Get.Path; // To account for relative paths
    
+   string GzPathOption = "Dir::bin::"+string(Prog);
+
    FetchResult Res;
    Res.Filename = Itm->DestFile;
    URIStart(Res);
    
    // Open the source and destination files
    FileFd From(Path,FileFd::ReadOnly);
-   FileFd To(Itm->DestFile,FileFd::WriteEmpty);   
-   To.EraseOnFailure();
-   if (_error->PendingError() == true)
-      return false;
 
-   int GzOut[2];
-   
+   int GzOut[2];   
    if (pipe(GzOut) < 0)
-      return _error->Errno("fork","Couldn't open pipe for gzip");
+      return _error->Errno("pipe","Couldn't open pipe for %s",Prog);
 
-   
    // Fork gzip
-   int Process = fork();
-   if (Process < 0)
-      return _error->Errno("fork","Couldn't fork gzip");
-   
-   // The child
+   int Process = ExecFork();
    if (Process == 0)
    {
+      close(GzOut[0]);
       dup2(From.Fd(),STDIN_FILENO);
       dup2(GzOut[1],STDOUT_FILENO);
       From.Close();
@@ -73,32 +68,37 @@ bool GzipMethod::Fetch(FetchItem *Itm)
       SetCloseExec(STDOUT_FILENO,false);
       
       const char *Args[3];
-      Args[0] = _config->Find("Dir::bin::gzip","gzip").c_str();
+      string Tmp = _config->Find(GzPathOption,Prog);
+      Args[0] = Tmp.c_str();
       Args[1] = "-d";
       Args[2] = 0;
       execvp(Args[0],(char **)Args);
-      exit(100);
+      _exit(100);
    }
    From.Close();
    close(GzOut[1]);
    
-   MD5Summation MD5;
-      
-   bool Failed = false;
+   FileFd FromGz(GzOut[0]);  // For autoclose   
+   FileFd To(Itm->DestFile,FileFd::WriteEmpty);   
+   To.EraseOnFailure();
+   if (_error->PendingError() == true)
+      return false;
    
    // Read data from gzip, generate checksums and write
+   Hashes Hash;
+   bool Failed = false;
    while (1) 
    {
       unsigned char Buffer[4*1024];
       unsigned long Count;
       
-      Count = read(GzOut[0],Buffer,4*1024);
+      Count = read(GzOut[0],Buffer,sizeof(Buffer));
       if (Count < 0 && errno == EINTR)
 	 continue;
       
       if (Count < 0)
       {
-	 _error->Errno("read", "Read error from gzip process");
+	 _error->Errno("read", "Read error from %s process",Prog);
 	 Failed = true;
 	 break;
       }
@@ -106,13 +106,16 @@ bool GzipMethod::Fetch(FetchItem *Itm)
       if (Count == 0)
 	 break;
       
-      MD5.Add(Buffer,Count);
-      
-      To.Write(Buffer,Count);
+      Hash.Add(Buffer,Count);
+      if (To.Write(Buffer,Count) == false)
+      {
+	 Failed = true;
+	 break;
+      }      
    }
    
    // Wait for gzip to finish
-   if (ExecWait(Process,_config->Find("Dir::bin::gzip","gzip").c_str(),false) == false)
+   if (ExecWait(Process,_config->Find(GzPathOption,Prog).c_str(),false) == false)
    {
       To.OpFail();
       return false;
@@ -140,7 +143,7 @@ bool GzipMethod::Fetch(FetchItem *Itm)
    // Return a Done response
    Res.LastModified = Buf.st_mtime;
    Res.Size = Buf.st_size;
-   Res.MD5Sum = MD5.Result();
+   Res.TakeHashes(Hash);
 
    URIDone(Res);
    
@@ -148,8 +151,12 @@ bool GzipMethod::Fetch(FetchItem *Itm)
 }
 									/*}}}*/
 
-int main()
+int main(int argc, char *argv[])
 {
    GzipMethod Mth;
+
+   Prog = strrchr(argv[0],'/');
+   Prog++;
+   
    return Mth.Run();
 }

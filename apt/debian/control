@@ -1,18 +1,19 @@
 Source: apt
 Section: admin
-Priority: standard
+Priority: important
 Maintainer: APT Development Team <deity@lists.debian.org>
-Standards-Version: 2.4.1
-Build-Depends: debhelper, debiandoc-sgml
+Uploaders: Jason Gunthorpe <jgg@debian.org>
+Standards-Version: 3.1.1
+Build-Depends: debhelper, debiandoc-sgml, libdb2-dev
 
 Package: apt
 Architecture: any
 Depends: ${shlibs:Depends}
 Priority: standard
-Conflicts: deity
-Replaces: deity, libapt-pkg-doc (<< 0.3.7), libapt-pkg-dev (<< 0.3.7)
-Provides: libapt-pkg${libapt-pkg:major}
+Replaces: libapt-pkg-doc (<< 0.3.7), libapt-pkg-dev (<< 0.3.7)
+Provides: ${libapt-pkg:provides}
 Suggests: dpkg-dev
+Section: base
 Description: Advanced front-end for dpkg
  This is Debian's next generation front-end for the dpkg package manager.
  It provides the apt-get utility and APT dselect method that provides a 
@@ -20,20 +21,36 @@ Description: Advanced front-end for dpkg
  .
  APT features complete installation ordering, multiple source capability
  and several other unique features, see the Users Guide in
- /usr/doc/apt/guide.text.gz
+ /usr/share/doc/apt/guide.text.gz
 
 Package: libapt-pkg-dev
 Architecture: any
 Priority: optional
-Depends: libapt-pkg${libapt-pkg:major}
-Description: Development files for APT's libapt-pkg
- This package contains the header files and static libraries for
+Depends: apt-utils, ${libapt-pkg:provides}, ${libapt-inst:provides}
+Section: devel
+Description: Development files for APT's libapt-pkg and libapt-inst
+ This package contains the header files and libraries for
  developing with APT's libapt-pkg Debian package manipulation
- library.
+ library and the libapt-inst deb/tar/ar library.
 
 Package: libapt-pkg-doc
 Architecture: all
 Priority: optional
+Section: doc
 Description: Documentation for APT development
  This package contains documentation for development of the APT
  Debian package manipulation program and its libraries.
+
+Package: apt-utils
+Architecture: any
+Depends: ${shlibs:Depends}
+Priority: optional
+Provides: ${libapt-inst:provides}
+Section: admin
+Description: APT utility programs
+ This package contains some infrequently used APT utility programs such
+ as apt-ftparchive, apt-sortpkgs and apt-extracttemplates.
+ .
+ apt-extracttemplates is used by debconf to prompt for configuration 
+ questions before installation. apt-ftparchive is used to create Package
+ and other index files. apt-sortpkgs is a Package/Source file normalizer.

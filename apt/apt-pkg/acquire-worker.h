@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire-worker.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: acquire-worker.h,v 1.1 2002/07/23 17:54:50 niemeyer Exp $
 /* ######################################################################
 
    Acquire Worker - Worker process manager
@@ -21,10 +21,10 @@
 // Interfacing to the method process
 class pkgAcquire::Worker
 {
-   friend pkgAcquire;
+   friend class pkgAcquire;
    
    protected:
-   friend Queue;
+   friend class Queue;
 
    /* Linked list starting at a Queue and a linked list starting
       at Acquire */

@@ -1,0 +1,16 @@
+2002-10-23  Dmitry V. Levin <ldv@altlinux.org>
+
+	* apt-pkg/rpm/rpmpm.cc(pkgRPMPM::ExecRPM):
+	Pass "fancypercent" option if interactive.
+
+--- apt-0.5.4cnc8/apt-pkg/rpm/rpmpm.cc.orig	2002-08-05 17:46:44 +0300
++++ apt-0.5.4cnc8/apt-pkg/rpm/rpmpm.cc	2002-10-23 11:16:13 +0300
+@@ -266,6 +266,8 @@
+ 
+    if (Interactive == false && op != Item::RPMErase)
+       Args[n++] = "--percent";
++   if (Interactive)
++      Args[n++] = "--fancypercent";
+     
+    string rootdir = _config->Find("RPM::RootDir", "");
+    if (!rootdir.empty()) 

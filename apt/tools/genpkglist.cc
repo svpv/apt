@@ -1,64 +1,5 @@
 /*
- * $Id: genpkglist.cc,v 1.17 2001/11/30 20:40:27 kojima Exp $
- *
- * $Log: genpkglist.cc,v $
- * Revision 1.17  2001/11/30 20:40:27  kojima
- * patched --progress stuff from stelian
- *
- * Revision 1.16  2001/11/09 21:13:08  kojima
- *         * Corrects the use of 'scandir' and makes genpkglist behave
- *         correctly when it finds empty RPMS directories (instead of
- *         dumping core).
- *
- *         * Better package progression indicator.
- *
- * Revision 1.15  2001/08/07 20:46:03  kojima
- * Alexander Bokovoy <a.bokovoy@sam-solutions.net>'s patch for cleaning
- * up genpkglist
- *
- * Revision 1.14  2001/07/12 21:47:33  kojima
- * ignore duplicated version/diff deps packages
- * new release (cnc51)
- *
- * Revision 1.13  2001/06/05 12:26:25  kojima
- * added fileflags tag to pkglist
- *
- * Revision 1.12  2001/01/04 21:26:14  kojima
- * fixed some mem leaks
- *
- * Revision 1.11  2000/11/30 18:31:55  kojima
- * removed kluges in filelist stripper and added a --bloat flag
- *
- * Revision 1.10  2000/11/29 20:13:26  kojima
- * added lib to filelist
- *
- * Revision 1.9  2000/11/29 19:48:16  kojima
- * include /etc files in list of files in pkglist
- *
- * Revision 1.8  2000/11/06 12:53:49  kojima
- * fixed compile errors for RedHat 6.x (with gcc -Wall -Werror)
- *
- * Revision 1.7  2000/11/01 21:32:28  kojima
- * added manpage
- *
- * Revision 1.5  2000/10/31 20:30:42  kojima
- * some updates
- *
- * Revision 1.4  2000/10/29 21:49:54  kojima
- * fixed gensrclist/pkglist bug
- *
- * Revision 1.3  2000/10/29 20:25:10  kojima
- * added support for source download
- *
- * Revision 1.2  2000/10/26 21:15:22  kojima
- * *** empty log message ***
- *
- * Revision 1.1  2000/10/22 19:57:19  kojima
- * added new c++ genpkglist
- *
- * Revision 1.13  2000/10/19 19:32:35  claudio
- * Language setting to generate a consistent pkglist.
- *
+ * $Id: genpkglist.cc,v 1.7 2003/01/30 17:18:21 niemeyer Exp $
  */
 #include <alloca.h>
 #include <ctype.h>
@@ -74,15 +15,18 @@
 #include <assert.h>
 
 #include <map>
+#include <iostream>
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
-#include <apt-pkg/rpminit.h>
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/rpmhandler.h>
 
 #include "cached_md5.h"
 
-
+#ifdef HAVE_RPM41
+#include <rpm/rpmts.h>
+#endif
 
 #define CRPMTAG_TIMESTAMP   1012345
 
@@ -253,7 +197,7 @@ bool loadUpdateInfo(char *path, map<string,UpdateInfo> &map)
       return false;
    }
    
-   pkgTagFile Tags(F);
+   pkgTagFile Tags(&F);
    pkgTagSection Section;
    
    while (Tags.Step(Section)) 
@@ -599,11 +543,17 @@ int main(int argc, char ** argv)
       return 1;
    }
 
-   md5cache = new CachedMD5(string(op_dir) + string(op_suf));
+   md5cache = new CachedMD5(string(op_dir) + string(op_suf), "genpkglist");
+
+#ifdef HAVE_RPM41   
+   rpmts ts = rpmtsCreate();
+   rpmReadConfigFiles(NULL, NULL);
+#else
+   int isSource;
+#endif   
 
    for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
       struct stat sb;
-      int isSource;
 
       if (progressBar) {
          if (entry_cur)
@@ -630,11 +580,15 @@ int main(int argc, char ** argv)
 	    exit(1);
 	 }
 	 
+#ifdef HAVE_RPM41	 
+	 rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
+	 if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
+#else
 	 rc = rpmReadPackageHeader(fd, &h, &isSource, NULL, NULL);
-	 
-	 if (!rc) {
+	 if (rc == 0) {
+#endif
 	    Header newHeader;
-	    unsigned char md5[34];
+	    char md5[34];
 	    
 	    newHeader = headerNew();
 	    
@@ -655,6 +609,10 @@ int main(int argc, char ** argv)
    }
 
    fdClose(outfd);
+
+#ifdef HAVE_RPM41	 
+   ts = rpmtsFree(ts);
+#endif
    
    delete md5cache;
 

@@ -1,14 +1,9 @@
-
-
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "hashtable.h"
-
-
-
 
 #define INITIAL_CAPACITY	23
 

@@ -1,5 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
-// Description								/*{{{*/// $Id: http.h,v 1.1.1.1 2000/08/10 12:42:38 kojima Exp $
+// Description								/*{{{*/// $Id: http.h,v 1.2 2002/07/25 18:07:19 niemeyer Exp $
+// $Id: http.h,v 1.2 2002/07/25 18:07:19 niemeyer Exp $
 /* ######################################################################
 
    HTTP Aquire Method - This is the HTTP aquire method for APT.
@@ -11,6 +12,11 @@
 #define APT_HTTP_H
 
 #define MAXLEN 360
+
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 class HttpMethod;
 
@@ -45,7 +51,7 @@ class CircleBuf
    
    public:
    
-   MD5Summation *MD5;
+   Hashes *Hash;
    
    // Read data in
    bool Read(int Fd);
@@ -69,7 +75,7 @@ class CircleBuf
    void Stats();
 
    CircleBuf(unsigned long Size);
-   ~CircleBuf() {delete [] Buf;};
+   ~CircleBuf() {delete [] Buf; delete Hash;};
 };
 
 struct ServerState
@@ -87,6 +93,9 @@ struct ServerState
    bool HaveContent;
    enum {Chunked,Stream,Closes} Encoding;
    enum {Header, Data} State;
+   bool Persistent;
+   
+   // This is a Persistent attribute of the server itself.
    bool Pipeline;
    
    HttpMethod *Owner;
@@ -130,7 +139,7 @@ class HttpMethod : public pkgAcqMethod
    static void SigTerm(int);
    
    public:
-   friend ServerState;
+   friend class ServerState;
 
    FileFd *File;
    ServerState *Server;

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: mmap.cc,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: mmap.cc,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    MMap Class - Provides 'real' mmap or a faked mmap using read().
@@ -28,6 +28,8 @@
 #define _BSD_SOURCE
 #include <apt-pkg/mmap.h>
 #include <apt-pkg/error.h>
+
+#include <apti18n.h>
 
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -77,12 +79,12 @@ bool MMap::Map(FileFd &Fd)
       Map = MAP_PRIVATE;
    
    if (iSize == 0)
-      return _error->Error("Can't mmap an empty file");
+      return _error->Error(_("Can't mmap an empty file"));
    
    // Map it.
    Base = mmap(0,iSize,Prot,Map,Fd.Fd(),0);
    if (Base == (void *)-1)
-      return _error->Errno("mmap","Couldn't make mmap of %u bytes",iSize);
+      return _error->Errno("mmap",_("Couldn't make mmap of %lu bytes"),iSize);
 
    return true;
 }
@@ -102,6 +104,7 @@ bool MMap::Close(bool DoSync)
       _error->Warning("Unable to munmap");
    
    iSize = 0;
+   Base = 0;
    return true;
 }
 									/*}}}*/
@@ -150,9 +153,15 @@ DynamicMMap::DynamicMMap(FileFd &F,unsigned long Flags,unsigned long WorkSpace) 
       return;
    
    unsigned long EndOfFile = Fd->Size();
-   Fd->Seek(WorkSpace);
-   char C = 0;
-   Fd->Write(&C,sizeof(C));
+   if (EndOfFile > WorkSpace)
+      WorkSpace = EndOfFile;
+   else
+   {
+      Fd->Seek(WorkSpace);
+      char C = 0;
+      Fd->Write(&C,sizeof(C));
+   }
+   
    Map(F);
    iSize = EndOfFile;
 }
@@ -167,6 +176,7 @@ DynamicMMap::DynamicMMap(unsigned long Flags,unsigned long WorkSpace) :
       return;
    
    Base = new unsigned char[WorkSpace];
+   memset(Base,0,WorkSpace);
    iSize = 0;
 }
 									/*}}}*/
@@ -182,11 +192,9 @@ DynamicMMap::~DynamicMMap()
    }
    
    unsigned long EndOfFile = iSize;
-   Sync();
    iSize = WorkSpace;
    Close(false);
    ftruncate(Fd->Fd(),EndOfFile);
-   Fd->Close();
 }  
 									/*}}}*/
 // DynamicMMap::RawAllocate - Allocate a raw chunk of unaligned space	/*{{{*/

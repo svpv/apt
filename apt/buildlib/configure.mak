@@ -10,10 +10,10 @@
 #  CONVERTED - List of files output by configure $(BUILD) is prepended
 #              The caller must provide depends for these files
 # It would be a fairly good idea to run this after a cvs checkout.
-BUILDDIR=.
+BUILDDIR=build
 
 .PHONY: startup
-startup: configure $(BUILDDIR)/config.status $(addprefix $(BUILDDIR)/,$(CONVERTED)) 
+startup: configure $(BUILDDIR)/config.status $(addprefix $(BUILDDIR)/,$(CONVERTED))
 
 configure: aclocal.m4 configure.in
 	autoconf

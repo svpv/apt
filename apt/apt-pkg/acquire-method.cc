@@ -1,12 +1,12 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire-method.cc,v 1.4 2001/06/16 01:50:22 kojima Exp $
+// $Id: acquire-method.cc,v 1.1 2002/07/23 17:54:50 niemeyer Exp $
 /* ######################################################################
 
    Acquire Method
 
    This is a skeleton class that implements most of the functionality
-   of a method and some usefull functions to make method implementation
+   of a method and some useful functions to make method implementation
    simpler. The methods all derive this and specialize it. The most
    complex implementation is the http method which needs to provide
    pipelining, it runs the message engine at the same time it is 
@@ -23,21 +23,26 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hashes.h>
 
+#include <iostream>
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
 									/*}}}*/
 
+using namespace std;
+
 // AcqMethod::pkgAcqMethod - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* This constructs the initialization text */
 pkgAcqMethod::pkgAcqMethod(const char *Ver,unsigned long Flags)
+	: Flags(Flags) // CNC:2002-07-11
 {
    char S[300] = "";
    char *End = S;
    strcat(End,"100 Capabilities\n");
-   snprintf(End+strlen(End),sizeof(S),"Version: %s\n",Ver);
+   sprintf(End+strlen(End),"Version: %s\n",Ver);
 
    if ((Flags & SingleInstance) == SingleInstance)
       strcat(End,"Single-Instance: true\n");
@@ -85,7 +90,7 @@ void pkgAcqMethod::Fail(bool Transient)
 void pkgAcqMethod::Fail(string Err,bool Transient)
 {
    // Strip out junk from the error messages
-   for (char *I = Err.begin(); I != Err.end(); I++)
+   for (string::iterator I = Err.begin(); I != Err.end(); I++)
    {
       if (*I == '\r') 
 	 *I = ' ';
@@ -97,7 +102,8 @@ void pkgAcqMethod::Fail(string Err,bool Transient)
    if (Queue != 0)
    {
       snprintf(S,sizeof(S)-50,"400 URI Failure\nURI: %s\n"
-	       "Message: %s\n",Queue->Uri.c_str(),Err.c_str());
+	       "Message: %s %s\n",Queue->Uri.c_str(),Err.c_str(),
+	       FailExtra.c_str());
 
       // Dequeue
       FetchItem *Tmp = Queue;
@@ -108,7 +114,8 @@ void pkgAcqMethod::Fail(string Err,bool Transient)
    }
    else
       snprintf(S,sizeof(S)-50,"400 URI Failure\nURI: <UNKNOWN>\n"
-	       "Message: %s\n",Err.c_str());
+	       "Message: %s %s\n",Err.c_str(),
+	       FailExtra.c_str());
       
    // Set the transient flag 
    if (Transient == true)
@@ -173,10 +180,12 @@ void pkgAcqMethod::URIDone(FetchResult &Res, FetchResult *Alt)
 
    if (Res.MD5Sum.empty() == false)
       End += snprintf(End,sizeof(S)-50 - (End - S),"MD5-Hash: %s\n",Res.MD5Sum.c_str());
+   if (Res.SHA1Sum.empty() == false)
+      End += snprintf(End,sizeof(S)-50 - (End - S),"SHA1-Hash: %s\n",Res.SHA1Sum.c_str());
 
-   if (Res.SignatureKeyID.empty() == false)
-      End += snprintf(End,sizeof(S)-80 - (End - S),"Signature-Key: %s\n",
-		      Res.SignatureKeyID.c_str());
+   // CNC:2002-07-04
+   if (Res.SignatureFP.empty() == false)
+      End += snprintf(End,sizeof(S)-50 - (End - S),"Signature-Fingerprint: %s\n",Res.SignatureFP.c_str());
 
    if (Res.ResumePoint != 0)
       End += snprintf(End,sizeof(S)-50 - (End - S),"Resume-Point: %lu\n",
@@ -201,11 +210,10 @@ void pkgAcqMethod::URIDone(FetchResult &Res, FetchResult *Alt)
       if (Alt->MD5Sum.empty() == false)
 	 End += snprintf(End,sizeof(S)-50 - (End - S),"Alt-MD5-Hash: %s\n",
 			 Alt->MD5Sum.c_str());
-
-      if (Alt->SignatureKeyID.empty() == false)
-	 End += snprintf(End,sizeof(S)-80 - (End - S),"Alt-Signature-Key: %s\n",
-			 Alt->SignatureKeyID.c_str());
-
+      if (Alt->SHA1Sum.empty() == false)
+	 End += snprintf(End,sizeof(S)-50 - (End - S),"Alt-SHA1-Hash: %s\n",
+			 Alt->SHA1Sum.c_str());
+      
       if (Alt->IMSHit == true)
 	 strcat(End,"Alt-IMS-Hit: true\n");
    }
@@ -268,7 +276,7 @@ bool pkgAcqMethod::MediaFail(string Required,string Drive)
 	    MyMessages.erase(MyMessages.begin());
 	 }
 
-	 return !StringToBool(LookupTag(Message,"Failed"),false);
+	 return !StringToBool(LookupTag(Message,"Fail"),false);
       }
       
       Messages.push_back(Message);
@@ -283,10 +291,11 @@ bool pkgAcqMethod::Configuration(string Message)
 {
    ::Configuration &Cnf = *_config;
    
-   const char *I = Message.begin();
+   const char *I = Message.c_str();
+   const char *MsgEnd = I + Message.length();
    
    unsigned int Length = strlen("Config-Item");
-   for (; I + Length < Message.end(); I++)
+   for (; I + Length < MsgEnd; I++)
    {
       // Not a config item
       if (I[Length] != ':' || stringcasecmp(I,I+Length,"Config-Item") != 0)
@@ -294,11 +303,11 @@ bool pkgAcqMethod::Configuration(string Message)
       
       I += Length + 1;
       
-      for (; I < Message.end() && *I == ' '; I++);
+      for (; I < MsgEnd && *I == ' '; I++);
       const char *Equals = I;
-      for (; Equals < Message.end() && *Equals != '='; Equals++);
+      for (; Equals < MsgEnd && *Equals != '='; Equals++);
       const char *End = Equals;
-      for (; End < Message.end() && *End != '\n'; End++);
+      for (; End < MsgEnd && *End != '\n'; End++);
       if (End == Equals)
 	 return false;
       
@@ -362,6 +371,11 @@ int pkgAcqMethod::Run(bool Single)
 	       Tmp->LastModified = 0;
 	    Tmp->IndexFile = StringToBool(LookupTag(Message,"Index-File"),false);
 	    Tmp->Next = 0;
+
+	    // CNC:2002-07-11
+	    if (StringToBool(LookupTag(Message,"Local-Only-IMS"),false) == true
+	        && (Flags & LocalOnly) == 0)
+	       Tmp->LastModified = 0;
 	    
 	    // Append it to the list
 	    FetchItem **I = &Queue;
@@ -440,3 +454,14 @@ pkgAcqMethod::FetchResult::FetchResult() : LastModified(0),
 {
 }
 									/*}}}*/
+// AcqMethod::FetchResult::TakeHashes - Load hashes			/*{{{*/
+// ---------------------------------------------------------------------
+/* This hides the number of hashes we are supporting from the caller. 
+   It just deals with the hash class. */
+void pkgAcqMethod::FetchResult::TakeHashes(Hashes &Hash)
+{
+   MD5Sum = Hash.MD5.Result();
+   SHA1Sum = Hash.SHA1.Result();
+}
+									/*}}}*/
+// vim:sts=3:sw=3

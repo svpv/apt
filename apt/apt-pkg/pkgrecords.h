@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: pkgrecords.h,v 1.3 2000/10/28 01:48:45 kojima Exp $
+// $Id: pkgrecords.h,v 1.2 2002/11/28 18:54:15 niemeyer Exp $
 /* ######################################################################
    
    Package Records - Allows access to complete package description records
@@ -14,7 +14,6 @@
    
    ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_PKGRECORDS_H
 #define PKGLIB_PKGRECORDS_H
 
@@ -33,17 +32,10 @@ class pkgRecords
    private:
    
    pkgCache &Cache;
-   
-   // List of package files
-   struct PkgFile
-   {
-       string File;
-       Parser *Parse;
-
-       PkgFile() : Parse(0) { File=""; };
-       ~PkgFile();
-   };
-   PkgFile *Files;
+   Parser **Files;
+      
+   // CNC:2002-11-28
+   int PackageFileCount;
    
    public:
 
@@ -58,22 +50,27 @@ class pkgRecords
 class pkgRecords::Parser
 {
    protected:
-      
-   public:
-   friend pkgRecords;
    
    virtual bool Jump(pkgCache::VerFileIterator const &Ver) = 0;
-
+   
+   public:
+   friend class pkgRecords;
+   
    // These refer to the archive file for the Version
    virtual string FileName() {return string();};
    virtual string MD5Hash() {return string();};
+   virtual string SHA1Hash() {return string();};
    virtual string SourcePkg() {return string();};
-   
+
    // These are some general stats about the package
    virtual string Maintainer() {return string();};
    virtual string ShortDesc() {return string();};
    virtual string LongDesc() {return string();};
-
+   virtual string Name() {return string();};
+   
+   // The record in binary form
+   virtual void GetRec(const char *&Start,const char *&Stop) {Start = Stop = 0;};
+   
    virtual ~Parser() {};
 };
 

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: packagemanager.h,v 1.2 2000/09/26 14:22:14 kojima Exp $
+// $Id: packagemanager.h,v 1.1 2002/07/23 17:54:50 niemeyer Exp $
 /* ######################################################################
 
    Package Manager - Abstacts the package manager
@@ -20,7 +20,6 @@
    
    ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_PACKAGEMANAGER_H
 #define PKGLIB_PACKAGEMANAGER_H
 
@@ -31,12 +30,14 @@
 #include <string>
 #include <apt-pkg/pkgcache.h>
 
+using std::string;
+
 class pkgAcquire;
 class pkgDepCache;
 class pkgSourceList;
 class pkgOrderList;
 class pkgRecords;
-class pkgPackageManager
+class pkgPackageManager : protected pkgCache::Namespace
 {
    public:
    
@@ -47,17 +48,9 @@ class pkgPackageManager
    pkgDepCache &Cache;
    pkgOrderList *List;
    bool Debug;
-   
-   // Bring some usefull types into the local scope
-   typedef pkgCache::PkgIterator PkgIterator;
-   typedef pkgCache::VerIterator VerIterator;
-   typedef pkgCache::DepIterator DepIterator;
-   typedef pkgCache::PrvIterator PrvIterator;
-   typedef pkgCache::Version Version;
-   typedef pkgCache::Package Package;
-      
+         
    bool DepAdd(pkgOrderList &Order,PkgIterator P,int Depth = 0);
-   OrderResult OrderInstall();
+   virtual OrderResult OrderInstall();
    bool CheckRConflicts(PkgIterator Pkg,DepIterator Dep,const char *Ver);
    bool CreateOrderList();
    
@@ -71,13 +64,13 @@ class pkgPackageManager
    bool SmartRemove(PkgIterator Pkg);
    bool EarlyRemove(PkgIterator Pkg);   
    
-   // The Actuall installation implementation
+   // The Actual installation implementation
    virtual bool Install(PkgIterator /*Pkg*/,string /*File*/) {return false;};
    virtual bool Configure(PkgIterator /*Pkg*/) {return false;};
    virtual bool Remove(PkgIterator /*Pkg*/,bool /*Purge*/=false) {return false;};
    virtual bool Go() {return true;};
    virtual void Reset() {};
-
+   
    public:
       
    // Main action members
@@ -86,7 +79,7 @@ class pkgPackageManager
    OrderResult DoInstall();
    bool FixMissing();
    
-   pkgPackageManager(pkgDepCache &Cache);
+   pkgPackageManager(pkgDepCache *Cache);
    virtual ~pkgPackageManager();
 };
 

@@ -1,19 +1,16 @@
 The project hierachy stands at:
 
 CVS:jgg Jason Gunthorpe <jgg@debian.org>
-- Project leader
-
-CVS:srivasta Manoj Srivastava <srivasta@datasync.com>
-- Dependency Expert
+- The Mad Cow incarnate
 
 CVS:che Ben Gertzfield <che@debian.org>
 - Packaging and Releases
 
-CVS:branden Branden Robinson <branden@purdue.edu>
-- Man Page Documentation
+CVS:bod Brendan O'Dea <bod@debian.org>
+- Perl Bindings
 
-CVS:doogie Adam Heath <doogie@debian.org>
-- FTP method author
+CVS:tausq Randolph Chung <tausq@debian.org>
+- Patches, Fixes, Debugging, GUIs and Releases
 
 Past Contributures:
 
@@ -21,8 +18,12 @@ Brian White <bcwhite@verisim.com> - Project originator
 Tom Lees <tom@lpsg.demon.co.uk> - DPKG documentation and ideas
 Behan Webster <behanw@verisim.com> - Original GUI design
 Scott Ellis <storm@gate.net> - Original packaging and beta releases
+Branden Robinson <branden@purdue.edu> - Man Page Documentation
+Manoj Srivastava <srivasta@datasync.com> - 1st Generation FTP method and
+                                           dselect setup script
+Adam Heath <doogie@debian.org> - 2nd Generation FTP method author
+Ben Collins <bcollins@debian.org> - Initial RSH method
 Many other bug reports through the Debian Bug system
 
 NOTE: The ChangeLog generator will parse for names and email addresses. The
 'CVS:<name>' tag should indicate who this pair refers to.
-

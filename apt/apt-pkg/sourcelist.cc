@@ -1,9 +1,9 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: sourcelist.cc,v 1.25 2001/11/12 16:34:00 kojima Exp $
+// $Id: sourcelist.cc,v 1.3 2002/08/15 20:51:37 niemeyer Exp $
 /* ######################################################################
 
-   List of Sources and Vendors
+   List of Sources
    
    ##################################################################### */
 									/*}}}*/
@@ -17,15 +17,103 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/strutl.h>
-#include <apt-pkg/tagfile.h>
 
-#include <i18n.h>
+#include <apti18n.h>
 
-#include <fstream.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/stat.h>
+#include <fstream>
+									/*}}}*/
+
+using namespace std;
+
+// Global list of Items supported
+static  pkgSourceList::Type *ItmList[10];
+pkgSourceList::Type **pkgSourceList::Type::GlobalList = ItmList;
+unsigned long pkgSourceList::Type::GlobalListLen = 0;
+
+// Type::Type - Constructor						/*{{{*/
+// ---------------------------------------------------------------------
+/* Link this to the global list of items*/
+pkgSourceList::Type::Type()
+{
+   ItmList[GlobalListLen] = this;
+   GlobalListLen++;
+}
+									/*}}}*/
+// Type::GetType - Get a specific meta for a given type			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+pkgSourceList::Type *pkgSourceList::Type::GetType(const char *Type)
+{
+   for (unsigned I = 0; I != GlobalListLen; I++)
+      if (strcmp(GlobalList[I]->Name,Type) == 0)
+	 return GlobalList[I];
+   return 0;
+}
+									/*}}}*/
+// Type::FixupURI - Normalize the URI and check it..			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+bool pkgSourceList::Type::FixupURI(string &URI) const
+{
+   if (URI.empty() == true)
+      return false;
+
+   if (URI.find(':') == string::npos)
+      return false;
+
+   URI = SubstVar(URI,"$(ARCH)",_config->Find("APT::Architecture"));
+   
+   // Make sure that the URI is / postfixed
+   if (URI[URI.size() - 1] != '/')
+      URI += '/';
+   
+   return true;
+}
+									/*}}}*/
+// Type::ParseLine - Parse a single line				/*{{{*/
+// ---------------------------------------------------------------------
+/* This is a generic one that is the 'usual' format for sources.list
+   Weird types may override this. */
+bool pkgSourceList::Type::ParseLine(vector<pkgIndexFile *> &List,
+				    Vendor const *Vendor,
+				    const char *Buffer,
+				    unsigned long CurLine,
+				    string File) const
+{
+   string URI;
+   string Dist;
+   string Section;   
+   
+   if (ParseQuoteWord(Buffer,URI) == false)
+      return _error->Error(_("Malformed line %lu in source list %s (URI)"),CurLine,File.c_str());
+   if (ParseQuoteWord(Buffer,Dist) == false)
+      return _error->Error(_("Malformed line %lu in source list %s (dist)"),CurLine,File.c_str());
+      
+   if (FixupURI(URI) == false)
+      return _error->Error(_("Malformed line %lu in source list %s (URI parse)"),CurLine,File.c_str());
+   
+   // Check for an absolute dists specification.
+   if (Dist.empty() == false && Dist[Dist.size() - 1] == '/')
+   {
+      if (ParseQuoteWord(Buffer,Section) == true)
+	 return _error->Error(_("Malformed line %lu in source list %s (Absolute dist)"),CurLine,File.c_str());
+      Dist = SubstVar(Dist,"$(ARCH)",_config->Find("APT::Architecture"));
+      return CreateItem(List,URI,Dist,Section,Vendor);
+   }
+   
+   // Grab the rest of the dists
+   if (ParseQuoteWord(Buffer,Section) == false)
+      return _error->Error(_("Malformed line %lu in source list %s (dist parse)"),CurLine,File.c_str());
+   
+   do
+   {
+      if (CreateItem(List,URI,Dist,Section,Vendor) == false)
+	 return false;
+   }
+   while (ParseQuoteWord(Buffer,Section) == true);
+   
+   return true;
+}
 									/*}}}*/
 
 // SourceList::pkgSourceList - Constructors				/*{{{*/
@@ -34,67 +122,134 @@
 pkgSourceList::pkgSourceList()
 {
 }
-/*
+
 pkgSourceList::pkgSourceList(string File)
 {
-   ReadVendors(_config->FindFile("Dir::Etc::vendorlist"));
-
    Read(File);
 }
-*/									/*}}}*/
-// SourceList::ReadMainList - Read the main source list from etc	/*{{{*/
+									/*}}}*/
+// SourceList::~pkgSourceList - Destructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool pkgSourceList::ReadMainList()
+pkgSourceList::~pkgSourceList()
 {
-   ReadVendors(_config->FindFile("Dir::Etc::vendorlist"));
-
-   return Read(_config->FindFile("Dir::Etc::sourcelist"));
+   for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
+      delete *I;
+   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
+	I != VendorList.end(); I++)
+      delete *I;
 }
 									/*}}}*/
-
-bool pkgSourceList::ReadVendors(string File)
+// SourceList::ReadVendors - Read list of known package vendors		/*{{{*/
+// ---------------------------------------------------------------------
+/* This also scans a directory of vendor files similar to apt.conf.d 
+   which can contain the usual suspects of distribution provided data.
+   The APT config mechanism allows the user to override these in their
+   configuration file. */
+bool pkgSourceList::ReadVendors()
 {
    Configuration Cnf;
-   
-   ReadConfigFile(Cnf, File, true);
+
+   string CnfFile = _config->FindDir("Dir::Etc::vendorparts");
+   if (FileExists(CnfFile) == true)
+      if (ReadConfigDir(Cnf,CnfFile,true) == false)
+	 return false;
+   CnfFile = _config->FindFile("Dir::Etc::vendorlist");
+   if (FileExists(CnfFile) == true)
+      if (ReadConfigFile(Cnf,CnfFile,true) == false)
+	 return false;
+
+   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
+	I != VendorList.end(); I++)
+      delete *I;
+   VendorList.erase(VendorList.begin(),VendorList.end());
    
    // Process 'simple-key' type sections
    const Configuration::Item *Top = Cnf.Tree("simple-key");
    for (Top = (Top == 0?0:Top->Child); Top != 0; Top = Top->Next)
    {
       Configuration Block(Top);
-      VendorItem *vendor;
+      Vendor *Vendor;
+      
+      Vendor = new pkgSourceList::Vendor;
+      
+      Vendor->VendorID = Top->Tag;
+      Vendor->FingerPrint = Block.Find("Fingerprint");
+      Vendor->Description = Block.Find("Name");
 
-      vendor = new VendorItem;
-
-      vendor->VendorID = Top->Tag;
-      vendor->Fingerprint = Block.Find("Fingerprint");
-      vendor->Name = Block.Find("Name"); // Description?
-
-      if (vendor->Fingerprint.empty() == true || vendor->Name.empty() == true)
-         _error->Error(_("Block %s is invalid"), vendor->VendorID.c_str());
-
-      Vendors.push_back(vendor);
+      // CNC:2002-08-15
+      char *buffer = new char[Vendor->FingerPrint.length()+1];
+      char *p = buffer;;
+      for (string::const_iterator I = Vendor->FingerPrint.begin();
+	   I != Vendor->FingerPrint.end(); I++)
+      {
+	 if (*I != ' ' && *I != '\t')
+	    *p++ = *I;
+      }
+      *p = 0;
+      Vendor->FingerPrint = buffer;
+      delete [] buffer;
+      
+      if (Vendor->FingerPrint.empty() == true || 
+	  Vendor->Description.empty() == true)
+      {
+         _error->Error(_("Vendor block %s is invalid"), Vendor->VendorID.c_str());
+	 delete Vendor;
+	 continue;
+      }
+      
+      VendorList.push_back(Vendor);
    }
 
-   if (_error->PendingError())
-       return false;
+   /* XXX Process 'group-key' type sections
+      This is currently faked out so that the vendors file format is
+      parsed but nothing is done with it except check for validity */
+   Top = Cnf.Tree("group-key");
+   for (Top = (Top == 0?0:Top->Child); Top != 0; Top = Top->Next)
+   {
+      Configuration Block(Top);
+      Vendor *Vendor;
+      
+      Vendor = new pkgSourceList::Vendor;
+      
+      Vendor->VendorID = Top->Tag;
+      Vendor->Description = Block.Find("Name");
 
-   return true;
+      if (Vendor->Description.empty() == true)
+      {
+         _error->Error(_("Vendor block %s is invalid"), 
+		       Vendor->VendorID.c_str());
+	 delete Vendor;
+	 continue;
+      }
+      
+      VendorList.push_back(Vendor);
+   }
+   
+   return !_error->PendingError();
 }
-
+									/*}}}*/
+// SourceList::ReadMainList - Read the main source list from etc	/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+bool pkgSourceList::ReadMainList()
+{
+   return ReadVendors() && Read(_config->FindFile("Dir::Etc::sourcelist"));
+}
+									/*}}}*/
 // SourceList::Read - Parse the sourcelist file				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
 bool pkgSourceList::Read(string File)
-{   
+{
    // Open the stream for reading
-   ifstream F(File.c_str(),ios::in | ios::nocreate);
+   ifstream F(File.c_str(),ios::in /*| ios::nocreate*/);
    if (!F != 0)
-      return _error->Errno("ifstream::ifstream","Opening %s",File.c_str());
+      return _error->Errno("ifstream::ifstream",_("Opening %s"),File.c_str());
    
-   List.erase(List.begin(),List.end());
+   for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
+      delete *I;
+   SrcList.erase(SrcList.begin(),SrcList.end());
    char Buffer[300];
 
    int CurLine = 0;
@@ -103,621 +258,102 @@ bool pkgSourceList::Read(string File)
       F.getline(Buffer,sizeof(Buffer));
       CurLine++;
       _strtabexpand(Buffer,sizeof(Buffer));
-      _strstrip(Buffer);
+      if (F.fail() && !F.eof())
+	 return _error->Error(_("Line %u too long in source list %s."),
+			      CurLine,File.c_str());
+
+      
+      char *I;
+      for (I = Buffer; *I != 0 && *I != '#'; I++);
+      *I = 0;
+      
+      const char *C = _strstrip(Buffer);
       
       // Comment or blank
-      if (Buffer[0] == '#' || Buffer[0] == 0)
+      if (C[0] == '#' || C[0] == 0)
 	 continue;
-      
+      	    
       // Grok it
-      string Type;
-      string URI;
-      string VendorID;
-
-      RepositoryItem *Rep = new RepositoryItem;
-
-      const char *C = Buffer;
-      if (ParseQuoteWord(C,Type) == false)
+      string LineType;
+      if (ParseQuoteWord(C,LineType) == false)
 	 return _error->Error(_("Malformed line %u in source list %s (type)"),CurLine,File.c_str());
-      if (ParseQuoteWord(C,URI) == false)
-	 return _error->Error(_("Malformed line %u in source list %s (URI)"),CurLine,File.c_str());
 
-      if (URI[0] == '[') {	 
-	 const char *begin = URI.c_str()+1;
-	 const char *end = strchr(begin, ']');
-	 
-	 if (!end)
-	     return _error->Error(_("Malformed line %u in source list %s (vendor ID)"),CurLine,File.c_str());
-
-	 VendorID = string(begin, end);
-
-	 if (ParseQuoteWord(C,URI) == false)
-	     return _error->Error(_("Malformed line %u in source list %s (URI)"),CurLine,File.c_str());
-      } else {
-	 VendorID = "";
-	 Rep->Vendor = NULL;
-      }
-      if (ParseQuoteWord(C,Rep->Dist) == false)
-	 return _error->Error(_("Malformed line %u in source list %s (dist)"),CurLine,File.c_str());
-
-      if (!VendorID.empty()) {
-	 if (Rep->SetVendor(Vendors, VendorID) == false)
-	     return _error->Error(_("Malformed line %u in source list %s (bad vendor ID)"),CurLine,File.c_str());
-      }
-      if (Rep->SetType(Type) == false)
-	 return _error->Error(_("Malformed line %u in source list %s (bad type)"),CurLine,File.c_str());
-            
-      if (Rep->SetURI(URI) == false)
-	 return _error->Error(_("Malformed line %u in source list %s (bad URI)"),CurLine,File.c_str());
-
-      // Check for an absolute dists specification.
-      if (Rep->Dist.empty() == false && Rep->Dist[Rep->Dist.size() - 1] == '/')
-      {
-	 Item Itm;
-	 Itm.Dist = Rep->Dist;
-	 Itm.Repository = Rep;
-
-	 if (ParseQuoteWord(C,Itm.Section) == true)
-	    return _error->Error(_("Malformed line %u in source list %s (Absolute dist)"),CurLine,File.c_str());
-	 Rep->Dist = SubstVar(Rep->Dist,"$(ARCH)",_config->Find("APT::Architecture"));
-
-	 List.push_back(Itm);
-	 
-	 Repositories.push_back(Rep);
-	 continue;
-      }
-            
-      string Section;
-
-      // Grab the rest of the dists
-      if (ParseQuoteWord(C,Section) == false)
-	  return _error->Error(_("Malformed line %u in source list %s (dist parse)"),CurLine,File.c_str());
-
-      do
-      {
-	 Item Itm;
-
-	 Itm.Section = Section;
-	 Itm.Dist = SubstVar(Rep->Dist,"$(ARCH)",_config->Find("APT::Architecture"));
-	 Itm.Repository = Rep;
-	 List.push_back(Itm);
-      }
-      while (ParseQuoteWord(C, Section) == true);
+      Type *Parse = Type::GetType(LineType.c_str());
+      if (Parse == 0)
+	 return _error->Error(_("Type '%s' is not known in on line %u in source list %s"),LineType.c_str(),CurLine,File.c_str());
       
-      Repositories.push_back(Rep);
+      // Authenticated repository
+      Vendor const *Vndr = 0;
+      if (C[0] == '[')
+      {
+	 string VendorID;
+	 
+	 if (ParseQuoteWord(C,VendorID) == false)
+	     return _error->Error(_("Malformed line %u in source list %s (vendor id)"),CurLine,File.c_str());
+
+	 if (VendorID.length() < 2 || VendorID.end()[-1] != ']')
+	     return _error->Error(_("Malformed line %u in source list %s (vendor id)"),CurLine,File.c_str());
+	 VendorID = string(VendorID,1,VendorID.size()-2);
+	 
+	 for (vector<Vendor const *>::const_iterator iter = VendorList.begin();
+	      iter != VendorList.end(); iter++) 
+	 {
+	    if ((*iter)->VendorID == VendorID)
+	    {
+	       Vndr = *iter;
+	       break;
+	    }
+	 }
+
+	 if (Vndr == 0)
+	    return _error->Error(_("Unknown vendor ID '%s' in line %u of source list %s"),
+				 VendorID.c_str(),CurLine,File.c_str());
+      }
       
-   
+      if (Parse->ParseLine(SrcList,Vndr,C,CurLine,File) == false)
+	 return false;
    }
    return true;
 }
 									/*}}}*/
-// SourceList::Item << - Writes the item to a stream			/*{{{*/
-// ---------------------------------------------------------------------
-/* This is not suitable for rebuilding the sourcelist file but it good for
-   debugging. */
-ostream &operator <<(ostream &O,pkgSourceList::Item &Itm)
-{
-   O << (int)Itm.Type() << ' ' << Itm.URI() << ' ' << Itm.Dist << ' ' << Itm.Section;
-   return O;
-}
-									/*}}}*/
-// SourceList::Repository::SetType - Sets the distribution type		/*{{{*/
+// SourceList::FindIndex - Get the index associated with a file		/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool pkgSourceList::RepositoryItem::SetType(string S)
+bool pkgSourceList::FindIndex(pkgCache::PkgFileIterator File,
+			      pkgIndexFile *&Found) const
 {
-   if (S == "deb")
+   for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
    {
-      Type = Deb;
-      return true;
-   }
-
-   if (S == "deb-src")
-   {
-      Type = DebSrc;
-      return true;
+      if ((*I)->FindInCache(*File.Cache()) == File)
+      {
+	 Found = *I;
+	 return true;
+      }
    }
    
-   //akk
-   if (S == "rpm")
-   {
-      Type = Rpm;
-      return true;
-   }
-   
-   if (S == "rpm-src")
-   {
-      Type = RpmSrc;
-      return true;
-   }
-
    return false;
 }
 									/*}}}*/
-
-bool pkgSourceList::RepositoryItem::SetVendor(vector<VendorItem*> vendors,
-					      string S)
-{
-   vector<VendorItem*>::const_iterator iter;
-
-   if (S.empty()) 
-   {
-       Vendor = NULL;
-       return false;
-   }
-   
-   for (iter = vendors.begin();
-	iter != vendors.end(); 
-	iter++)
-   {
-      Vendor = *iter;
-
-      if (Vendor->VendorID == S) 
-      {
-	  return true;
-      }
-   }
-    
-   Vendor = NULL;
-
-   return false;
-}
-
-
-// SourceList::RepositoryItem::SetURI - Set the URI				/*{{{*/
+// SourceList::GetIndexes - Load the index files into the downloader	/*{{{*/
 // ---------------------------------------------------------------------
-/* For simplicity we strip the scheme off the uri */
-bool pkgSourceList::RepositoryItem::SetURI(string S)
+/* */
+bool pkgSourceList::GetIndexes(pkgAcquire *Owner) const
 {
-   if (S.empty() == true)
-      return false;
-
-   if (S.find(':') == string::npos)
-      return false;
-
-   S = SubstVar(S,"$(ARCH)",_config->Find("APT::Architecture"));
-   
-   // Make sure that the URN is / postfixed
-   URI = S;
-   if (URI[URI.size() - 1] != '/')
-      URI += '/';
-   
+   for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
+      if ((*I)->GetIndexes(Owner) == false)
+	 return false;
    return true;
 }
 									/*}}}*/
-// SourceList::Item::SiteOnly - Strip off the path part of a URI	/*{{{*/
+// CNC:2002-07-04
+// SourceList::GetReleases - Load release files into the downloader	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-string pkgSourceList::RepositoryItem::SiteOnly(string URI)
+bool pkgSourceList::GetReleases(pkgAcquire *Owner) const
 {
-   ::URI U(URI);
-   U.User = string();
-   U.Password = string();
-   U.Path = string();
-   U.Port = 0;
-   return U;
-}
-									/*}}}*/
-
-
-string pkgSourceList::RepositoryItem::HashesURI()
-{   
-   string Res;
-   switch (Type)
-   {
-    case Deb:
-      break;
-      
-    case DebSrc:
-      break;
-      
-    case Rpm:
-      Res = URI + Dist + "/base/hashfile";
-      break;
-      
-    case RpmSrc:
-      Res = URI + Dist + "/base/hashfile";
-      break;
-   };
-   return Res;   
-}
-
-
-string pkgSourceList::RepositoryItem::HashesInfo()
-{
-   string Res;
-   switch (Type)
-   {
-    case Deb:
-      break;
-     
-    case DebSrc:
-      break;
-      
-    case Rpm:
-    case RpmSrc:
-      Res = SiteOnly(URI) + ' ';
-      Res += Dist + "/";
-      Res += "base/hashfile";
-      break;
-   };
-   return Res;
-}
-
-
-bool pkgSourceList::RepositoryItem::UpdateHashes(string File)
-{
-  // Open the stream for reading
-   FileFd F(File, FileFd::ReadOnly);
-   if (_error->PendingError())
-      return _error->Error(_("could not open hash index"),File.c_str());
-
-   pkgTagFile Tags(F);
-   pkgTagSection Section;
-
-   if (!Tags.Step(Section))
-       return false;
-   
-   string Files = Section.FindS("MD5SUM");
-   if (Files.empty()) {
-      return _error->Error(_("No MD5SUM data in hashfile"));
-   }
-   // Iterate over the entire list grabbing each triplet
-   const char *C = Files.c_str();
-   while (*C != 0)
-   {   
-      string Size;
-      string Hash;
-      string Path;
-      
-      // Parse each of the elements
-      if (ParseQuoteWord(C,Hash) == false ||
-	  ParseQuoteWord(C,Size) == false ||
-	  ParseQuoteWord(C,Path) == false)
-	 return _error->Error(_("Error parsing MD5 hash record"));
-      
-      // Parse the size and append the directory
-      HashIndex[Path].size = atoi(Size.c_str());
-      HashIndex[Path].md5_hash = Hash;
-   }
-   
+   for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
+      if ((*I)->GetReleases(Owner) == false)
+	 return false;
    return true;
 }
-
-
-
-bool pkgSourceList::RepositoryItem::MD5HashForFile(string file,
-						   string &hash,
-						   unsigned int &size)
-{
-    
-   if (Vendor == NULL) {
-      // means authentication is disabled
-      size = 0;
-      hash = "";
-      return true;
-   }
-   if (HashIndex.count(file) == 0) {
-      return _error->Error(_("Repository entry in sources.list contains extra components that are not listed in the signed hash file: %s"),
-			   file.c_str());
-   }
-   if (HashIndex[file].md5_hash.empty())
-       return false;
-   hash = HashIndex[file].md5_hash;
-   size = HashIndex[file].size;
-   return true;
-}
-
-
-// SourceList::Item::PackagesURI - Returns a URI to the packages file	/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-string pkgSourceList::Item::PackagesURI(bool PathOnly) const
-{
-   string Res;
-   string Prefix;
-   
-   if (PathOnly)
-       Prefix = "";
-   else
-       Prefix = URI();
-   
-   switch (Type())
-   {
-    case Deb:
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res = Prefix + Dist;
-	 else 
-	    Res = Prefix;
-      }      
-      else
-	 Res = Prefix + "dists/" + Dist + '/' + Section +
-	 "/binary-" + _config->Find("APT::Architecture") + '/';
-      
-      Res += "Packages";
-      break;
-      
-    case DebSrc:
-      if (Dist[Dist.size() - 1] == '/')
-	 Res = Prefix + Dist;
-      else
-	 Res = Prefix + "dists/" + Dist + '/' + Section +
-	 "/source/";
-      
-      Res += "Sources";
-      break;
-      
-    case Rpm:
-       if (Dist[Dist.size()-1] == '/')
-	  Res = Prefix + (Dist != "/" ? Dist : "") + "pkglist";
-       else
-	   Res = Prefix + Dist + "/base/pkglist."+Section;
-      break;
-      
-    case RpmSrc:
-       if (Dist[Dist.size()-1] == '/')
-	   Res = Prefix + (Dist != "/" ? Dist : "") + "srclist";
-       else
-	   Res = Prefix + Dist + "/base/srclist."+Section;
-      break;
-      
-    default:
-      cout << "SHIT!!!"<<endl;
-   };
-   return Res;
-}
 									/*}}}*/
-// SourceList::Item::PackagesInfo - Shorter version of the URI		/*{{{*/
-// ---------------------------------------------------------------------
-/* This is a shorter version that is designed to be < 60 chars or so */
-string pkgSourceList::Item::PackagesInfo() const
-{
-   string Res;
-
-   switch (Type())
-   {
-    case Deb:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	     Res += Dist;
-      }      
-      else
-	  Res += Dist + '/' + Section;
-      
-      Res += " Packages";
-      break;
-      
-    case DebSrc:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-	  Res += Dist;
-      else
-	  Res += Dist + '/' + Section;
-      
-      Res += " Sources";
-      break;
-      
-    case Rpm:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-	  Res += (Dist != "/" ? Dist : "") + "pkglist";
-      else
-	  Res += Dist + "/base/pkglist." + Section;
-      break;
-      
-    case RpmSrc:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-	  Res += (Dist != "/" ? Dist : "") + "srclist";
-      else
-	  Res += Dist + "/base/srclist." + Section;
-      break;
-   };
-   return Res;
-}
-/*}}}*/
-
-// SourceList::Item::ReleaseURI - Returns a URI to the release file	/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-string pkgSourceList::Item::ReleaseURI(bool PathOnly) const
-{
-   string Res;
-   string Prefix;
-   
-   if (PathOnly)
-       Prefix = "";
-   else
-       Prefix = URI();
-   
-   switch (Type())
-   {
-      case Deb:
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res = Prefix + Dist;
-	 else
-	    Res = Prefix;
-      }      
-      else
-	 Res = Prefix + "dists/" + Dist + '/' + Section +
-	 "/binary-" + _config->Find("APT::Architecture") + '/';
-      
-      Res += "Release";
-      break;
-      
-      case DebSrc:
-      if (Dist[Dist.size() - 1] == '/')
-	 Res = Prefix + Dist;
-      else
-	 Res = Prefix + "dists/" + Dist + '/' + Section +
-	 "/source/";
-      
-      Res += "Release";
-      break;
-      
-    case Rpm:
-    case RpmSrc:
-      if (Dist[Dist.size() - 1] == '/')
-	  Res = Prefix + (Dist != "/" ? Dist : "") + "release";
-      else 
-	  Res = Prefix + Dist + "/base/release."+Section;
-      break;
-   };
-   return Res;
-}
-									/*}}}*/
-// SourceList::Item::ReleaseInfo - Shorter version of the URI		/*{{{*/
-// ---------------------------------------------------------------------
-/* This is a shorter version that is designed to be < 60 chars or so */
-string pkgSourceList::Item::ReleaseInfo() const
-{
-   string Res;
-   
-   switch (Type())
-   {
-    case Deb:
-    case DebSrc:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res += Dist;
-      }      
-      else
-	 Res += Dist + '/' + Section;
-      
-      Res += " Release";
-      break;
-      
-    case Rpm:
-    case RpmSrc:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	     Res += Dist;
-	 Res += " release";
-      } else {
-	 Res += Dist;
-
-	 Res += " release."+Section;
-      }
-      break;
-   };
-   return Res;
-}
-									/*}}}*/
-
-// SourceList::Item::ArchiveInfo - Shorter version of the archive spec	/*{{{*/
-// ---------------------------------------------------------------------
-/* This is a shorter version that is designed to be < 60 chars or so */
-string pkgSourceList::Item::ArchiveInfo(pkgCache::VerIterator Ver) const
-{
-   string Res;
-   
-   switch (Type())
-   {
-      case DebSrc:
-      case Deb:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res += Dist;
-      }      
-      else
-	 Res += Dist + '/' + Section;
-      
-      Res += " ";
-      Res += Ver.ParentPkg().Name();
-      Res += " ";
-      Res += Ver.VerStr();
-
-      break;
-      
-    case Rpm:
-    case RpmSrc:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res += Dist;
-      }      
-      else
-	 Res += Dist + '/' + Section;
-      
-      Res += " ";
-      Res += Ver.ParentPkg().Name();
-      Res += " ";
-      Res += Ver.VerStr();
-      break;
-   };
-   return Res;
-}
-									/*}}}*/
-// SourceList::Item::ArchiveURI - Returns a URI to the given archive	/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-string pkgSourceList::Item::ArchiveURI(string File) const
-{
-   string Res;
-   switch (Type())
-   {
-    case Deb:
-    case DebSrc:
-      Res = URI() + File;
-      break;
-    case Rpm:
-      if (Dist[Dist.size()-1] == '/')
-	  Res = URI()+(Dist != "/" ? Dist : "")+File;
-      else
-	  Res = URI() + Dist + "/RPMS." + Section + "/" + File;
-      break;
-    case RpmSrc:
-      if (Dist[Dist.size()-1] == '/')
-	  Res = URI()+(Dist != "/" ? Dist : "")+File;
-      else
-	  Res = URI() + Dist + "/../" + File;
-      break;
-   };
-   return Res;
-}
-									/*}}}*/
-// SourceList::Item::SourceInfo	- Returns an info line for a source	/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-string pkgSourceList::Item::SourceInfo(string Pkg,string Ver,string Comp) const
-{
-   string Res;
-   
-   switch (Type())
-   {
-    case DebSrc:
-    case Deb:
-    case RpmSrc:
-    case Rpm:
-      Res += Repository->SiteOnly(URI()) + ' ';
-      if (Dist[Dist.size() - 1] == '/')
-      {
-	 if (Dist != "/")
-	    Res += Dist;
-      }
-      else
-	 Res += Dist + '/' + Section;
-      
-      Res += " ";
-      Res += Pkg;
-      Res += " ";
-      Res += Ver;
-      if (Comp.empty() == false)
-	 Res += " (" + Comp + ")";
-      break;
-   };
-   return Res;
-}

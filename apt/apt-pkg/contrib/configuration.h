@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: configuration.h,v 1.2 2000/10/30 18:49:49 kojima Exp $
+// $Id: configuration.h,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
 
    Configuration Class
@@ -33,6 +33,9 @@
 #endif 
 
 #include <string>
+#include <iostream>
+
+using std::string;
 
 class Configuration
 {
@@ -70,7 +73,7 @@ class Configuration
    string FindFile(const char *Name,const char *Default = 0) const;
    string FindDir(const char *Name,const char *Default = 0) const;
    int FindI(const char *Name,int Default = 0) const;
-   int FindI(string Name,bool Default = 0) const {return FindI(Name.c_str(),Default);};
+   int FindI(string Name,int Default = 0) const {return FindI(Name.c_str(),Default);};
    bool FindB(const char *Name,bool Default = false) const;
    bool FindB(string Name,bool Default = false) const {return FindB(Name.c_str(),Default);};
    string FindAny(const char *Name,const char *Default = 0) const;
@@ -88,7 +91,8 @@ class Configuration
    
    inline const Item *Tree(const char *Name) const {return Lookup(Name);};
 
-   void Dump();
+   inline void Dump() { Dump(std::clog); };
+   void Dump(std::ostream& str);
 
    Configuration(const Item *Root);
    Configuration();
@@ -98,6 +102,9 @@ class Configuration
 extern Configuration *_config;
 
 bool ReadConfigFile(Configuration &Conf,string FName,bool AsSectional = false,
+		    unsigned Depth = 0);
+
+bool ReadConfigDir(Configuration &Conf,string Dir,bool AsSectional = false,
 		    unsigned Depth = 0);
 
 #endif

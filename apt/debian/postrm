@@ -8,13 +8,15 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 
+#DEBHELPER#
+
 case "$1" in
        purge)
 		echo -n "Removing APT cache and state files... "
 		echo -n "/var/cache/apt"
 		rm -rf /var/cache/apt
-		echo -n ", /var/state/apt"
-		rm -rf /var/state/apt
+		echo -n ", /var/lib/apt"
+		rm -rf /var/lib/apt
 		echo ". Done."
 esac
 

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: rpmrecords.h,v 1.3 2001/06/05 17:14:24 kojima Exp $
+// $Id: rpmrecords.h,v 1.3 2002/08/08 20:07:33 niemeyer Exp $
 /* ######################################################################
    
    RPM Package Records - Parser for RPM hdlist/rpmdb files
@@ -19,18 +19,29 @@
 #pragma interface "apt-pkg/rpmrecords.h"
 #endif 
 
-
 #include <apt-pkg/pkgrecords.h>
 #include <apt-pkg/fileutl.h>
 #include <rpm/rpmlib.h>
 
+  
+class RPMFileHandler;
+
 class rpmRecordParser : public pkgRecords::Parser
 {
-   FileFd *Fd;
-   unsigned Offset;
+   RPMFileHandler *FileHandler;
 
-   Header header;
-    
+   Header HeaderP;
+
+   char *Buffer;
+   unsigned BufSize;
+   unsigned BufUsed;
+
+   void BufCat(char *text);
+   void BufCat(char *begin, char *end);
+   void BufCatTag(char *tag, char *value);
+   void BufCatDep(char *pkg, char *version, int flags);
+   void BufCatDescr(char *descr);
+
    protected:
    
    virtual bool Jump(pkgCache::VerFileIterator const &Ver);
@@ -46,9 +57,13 @@ class rpmRecordParser : public pkgRecords::Parser
    virtual string Maintainer();
    virtual string ShortDesc();
    virtual string LongDesc();
-
-   inline Header GetRecord() { return header; };
+   virtual string Name();
    
+   inline Header GetRecord() { return HeaderP; };
+
+   // The record in raw text, in standard Debian format
+   virtual void GetRec(const char *&Start,const char *&Stop);
+
    rpmRecordParser(string File,pkgCache &Cache);
    ~rpmRecordParser();
 };

@@ -25,9 +25,9 @@ Comments ?
 Stelian.
 
 
---- apt-0.3.19cnc53/apt-pkg/algorithms.cc.orig	Wed Nov 21 17:45:34 2001
-+++ apt-0.3.19cnc53/apt-pkg/algorithms.cc	Wed Nov 21 17:46:12 2001
-@@ -454,6 +454,8 @@
+--- apt-0.5.4cnc9/apt-pkg/algorithms.cc.orig	Wed Nov 21 17:45:34 2001
++++ apt-0.5.4cnc9/apt-pkg/algorithms.cc	Wed Nov 21 17:46:12 2001
+@@ -566,6 +566,8 @@
        {
  	 if (D->Type == pkgCache::Dep::Depends || D->Type == pkgCache::Dep::PreDepends)
  	    Scores[D.TargetPkg()->ID]++;

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: sptr.h,v 1.1 2001/03/27 21:18:18 kojima Exp $
+// $Id: sptr.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    Trivial non-ref counted 'smart pointer'

@@ -1,37 +1,5 @@
 /*
- * $Id: cached_md5.cc,v 1.2 2001/11/13 17:32:08 kojima Exp $
- *
- * $Log: cached_md5.cc,v $
- * Revision 1.2  2001/11/13 17:32:08  kojima
- * Patches from Dmitry Levin <ldv@alt-linux.org>
- * apt-0.3.19cnc52-configure.patch -- patch for configure to add Russian
- *                                    translation and better support of
- *                                    RPM4's db3 usage.
- * apt-0.3.19cnc52-i18n.patch      -- i18n patch. All APT messages now can be
- *                                    localized.
- * apt-0.3.19cnc52-replace-support.patch
- *                                 -- support for Replace option. It is
- *                                 better detection whether package is truly
- *                                 removed or is going to be replaced by
- *                                 package with different name.
- * Patch from Ivan Zakharyashev:
- * apt-cdrom.newfix_imz.patch      -- Fixes apt-cdrom to better manage
- *                                    repository search when CD has both RPMS
- *                                    and SRPMS.
- * Alexander Bokovoy <ab@avilink.net>:
- * apt-gpg-pubring.patch           -- uses --homedir instead of --keyring
- *                                    option to GPG. It is generally better
- *                                    because you also can specify GPG
- *                                    options in
- *                                    ${Apt::GPG::PubringPath}/options
- * apt-ru.po                       -- updated Russian translation for APT
- *                                    (Dmitry Levin and me).
- *
- * Revision 1.1  2001/08/07 20:46:03  kojima
- * Alexander Bokovoy <a.bokovoy@sam-solutions.net>'s patch for cleaning
- * up genpkglist
- *
- *
+ * $Id: cached_md5.cc,v 1.4 2003/01/29 13:47:31 niemeyer Exp $
  */
 #include <alloca.h>
 #include <ctype.h>
@@ -49,101 +17,84 @@
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
-#include <apt-pkg/rpminit.h>
+#include <apt-pkg/rpmhandler.h>
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/md5.h>
 
-// from rpmlib
-extern  "C" {
-   extern int mdfile( const char *fn, unsigned char *digest );
-};
+#include <config.h>
 
-extern const char *__progname;
-
-CachedMD5::CachedMD5( string DirName )
+CachedMD5::CachedMD5(string DirName, string Domain)
 {
-	string fname = DirName;
-	for ( string::iterator i = fname.begin(); i != fname.end(); ++i )
-		if ( '/' == *i )
-			*i = '_';
+   string fname = DirName;
+   for (string::iterator i = fname.begin(); i != fname.end(); ++i)
+      if ('/' == *i)
+	 *i = '_';
+   CacheFileName = _config->FindDir("Dir::Cache", "/var/cache/apt") + '/' +
+		   Domain + '/' + fname + ".md5cache";
 
-	filename = _config->FindDir( "Dir::Cache", "/var/cache/apt" ) + '/' +
-	__progname + '/' +
-	fname +	".md5cache";
+   FILE *f = fopen(CacheFileName.c_str(), "r");
+   if (!f)
+      return;
 
-    FILE *f = fopen( filename.c_str(), "r" );
-    if (!f) {
-	return;
-    }
+   while (1)
+   {
+      char buf[BUFSIZ];
+      if (!fgets(buf, sizeof(buf), f))
+	 break;
+      char *p1 = strchr(buf, ' ');
+      assert(p1);
 
-    while (1) {
-	string file;
-	FileData data;
-	char buf[BUFSIZ];
+      string File;
+      File = string(buf, p1++);
+      char *p2 = strchr(p1, ' ');
+      assert(p2);
+      
+      FileData Data;
+      Data.MD5 = string(p1, p2++);
+      Data.TimeStamp = atol(p2);
+      MD5Table[File] = Data;
+   }
 
-	if ( !fgets(buf, sizeof(buf), f) )
-	    break;
-	
-	char *p = strchr( buf, ' ' );
-	assert(p);
-
-	file = string( buf, p++ );
-	
-	char *pp = strchr( p, ' ' );
-	assert(p);
-	data.md5 = string( p, pp++ );
-	
-	data.timestamp = atol( pp );
-	
-	md5table[file] = data;
-    }
-
-    fclose(f);
+   fclose(f);
 }
 
 
 CachedMD5::~CachedMD5()
 {
-	FILE *f = fopen( filename.c_str(), "w+" );
-	if (!f)
-	{
-		// probably running as != root and not a real problem
-		
-		//cerr << __progname << ": could not open file " <<
-		//filename << " for writing:" << strerror(errno) << endl;
-	} else
-	{
-		for ( map<string,FileData>::const_iterator iter = md5table.begin();
-		iter != md5table.end();
-		iter++ )
-		{
-			string file = (*iter).first;
-			const FileData &data = (*iter).second;
-	
-			fprintf( f, "%s %s %lu\n",
-				file.c_str(),
-				data.md5.c_str(),
-				data.timestamp );
-		}
-		fclose(f);
-	}
+   FILE *f = fopen(CacheFileName.c_str(), "w+");
+   if (f)
+   {
+      for (map<string,FileData>::const_iterator I = MD5Table.begin();
+	   I != MD5Table.end(); I++ )
+      {
+         const string &File = (*I).first;
+         const FileData &Data = (*I).second;
+         fprintf(f, "%s %s %lu\n",
+	         File.c_str(), Data.MD5.c_str(), Data.TimeStamp );
+      }
+      fclose(f);
+   }
 }
 
-
-void CachedMD5::MD5ForFile( string FileName, time_t timestamp,
-	unsigned char *buf)
+void CachedMD5::MD5ForFile(string FileName, time_t TimeStamp, char *buf)
 {
-	if ( md5table.find(FileName) != md5table.end()
-	     && timestamp == md5table[FileName].timestamp )
-	{
-		strcpy( (char*)buf, md5table[FileName].md5.c_str() );
-		return;
-	}
-
-	FileData data;
-
-	mdfile( FileName.c_str(), buf );
-	data.md5 = string( (char*)buf );
-	data.timestamp = timestamp;
-
-	md5table[FileName] = data;
+   if (MD5Table.find(FileName) != MD5Table.end()
+       && TimeStamp == MD5Table[FileName].TimeStamp )
+   {
+      strcpy(buf, MD5Table[FileName].MD5.c_str());
+   }
+   else
+   {
+      MD5Summation MD5;
+      FileFd File(FileName, FileFd::ReadOnly);
+      MD5.AddFD(File.Fd(), File.Size());
+      File.Close();
+      FileData Data;
+      Data.MD5 = MD5.Result().Value();
+      Data.TimeStamp = TimeStamp;
+      MD5Table[FileName] = Data;
+      strcpy(buf, Data.MD5.c_str());
+   }
 }
+
+// vim:sts=3:sw=3

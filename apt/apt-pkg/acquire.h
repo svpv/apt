@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire.h,v 1.2 2000/11/06 12:53:49 kojima Exp $
+// $Id: acquire.h,v 1.2 2003/01/29 13:04:48 niemeyer Exp $
 /* ######################################################################
 
    Acquire - File Acquiration
@@ -35,6 +35,9 @@
 #include <vector>
 #include <string>
 
+using std::vector;
+using std::string;
+
 #ifdef __GNUG__
 #pragma interface "apt-pkg/acquire.h"
 #endif 
@@ -52,8 +55,11 @@ class pkgAcquire
    class Worker;
    struct MethodConfig;
    struct ItemDesc;
-   friend Item;
-   friend Queue;
+   friend class Item;
+   friend class Queue;
+
+   typedef vector<Item *>::iterator ItemIterator;
+   typedef vector<Item *>::const_iterator ItemCIterator;
    
    protected:
    
@@ -100,8 +106,8 @@ class pkgAcquire
    // Simple iteration mechanism
    inline Worker *WorkersBegin() {return Workers;};
    Worker *WorkerStep(Worker *I);
-   inline Item **ItemsBegin() {return Items.begin();};
-   inline Item **ItemsEnd() {return Items.end();};
+   inline ItemIterator ItemsBegin() {return Items.begin();};
+   inline ItemIterator ItemsEnd() {return Items.end();};
    
    // Iterate over queued Item URIs
    class UriIterator;
@@ -112,9 +118,9 @@ class pkgAcquire
    bool Clean(string Dir);
 
    // Returns the size of the total download set
-   unsigned long TotalNeeded();
-   unsigned long FetchNeeded();
-   unsigned long PartialPresent();
+   double TotalNeeded();
+   double FetchNeeded();
+   double PartialPresent();
    
    pkgAcquire(pkgAcquireStatus *Log = 0);
    virtual ~pkgAcquire();
@@ -132,11 +138,14 @@ struct pkgAcquire::ItemDesc
 // List of possible items queued for download.
 class pkgAcquire::Queue
 {
-   friend pkgAcquire;
-   friend pkgAcquire::UriIterator;
+   friend class pkgAcquire;
+   friend class pkgAcquire::UriIterator;
+   friend class pkgAcquire::Worker;
    Queue *Next;
    
- public:
+   protected:
+
+#ifndef SWIG
    // Queued item
    struct QItem : pkgAcquire::ItemDesc
    {
@@ -151,7 +160,8 @@ class pkgAcquire::Queue
 	 Owner = I.Owner;
       };
    };
- protected:   
+#endif
+   
    // Name of the queue
    string Name;
 
@@ -240,11 +250,11 @@ class pkgAcquireStatus
    
    struct timeval Time;
    struct timeval StartTime;
-   unsigned long LastBytes;
+   double LastBytes;
    double CurrentCPS;
-   unsigned long CurrentBytes;
-   unsigned long TotalBytes;
-   unsigned long FetchedBytes;
+   double CurrentBytes;
+   double TotalBytes;
+   double FetchedBytes;
    unsigned long ElapsedTime;
    unsigned long TotalItems;
    unsigned long CurrentItems;

@@ -1,0 +1,11 @@
+--- apt-0.5.5cnc1/apt-pkg/rpm/rpmpackagedata.cc.orig	2003-01-29 16:52:32 +0300
++++ apt-0.5.5cnc1/apt-pkg/rpm/rpmpackagedata.cc	2003-02-07 18:31:11 +0300
+@@ -16,7 +16,7 @@
+ RPMPackageData::RPMPackageData()
+ {
+    // Populate priorities
+-   string FileName = _config->FindFile("Dir::Etc::rpmpriorities");
++   string FileName = _config->FindFile("Dir::Etc") + "pkgpriorities";
+    FileFd F(FileName, FileFd::ReadOnly);
+    if (_error->PendingError()) 
+    {

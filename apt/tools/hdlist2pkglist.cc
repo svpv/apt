@@ -1,35 +1,5 @@
 /*
- * $Id: hdlist2pkglist.cc,v 1.3 2001/07/12 21:47:33 kojima Exp $
- *
- * $Log: hdlist2pkglist.cc,v $
- * Revision 1.3  2001/07/12 21:47:33  kojima
- * ignore duplicated version/diff deps packages
- * new release (cnc51)
- *
- * Revision 1.2  2000/11/06 12:53:49  kojima
- * fixed compile errors for RedHat 6.x (with gcc -Wall -Werror)
- *
- * Revision 1.1  2000/11/01 18:27:21  kojima
- * added md5 caching to pkglist generators
- *
- * Revision 1.5  2000/10/31 20:30:42  kojima
- * some updates
- *
- * Revision 1.4  2000/10/29 21:49:54  kojima
- * fixed gensrclist/pkglist bug
- *
- * Revision 1.3  2000/10/29 20:25:10  kojima
- * added support for source download
- *
- * Revision 1.2  2000/10/26 21:15:22  kojima
- * *** empty log message ***
- *
- * Revision 1.1  2000/10/22 19:57:19  kojima
- * added new c++ hdlist2pkglist
- *
- * Revision 1.13  2000/10/19 19:32:35  claudio
- * Language setting to generate a consistent pkglist.
- *
+ * $Id: hdlist2pkglist.cc,v 1.4 2002/07/26 23:16:34 niemeyer Exp $
  */
 #include <alloca.h>
 #include <ctype.h>
@@ -45,54 +15,52 @@
 #include <assert.h>
 
 #include <map>
+#include <iostream>
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
-#include <apt-pkg/rpminit.h>
+#include <apt-pkg/rpmhandler.h>
+#include <apt-pkg/md5.h>
 
-// from rpmlib
-extern  "C" {
-   extern int mdfile(const char *fn, unsigned char *digest);
-};
+#include <config.h>
 
-
+using namespace std;
 
 #define CRPMTAG_TIMESTAMP   1012345
 
 int tags[] =  {
    RPMTAG_NAME, 
-       RPMTAG_EPOCH,
-       RPMTAG_VERSION,
-       RPMTAG_RELEASE,
-       RPMTAG_GROUP,
-       RPMTAG_ARCH,
-       RPMTAG_PACKAGER,
-       RPMTAG_SOURCERPM,
-       RPMTAG_SIZE,
-       RPMTAG_VENDOR,
-       
-       RPMTAG_DESCRIPTION, 
-       RPMTAG_SUMMARY, 
-       
-       RPMTAG_REQUIREFLAGS, 
-       RPMTAG_REQUIRENAME,
-       RPMTAG_REQUIREVERSION,
-       
-       RPMTAG_CONFLICTFLAGS,
-       RPMTAG_CONFLICTNAME,
-       RPMTAG_CONFLICTVERSION,
-       
-       RPMTAG_PROVIDENAME,
-       RPMTAG_PROVIDEFLAGS,
-       RPMTAG_PROVIDEVERSION,
-       
-       RPMTAG_OBSOLETENAME,
-       RPMTAG_OBSOLETEFLAGS,
-       RPMTAG_OBSOLETEVERSION
+   RPMTAG_EPOCH,
+   RPMTAG_VERSION,
+   RPMTAG_RELEASE,
+   RPMTAG_GROUP,
+   RPMTAG_ARCH,
+   RPMTAG_PACKAGER,
+   RPMTAG_SOURCERPM,
+   RPMTAG_SIZE,
+   RPMTAG_VENDOR,
+   
+   RPMTAG_DESCRIPTION, 
+   RPMTAG_SUMMARY, 
+   
+   RPMTAG_REQUIREFLAGS, 
+   RPMTAG_REQUIRENAME,
+   RPMTAG_REQUIREVERSION,
+   
+   RPMTAG_CONFLICTFLAGS,
+   RPMTAG_CONFLICTNAME,
+   RPMTAG_CONFLICTVERSION,
+   
+   RPMTAG_PROVIDENAME,
+   RPMTAG_PROVIDEFLAGS,
+   RPMTAG_PROVIDEVERSION,
+   
+   RPMTAG_OBSOLETENAME,
+   RPMTAG_OBSOLETEFLAGS,
+   RPMTAG_OBSOLETEVERSION
 };
+
 int numTags = sizeof(tags) / sizeof(int);
-
-
 
 typedef struct {
    string importance;
@@ -101,24 +69,19 @@ typedef struct {
    string url;
 } UpdateInfo;
 
-
 static inline int usefullFile(char *a)
 {
    int l = strlen(a);
-   
    if (strstr(a, "bin"))
-       return 1;
-   
+      return 1;
    if (l < 3)
-       return 0;
-   
+      return 0;
    if (strcmp(a + l - 2, ".a") == 0
        || strcmp(a + l - 3, ".so") == 0
        || strstr(a, ".so."))
-       return 1;
+      return 1;
    return 0;
 }
-
 
 static void copyStrippedFileList(Header header, Header newHeader)
 {
@@ -133,8 +96,6 @@ static void copyStrippedFileList(Header header, Header newHeader)
    int_32 *dindexes;
    int res1, res2, res3;
    
-#define FREE(a) if (a) free(a);
-   
    res1 = headerGetEntry(header, RPMTAG_DIRNAMES, &type1, 
 			 (void**)&dirnames, &count1);
    res2 = headerGetEntry(header, RPMTAG_BASENAMES, &type2, 
@@ -142,16 +103,16 @@ static void copyStrippedFileList(Header header, Header newHeader)
    res3 = headerGetEntry(header, RPMTAG_DIRINDEXES, &type3, 
 			 (void**)&dirindexes, &count3);
    
-   if (res1 != 1 || res2 != 1 || res3 != 1) {
-      FREE(dirnames);
-      FREE(basenames);
+   if (res1 != 1 || res2 != 1 || res3 != 1)
+   {
+      free(dirnames);
+      free(basenames);
       return;
    }
    
    dnames = dirnames;
    bnames = basenames;
    dindexes = (int_32*)malloc(sizeof(int_32)*count3);
-   
    
    i1 = 0;
    i2 = 0;
@@ -163,7 +124,8 @@ static void copyStrippedFileList(Header header, Header newHeader)
       if (!ok) 
 	  ok = usefullFile(dirnames[dirindexes[i]]);
       
-      if (!ok) {
+      if (!ok)
+      {
 	 int k = i;
 	 while (dirindexes[i] == dirindexes[k] && i < count2)
 	     i++;
@@ -196,22 +158,21 @@ static void copyStrippedFileList(Header header, Header newHeader)
       } 
    }
    
-   if (i1 == 0) {
-      FREE(dirnames);
-      FREE(basenames);
-      FREE(dindexes);
+   if (i1 == 0)
+   {
+      free(dirnames);
+      free(basenames);
+      free(dindexes);
       return;
    }
    
    headerAddEntry(newHeader, RPMTAG_DIRNAMES, type1, dnames, i2);
-   
    headerAddEntry(newHeader, RPMTAG_BASENAMES, type2, bnames, i1);
-   
    headerAddEntry(newHeader, RPMTAG_DIRINDEXES, type3, dindexes, i1);
    
-   FREE(dirnames);
-   FREE(basenames);
-   FREE(dindexes);
+   free(dirnames);
+   free(basenames);
+   free(dindexes);
 }
 
 
@@ -226,7 +187,7 @@ bool loadUpdateInfo(char *path, map<string,UpdateInfo> &map)
       return false;
    }
    
-   pkgTagFile Tags(F);
+   pkgTagFile Tags(&F);
    pkgTagSection Section;
    
    while (Tags.Step(Section)) 
@@ -262,9 +223,8 @@ bool copyFields(Header h, Header newHeader,
       int res;
       
       res = headerGetEntry(h, tags[i], &type, &data, &count);
-      if (res != 1) {
+      if (res != 1)
 	 continue;
-      }
       headerAddEntry(newHeader, tags[i], type, data, count);
    }
    
@@ -291,14 +251,13 @@ bool copyFields(Header h, Header newHeader,
    headerAddEntry(newHeader, CRPMTAG_FILESIZE, RPM_INT32_TYPE,
 		  size, 1);
    
-   {
-      unsigned char md5[34];
-      
-      mdfile(filename, md5);
-      
-      headerAddEntry(newHeader, CRPMTAG_MD5, RPM_STRING_TYPE, 
-		     md5, 1);
-   }
+   FileFd File(filename, FileFd::ReadOnly);
+   MD5Summation MD5;
+   MD5.AddFD(File.Fd(), File.Size());
+   File.Close();
+   char md5[34];
+   strcpy(md5, MD5.Result().Value().c_str());
+   headerAddEntry(newHeader, CRPMTAG_MD5, RPM_STRING_TYPE, md5, 1);
    
    // update description tags
    if (updateInfo.find(string(filename)) != updateInfo.end()) {
@@ -423,8 +382,8 @@ int main(int argc, char ** argv)
    
    hdlist = fdOpen(op_hdlist, O_RDONLY, 0644);
    if (!hdlist) {
-      cerr << "hdlist2pkglist: error opening file" << op_hdlist << ":"
-	  << strerror(errno);
+      cerr << "hdlist2pkglist: error opening file " << op_hdlist << ": "
+	  << strerror(errno) << endl;
       return 1;
    }
    
@@ -432,8 +391,8 @@ int main(int argc, char ** argv)
    
    outfd = fdOpen(op_pkglist, O_WRONLY | O_TRUNC | O_CREAT, 0644);
    if (!outfd) {
-      cerr << "hdlist2pkglist: error creating file" << op_pkglist << ":"
-	  << strerror(errno);
+      cerr << "hdlist2pkglist: error creating file " << op_pkglist << ": "
+	  << strerror(errno) << endl;;
       return 1;
    }
 
@@ -452,7 +411,7 @@ int main(int argc, char ** argv)
 	  break;
 
       if (headerGetEntry(h, CRPMTAG_FILENAME, &type, (void**)&package, &count)!=1) {
-	 cerr << "hdlist2pkglist: could not get CRPMTAG_FILENAME from header in hdlist"<< endl;
+	 cerr << "hdlist2pkglist: could not get CRPMTAG_FILENAME from header in hdlist" << endl;
 	 exit(1);
       }
 
@@ -477,3 +436,5 @@ int main(int argc, char ** argv)
 
    return 0;
 }
+
+// vim:sts=3:sw=3

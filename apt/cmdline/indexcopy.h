@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: indexcopy.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: indexcopy.h,v 1.1 2002/07/23 17:54:52 niemeyer Exp $
 /* ######################################################################
 
    Index Copying - Aid for copying and verifying the index files
@@ -12,6 +12,10 @@
 
 #include <vector>
 #include <string>
+#include <stdio.h>
+
+using std::string;
+using std::vector;
 
 class pkgTagSection;
 class FileFd;
@@ -28,11 +32,11 @@ class IndexCopy
    bool ReconstructChop(unsigned long &Chop,string Dir,string File);
    void ConvertToSourceList(string CD,string &Path);
    bool GrabFirst(string Path,string &To,unsigned int Depth);
-   bool CopyWithReplace(FileFd &Target,const char *Tag,string New);
    virtual bool GetFile(string &Filename,unsigned long &Size) = 0;
-   virtual bool RewriteEntry(FileFd &Target,string File) = 0;
+   virtual bool RewriteEntry(FILE *Target,string File) = 0;
    virtual const char *GetFileName() = 0;
    virtual const char *Type() = 0;
+   
    public:
 
    bool CopyPackages(string CDROM,string Name,vector<string> &List);
@@ -43,7 +47,7 @@ class PackageCopy : public IndexCopy
    protected:
    
    virtual bool GetFile(string &Filename,unsigned long &Size);
-   virtual bool RewriteEntry(FileFd &Target,string File);
+   virtual bool RewriteEntry(FILE *Target,string File);
    virtual const char *GetFileName() {return "Packages";};
    virtual const char *Type() {return "Package";};
    
@@ -55,7 +59,7 @@ class SourceCopy : public IndexCopy
    protected:
    
    virtual bool GetFile(string &Filename,unsigned long &Size);
-   virtual bool RewriteEntry(FileFd &Target,string File);
+   virtual bool RewriteEntry(FILE *Target,string File);
    virtual const char *GetFileName() {return "Sources";};
    virtual const char *Type() {return "Source";};
    

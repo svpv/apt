@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: error.cc,v 1.4 2001/11/12 16:04:37 kojima Exp $
+// $Id: error.cc,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
    
    Global Erorr Class - Global error mechanism
@@ -20,21 +20,24 @@
 
 #include <apt-pkg/error.h>
 
+#include <iostream>
 #include <errno.h>
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <stdarg.h>
 #include <unistd.h>
 
 #include "config.h"
    									/*}}}*/
 
+using namespace std;
+
 // Global Error Object							/*{{{*/
 /* If the implementation supports posix threads then the accessor function
    is compiled to be thread safe otherwise a non-safe version is used. A
    Per-Thread error object is maintained in much the same manner as libc
    manages errno */
-#if _POSIX_THREADS == 1 && defined(HAVE_PTHREAD)
+#if defined(_POSIX_THREADS) && defined(HAVE_PTHREAD)
  #include <pthread.h>
 
  static pthread_key_t ErrorKey;
@@ -225,11 +228,6 @@ void GlobalError::Discard()
 /* */
 void GlobalError::Insert(Item *Itm)
 {
-   if (0) {//akk don't leave this here or it will have evil side effects
-	   // on acquire methods
-      cerr << Itm->Text.c_str() << endl;
-      return;
-   }
    Item **End = &List;
    for (Item *I = List; I != 0; I = I->Next)
       End = &I->Next;

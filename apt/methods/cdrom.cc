@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: cdrom.cc,v 1.3 2001/06/25 16:16:18 kojima Exp $
+// $Id: cdrom.cc,v 1.3 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
 
    CDROM URI method for APT
@@ -14,10 +14,15 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/fileutl.h>
 
-#include <utime.h>  
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <iostream>
 									/*}}}*/
+// CNC:2002-10-18
+#include <utime.h>  
+
+using namespace std;
 
 class CDROMMethod : public pkgAcqMethod
 {
@@ -31,6 +36,7 @@ class CDROMMethod : public pkgAcqMethod
    string GetID(string Name);
    virtual void Exit();
 
+   // CNC:2002-10-18
    bool Copy(string Src, string Dest);
    
    public:
@@ -78,7 +84,7 @@ string CDROMMethod::GetID(string Name)
    return string();
 }
 									/*}}}*/
-
+// CNC:2002-10-18
 bool CDROMMethod::Copy(string Src, string Dest)
 {
    // See if the file exists
@@ -126,7 +132,7 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
    FetchResult Res;
 
    bool Debug = _config->FindB("Debug::Acquire::cdrom",false);
-   
+
    /* All IMS queries are returned as a hit, CDROMs are readonly so 
       time stamps never change */
    if (Itm->LastModified != 0)
@@ -174,6 +180,7 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
    while (CurrentID.empty() == true)
    {
       bool Hit = false;
+      Mounted = MountCdrom(CDROM);
       for (unsigned int Version = 2; Version != 0; Version--)
       {
 	 if (IdentCdrom(CDROM,NewID,Version) == false)
@@ -203,13 +210,12 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
 	 Fail("Wrong CD",true);
 	 return true;
       }
-      
-      MountCdrom(CDROM);
-      Mounted = true;
    }
-
+   
+   // CNC:2002-10-18
    // Found a CD
-   if (_config->FindB("Acquire::cdrom::copy", false) == true) {
+   if (_config->FindB("Acquire::CDROM::Copy-All", false) == true ||
+       _config->FindB("Acquire::CDROM::Copy", false) == true) {
       Res.Filename = Queue->DestFile;
       URIStart(Res);
       Copy(CDROM+File, Queue->DestFile);
@@ -219,7 +225,8 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
    
    struct stat Buf;
    if (stat(Res.Filename.c_str(),&Buf) != 0)
-       return _error->Error("File not found");   
+      return _error->Error("File not found");
+   
    if (NewID.empty() == false)
       CurrentID = NewID;
    Res.LastModified = Buf.st_mtime;

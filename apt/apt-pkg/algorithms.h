@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: algorithms.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: algorithms.h,v 1.4 2003/01/29 13:04:48 niemeyer Exp $
 /* ######################################################################
 
    Algorithms - A set of misc algorithms
@@ -27,7 +27,6 @@
 
    ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_ALGORITHMS_H
 #define PKGLIB_ALGORITHMS_H
 
@@ -38,12 +37,31 @@
 #include <apt-pkg/packagemanager.h>
 #include <apt-pkg/depcache.h>
 
+#include <iostream>
+
+using std::ostream;
+
+#ifndef SWIG
 class pkgSimulate : public pkgPackageManager
 {
    protected:
 
+   class Policy : public pkgDepCache::Policy
+   {
+      pkgDepCache *Cache;
+      public:
+      
+      virtual VerIterator GetCandidateVer(PkgIterator Pkg)
+      {
+	 return (*Cache)[Pkg].CandidateVerIter(*Cache);
+      }
+      
+      Policy(pkgDepCache *Cache) : Cache(Cache) {};
+   };
+   
    unsigned char *Flags;
    
+   Policy iPolicy;
    pkgDepCache Sim;
    
    // The Actuall installation implementation
@@ -51,11 +69,13 @@ class pkgSimulate : public pkgPackageManager
    virtual bool Configure(PkgIterator Pkg);
    virtual bool Remove(PkgIterator Pkg,bool Purge);
    void ShortBreaks();
+   void Describe(PkgIterator iPkg,ostream &out,bool Now);
    
    public:
 
-   pkgSimulate(pkgDepCache &Cache);
+   pkgSimulate(pkgDepCache *Cache);
 };
+#endif
 
 class pkgProblemResolver
 {
@@ -100,8 +120,11 @@ class pkgProblemResolver
    bool ResolveByKeep();
    
    void InstallProtect();   
+
+   bool RemoveDepends(); // CNC:2002-08-01
    
-   pkgProblemResolver(pkgDepCache &Cache);
+   pkgProblemResolver(pkgDepCache *Cache);
+   ~pkgProblemResolver();
 };
 
 bool pkgDistUpgrade(pkgDepCache &Cache);
@@ -110,4 +133,6 @@ bool pkgFixBroken(pkgDepCache &Cache);
 bool pkgAllUpgrade(pkgDepCache &Cache);
 bool pkgMinimizeUpgrade(pkgDepCache &Cache);
 
+void pkgPrioSortList(pkgCache &Cache,pkgCache::Version **List);
+		     
 #endif

@@ -24,12 +24,6 @@ LIB_MAKES = apt-pkg/makefile apt-inst/makefile
 SOURCE = scratch.cc
 include $(PROGRAM_H)
 
-PROGRAM=testextract
-SLIBS = -lapt-inst -lapt-pkg
-LIB_MAKES = apt-pkg/makefile apt-inst/makefile
-SOURCE = testextract.cc
-include $(PROGRAM_H)
-
 # Version compare tester
 PROGRAM=versiontest
 SLIBS = -lapt-pkg 
@@ -38,15 +32,38 @@ SOURCE = versiontest.cc
 include $(PROGRAM_H)
 
 # Version compare tester
-PROGRAM=srcrfind
-SLIBS = -lapt-pkg 
-LIB_MAKES = apt-pkg/makefile
-SOURCE = srcrfind.cc
+PROGRAM=testextract
+SLIBS = -lapt-pkg -lapt-inst
+LIB_MAKES = apt-pkg/makefile apt-inst/makefile
+SOURCE = testextract.cc
 include $(PROGRAM_H)
 
-# Control Extracter tester
-PROGRAM=extractcontrol
-SLIBS = -lapt-pkg -lapt-inst -ldb2
-LIB_MAKES = apt-pkg/makefile
-SOURCE = extractcontrol.cc
+# Program for testing the config file parser
+PROGRAM=conftest
+SLIBS = -lapt-pkg
+SOURCE = conf.cc
+include $(PROGRAM_H)
+
+# Program for testing the tar/deb extractor
+PROGRAM=testdeb
+SLIBS = -lapt-pkg -lapt-inst
+SOURCE = testdeb.cc
+include $(PROGRAM_H)
+
+# Program for testing tar extraction
+PROGRAM=extract-control
+SLIBS = -lapt-pkg -lapt-inst
+SOURCE = extract-control.cc
+include $(PROGRAM_H)
+
+# Program for testing hashes
+PROGRAM=hash
+SLIBS = -lapt-pkg 
+SOURCE = hash.cc
+include $(PROGRAM_H)
+
+# Program for checking rpm versions
+PROGRAM=rpmver
+SLIBS = -lapt-pkg -lrpm
+SOURCE = rpmver.cc
 include $(PROGRAM_H)

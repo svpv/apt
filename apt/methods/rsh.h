@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
-// Description								/*{{{*/// $Id: rsh.h,v 1.1 2001/11/30 20:34:13 kojima Exp $
-// $Id: rsh.h,v 1.1 2001/11/30 20:34:13 kojima Exp $
+// Description								/*{{{*/// $Id: rsh.h,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
+// $Id: rsh.h,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
 
    RSH method - Transfer files via rsh compatible program
@@ -53,6 +53,7 @@ class RSHConn
 class RSHMethod : public pkgAcqMethod
 {
    virtual bool Fetch(FetchItem *Itm);
+   virtual bool Configuration(string Message);
 
    RSHConn *Server;
 

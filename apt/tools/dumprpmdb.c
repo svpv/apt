@@ -1,9 +1,6 @@
-
 #include <stdio.h>
 #include <fcntl.h>
 #include <rpm/rpmlib.h>
-
-
 
 int main()
 {

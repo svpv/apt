@@ -1,4 +1,7 @@
+copy: *.8
 copy: *.conf
 copy: *.patch
+copy: *.po
+copy: *.rsync
 tar.bz2: apt
-copy: rpmpriorities
+copy: genbasedir

@@ -1,3 +1,4 @@
+ad
 dnl Process this file with autoconf to produce a configure script.
 dnl The ONLY thing this is used for is to configure for different
 dnl linux architectures and configurations, it is not used to make the
@@ -13,17 +14,20 @@ dnl configure.in correctly and can be run at any time
 
 AC_INIT(configure.in)
 AC_CONFIG_AUX_DIR(buildlib)
-AC_CONFIG_HEADER(include/config.h:buildlib/config.h.in)
+AC_CONFIG_HEADER(include/config.h:buildlib/config.h.in include/apti18n.h:buildlib/apti18n.h.in)
 
+dnl CNC:2002-07-08
 dnl -- SET THIS TO THE RELEASE VERSION --
-AC_DEFINE_UNQUOTED(VERSION,"0.3.19cnc55")
-PACKAGE="apt"
-AC_DEFINE_UNQUOTED(PACKAGE,"$PACKAGE")
-AC_SUBST(PACKAGE)
-AC_SUBST(VERSION)
+dnl AC_DEFINE_UNQUOTED(VERSION,"0.5.5")
+dnl PACKAGE="apt"
+dnl AC_DEFINE_UNQUOTED(PACKAGE,"$PACKAGE")
+dnl AC_SUBST(PACKAGE)
 
 dnl Check the archs, we want the target type.
 AC_CANONICAL_SYSTEM
+
+dnl CNC:2002-07-08
+AM_INIT_AUTOMAKE("apt", "0.5.5")
 
 dnl Check our C compiler
 AC_CHECK_TOOL_PREFIX
@@ -34,19 +38,7 @@ dnl Check for other programs
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_RANLIB
-AC_PROG_INSTALL
 AC_CHECK_TOOL(AR,ar,"ar")
-
-
-ALL_LINGUAS="pt_BR es_ES it_IT ru"
-
-dnl Check for i18n stuff through gettext 
-AM_GNU_GETTEXT
-AC_CHECK_HEADERS(libintl.h)
-
-LOCALEDIR="/usr/share/locale"
-AC_DEFINE_UNQUOTED(LOCALEDIR, "$LOCALEDIR")
-AC_SUBST(LOCALEDIR)
 
 dnl Checks for sockets
 SAVE_LIBS="$LIBS"
@@ -56,7 +48,7 @@ AC_SEARCH_LIBS(connect,socket)
 SOCKETLIBS="$LIBS"
 AC_SUBST(SOCKETLIBS)
 LIBS="$SAVE_LIBS"
-
+ 
 dnl Checks for pthread -- disabled due to glibc bugs jgg
 dnl AC_CHECK_LIB(pthread, pthread_create,[AC_DEFINE(HAVE_PTHREAD) PTHREADLIB="-lpthread"])
 AC_SUBST(PTHREADLIB)
@@ -70,8 +62,8 @@ AC_CHECK_HEADER(db2/db.h,
         [AC_DEFINE(HAVE_DB2) DB2LIB="-ldb2"])])
 AC_SUBST(DB2LIB)
 
-
-dnl Check for rpm version --akk
+dnl CNC:2002-07-03
+dnl Check for rpm version
 rpm_version="none"
 SAVE_LIBS="$LIBS"
 SAVE_CPPFLAGS="$CPPFLAGS"
@@ -92,7 +84,11 @@ if test $rpm_header_ok = 1; then
         [AC_DEFINE_UNQUOTED(HAVE_RPM, 1) AC_DEFINE_UNQUOTED(HAVE_RPM4, 1)
 	 RPMLIBS="-lrpm $RPMDBLIBS -lrpmio -lz -lbz2 -lpopt"
          SAVE_CPPFLAGS="$SAVE_CPPFLAGS -I/usr/include/rpm"
-	 rpm_version="4"])
+         AC_CHECK_LIB(rpm, rpmtsUpdateDSI,
+		      [AC_DEFINE_UNQUOTED(HAVE_RPM41, 1)
+		       rpm_version="4.1"],
+		      [rpm_version="4.0.X"])
+	])
 
       if test $rpm_version = "none"; then
         LIBS="$SAVE_LIBS -ldb1 -lz -lbz2 -lpopt"
@@ -144,6 +140,10 @@ if test x"$HAVE_STATVFS" != x"yes"; then
    AC_EGREP_HEADER(statfs,sys/mount.h,[AC_DEFINE(HAVE_MOUNT_H)],[AC_MSG_ERROR(failed: Need statvfs)])
    ])
 fi
+
+dnl We should use the real timegm function if we have it.
+AC_CHECK_FUNC(timegm,AC_DEFINE(HAVE_TIMEGM))
+AC_SUBST(HAVE_TIMEGM)
 
 dnl Check the sizes etc. of the architecture
 dnl This is stupid, it should just use the AC macros like it does below
@@ -218,4 +218,17 @@ rc_GLIBC_VER
 rc_LIBSTDCPP_VER
 ah_GCC3DEP
 
-AC_OUTPUT(po/Makefile.in intl/Makefile environment.mak:buildlib/environment.mak.in makefile:buildlib/makefile.in,make -s dirs)
+dnl It used to be that the user could select translations and that could get
+dnl passed to the makefiles, but now that can only work if you use special
+dnl gettext approved makefiles, so this feature is unsupported by this.
+dnl CNC:2002-10-22
+ALL_LINGUAS="de_DE es_ES it_IT pt_BR ru"
+AM_GNU_GETTEXT(external)
+if test x"$USE_NLS" = "xyes"; then
+   AC_DEFINE(USE_NLS)
+fi
+AC_SUBST(USE_NLS)
+AC_PATH_PROG(BASH, bash)
+
+dnl CNC:2002-07-08
+AC_OUTPUT(environment.mak:buildlib/environment.mak.in makefile:buildlib/makefile.in,make -s dirs)

@@ -1,224 +1,158 @@
-// $Id: rpmversion.cc,v 1.4 2002/01/14 16:53:12 kojima Exp $
+// -*- mode: cpp; mode: fold -*-
+// Description								/*{{{*/
+// $Id: rpmversion.cc,v 1.4 2002/11/19 13:03:29 niemeyer Exp $
+/* ######################################################################
 
+   RPM Version - Versioning system for RPM
+
+   This implements the standard RPM versioning system.
+   
+   ##################################################################### 
+ */
+									/*}}}*/
+// Include Files							/*{{{*/
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/rpmversion.h"
-#endif 
+#endif
 
-#include <apt-pkg/rpmfactory.h>
+#include <config.h>
 
-#include <alloca.h>
-#include <stdlib.h>
+#ifdef HAVE_RPM
+
+#include <apt-pkg/rpmversion.h>
+#include <apt-pkg/pkgcache.h>
 
 #include <rpm/rpmlib.h>
 #include <rpm/misc.h>
 
-// VersionCompare (op) - Greater than comparison for versions
+#include <stdlib.h>
+
+#ifdef HAVE_RPM41
+#include <rpm/rpmds.h>
+#endif
+
+rpmVersioningSystem rpmVS;
+
+// rpmVS::rpmVersioningSystem - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-int RPMFactory::versionCompare(const char *A, const char *B)
+rpmVersioningSystem::rpmVersioningSystem()
 {
-   return versionCompare(A,A + strlen(A),B,B + strlen(B));
+   Label = "Standard .rpm";
 }
-
-int RPMFactory::versionCompare(string A,string B)
-{
-   return versionCompare(A.begin(),A.end(),B.begin(),B.end());
-}
-
-
-
+									/*}}}*/
+// rpmVS::ParseVersion - Parse a version into it's components           /*{{{*/
+// ---------------------------------------------------------------------
 /* Code ripped from rpmlib */
-static void ParseVersion(const char *V, const char *VEnd,
-			 char **Epoch, 
-			 char **Version,
-			 char **Release)
+void rpmVersioningSystem::ParseVersion(const char *V, const char *VEnd,
+				       char **Epoch, 
+				       char **Version,
+				       char **Release)
 {
    string tmp = string(V, VEnd);
-   const char *evr = tmp.c_str();
-   const char *epoch, *epoend;
-   const char *version, *verend;        /* assume only version is present */
-   const char *release, *relend;
-   char *s, *se;
+   char *evr = strdup(tmp.c_str());
+   const char *epoch = NULL;
+   const char *version = NULL;
+   const char *release = NULL;
+   char *s;
 
-   s = (char*)evr;
-   while (*evr && isdigit(*s)) s++;   /* s points to epoch terminator */
-   se = strrchr(s, '-');               /* se points to version terminator */
-
-   if (*s == ':') {
+   assert(evr != NULL);
+   
+   s = strrchr(evr, '-');
+   if (s) {
+      *s++ = '\0';
+      release = s;
+   }
+   s = evr;
+   while (isdigit(*s)) s++;
+   if (*s == ':')
+   {
       epoch = evr;
       *s++ = '\0';
       version = s;
       if (*epoch == '\0') epoch = "0";
-   } else {
-      epoch = NULL;   /* XXX disable epoch compare if missing */
+   }
+   else
       version = evr;
-   }
-   if (se) {
-      *se++ = '\0';
-      release = se;
-   } else {
-      release = NULL;
-   }
 
 #define Xstrdup(a) (a) ? strdup(a) : NULL
    *Epoch = Xstrdup(epoch);
    *Version = Xstrdup(version);
    *Release = Xstrdup(release);
 #undef Xstrdup
+   free(evr);
 }
-
+									/*}}}*/
+// rpmVS::CmpVersion - Comparison for versions				/*{{{*/
+// ---------------------------------------------------------------------
 /* This fragments the version into E:V-R triples and compares each 
-   portion seperately. */
-int RPMFactory::versionCompare(const char *A, const char *AEnd, 
-				     const char *B, const char *BEnd)
+   portion separately. */
+int rpmVersioningSystem::DoCmpVersion(const char *A,const char *AEnd,
+				      const char *B,const char *BEnd)
 {
-#if 0
-   char *AE, *AV, *AS;
-   char *BE, *BV, *BS;
-   int rc;
-   
-#define FREE(x) if (x) free(x)
-
-   ParseVersion(A, AEnd, &AE, &AV, &AS);
-   ParseVersion(B, BEnd, &BE, &BV, &BS);
-   
-   if (AE && !BE) {
-       FREE(AE); FREE(AV); FREE(AS);
-       FREE(BE); FREE(BV); FREE(BS);
-       return 1;
-   } else if (!AE && BE) {
-       FREE(AE); FREE(AV); FREE(AS);
-       FREE(BE); FREE(BV); FREE(BS);
-       return -1;
-   } else if (AE && BE) 
+   char *AE, *AV, *AR;
+   char *BE, *BV, *BR;
+   int rc = 0;
+   ParseVersion(A, AEnd, &AE, &AV, &AR);
+   ParseVersion(B, BEnd, &BE, &BV, &BR);
+   if (AE && !BE)
+       rc = 1;
+   else if (!AE && BE)
+       rc = -1;
+   else if (AE && BE)
    {
-      int Aep, Bep;
-      
-      Aep = atoi(AE);
-      Bep = atoi(BE);
-      
-      FREE(AE); FREE(AV); FREE(AS);
-      FREE(BE); FREE(BV); FREE(BS);
-
-      if (Aep < Bep)
-	  return -1;
-      else
-	  return 1;
+      int AEi, BEi;
+      AEi = atoi(AE);
+      BEi = atoi(BE);
+      if (AEi < BEi)
+	  rc = -1;
+      else if (AEi > BEi)
+	  rc = 1;
    }
-   
-   rc = rpmvercmp(AV, BV);
-    
-   if (rc) {
-       FREE(AE); FREE(AV); FREE(AS);
-       FREE(BE); FREE(BV); FREE(BS);
-       
-       return rc;
+   if (rc == 0)
+   {
+      rc = rpmvercmp(AV, BV);
+      if (rc == 0)
+	 rc = rpmvercmp(AR, BR);
    }
-
-   rc = rpmvercmp(AS, BS);
-   FREE(AE); FREE(AV); FREE(AS);
-   FREE(BE); FREE(BV); FREE(BS);
-
-   return rc; 
-#else
-    char *bufA;
-    char *bufB;
-    char *p;
-    bool okA, okB;
-    char *verA, *verB;
-    char *relA, *relB;
-    int res;
-    
-    bufA = (char*)alloca(AEnd-A+4);
-    bufB = (char*)alloca(BEnd-B+4);
-    
-    bufA = strncpy(bufA, A, AEnd-A);
-    bufA[AEnd-A] = 0;
-    
-    bufB = strncpy(bufB, B, BEnd-B);
-    bufB[BEnd-B] = 0;
-    
-    // compare epoch
-    p = strchr(bufA, ':');
-    okA = (p != NULL);
-
-    p = strchr(bufB, ':');
-    okB = (p != NULL);
-
-    if (okA && !okB)
-	return 2;
-    else if (!okA && okB)
-	return -2;
-    else if (okA && okB) {
-	int epoA, epoB;
-	
-	p = strchr(bufA, ':');
-	*p = 0;
-	epoA = atoi(bufA);
-	verA = p+1;
-	
-	p = strchr(bufB, ':');
-	*p = 0;
-	verB = p+1;
-	
-	epoB = atoi(bufB);
-	if (epoA < epoB)
-	    return -1;
-	else if (epoA > epoB)
-	    return 1;
-    } else {
-	verA = bufA;
-	verB = bufB;
-    }
-    
-    // compare version
-    p = strchr(verA, '-');
-    if (p) {
-	*p = 0;
-	relA = p+1;
-    } else {
-	relA = NULL;
-    }
-    
-    p = strchr(verB, '-');
-    if (p) {
-	*p = 0;
-	relB = p+1;
-    } else {
-	relB = NULL;
-    }
-
-    res = rpmvercmp(verA, verB);
-    if (res)
-	return res;
-    
-    // compare release
-    if (!relA)
-	return 0;
-
-    if (!relB)
-	return 0;
-    
-    res = rpmvercmp(relA, relB);
-    
-    return res;
-#endif
+   free(AE);free(AV);free(AR);;
+   return rc;
 }
-
-
-// CheckDep - Check a single dependency					/*{{{*/
+									/*}}}*/
+// rpmVS::DoCmpVersionArch - Compare versions, using architecture	/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+int rpmVersioningSystem::DoCmpVersionArch(const char *A,const char *Aend,
+					  const char *AA,const char *AAend,
+					  const char *B,const char *Bend,
+					  const char *BA,const char *BAend)
+{
+   int rc = DoCmpVersion(A, Aend, B, Bend);
+   if (rc == 0)
+   {
+      int aa = rpmMachineScore(RPM_MACHTABLE_INSTARCH, AA); 
+      int ba = rpmMachineScore(RPM_MACHTABLE_INSTARCH, BA); 
+      if (aa < ba)
+	 rc = 1;
+      else if (aa > ba)
+	 rc = -1;
+   }
+   return rc;
+}
+									/*}}}*/
+// rpmVS::CheckDep - Check a single dependency				/*{{{*/
 // ---------------------------------------------------------------------
 /* This simply preforms the version comparison and switch based on 
-   operator. */
-bool RPMFactory::checkDep(const char *DepVer,const char *PkgVer,int Op)
+   operator. If DepVer is 0 then we are comparing against a provides
+   with no version. */
+bool rpmVersioningSystem::CheckDep(const char *PkgVer,
+				   int Op,const char *DepVer)
 {
-   int rc;
-   int PkgFlags;
-   int DepFlags;
+   int PkgFlags = RPMSENSE_EQUAL;
+   int DepFlags = 0;
    bool invert = false;
+   int rc;
    
-   DepFlags = 0;
-   PkgFlags = RPMSENSE_EQUAL;
    switch (Op & 0x0F)
    {
     case pkgCache::Dep::LessEq:
@@ -247,24 +181,41 @@ bool RPMFactory::checkDep(const char *DepVer,const char *PkgVer,int Op)
       break;
       
     default:
-      DepFlags = RPMSENSE_ANY; // any version is ok
+      DepFlags = RPMSENSE_ANY;
       break;
    }
-   
-   rc = rpmRangesOverlap("", PkgVer, PkgFlags, // provide
-			 "", DepVer, DepFlags); // request
-      
-   if (invert)
-       return !(rc == 1);
-   else
-       return (rc == 1);
-}
 
+#ifdef HAVE_RPM41
+   rpmds pds = rpmdsSingle(RPMTAG_PROVIDENAME, "", PkgVer, PkgFlags);
+   rpmds dds = rpmdsSingle(RPMTAG_REQUIRENAME, "", DepVer, DepFlags);
+   rc = rpmdsCompare(pds, dds);
+   rpmdsFree(pds);
+   rpmdsFree(dds);
+#else 
+   rc = rpmRangesOverlap("", PkgVer, PkgFlags, "", DepVer, DepFlags);
+#endif
+    
+   return (!invert && rc) || (invert && !rc);
+}
 									/*}}}*/
-// BaseVersion - Return the upstream version string			/*{{{*/
+// rpmVS::CheckDep - Check a single dependency				/*{{{*/
 // ---------------------------------------------------------------------
-/* This strips all the debian specific information from the version number */
-string RPMFactory::baseVersion(const char *Ver)
+/* This prototype is a wrapper over CheckDep above. It's useful in the
+   cases where the kind of dependency matters to decide if it matches
+   or not */
+bool rpmVersioningSystem::CheckDep(const char *PkgVer,
+				   pkgCache::DepIterator Dep)
+{
+   if (Dep->Type == pkgCache::Dep::Obsoletes &&
+       (PkgVer == 0 || PkgVer[0] == 0))
+      return false;
+   return CheckDep(PkgVer,Dep->CompareOp,Dep.TargetVer());
+}
+									/*}}}*/
+// rpmVS::UpstreamVersion - Return the upstream version string		/*{{{*/
+// ---------------------------------------------------------------------
+/* This strips all the vendor specific information from the version number */
+string rpmVersioningSystem::UpstreamVersion(const char *Ver)
 {
    // Strip off the bit before the first colon
    const char *I = Ver;
@@ -278,7 +229,11 @@ string RPMFactory::baseVersion(const char *Ver)
    for (; *I != 0; I++)
       if (*I == '-')
 	 Last = I - Ver;
-      
+   
    return string(Ver,Last);
 }
 									/*}}}*/
+
+#endif /* HAVE_RPM */
+
+// vim:sts=3:sw=3

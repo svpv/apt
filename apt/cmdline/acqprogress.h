@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acqprogress.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: acqprogress.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
 
    Acquire Progress - Command line progress meter 

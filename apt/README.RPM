@@ -1,5 +1,4 @@
 
-
 RPM enabled APT
 
 WARNING
@@ -12,7 +11,7 @@ DO NOT TRY TO COMPILE THIS ON A DEBIAN SYSTEM.
 THIS IS A WORK IN PROGRESS AND WILL NOT WORK ON DEBIAN
 RIGHT NOW.
 
-If you find a problem, contact kojima@conectiva.com.br,
+If you find a problem, contact niemeyer@conectiva.com,
 not the original developers.
 
 
@@ -36,6 +35,4 @@ The manpages are properly updated, but if you
 want simpler/friendlier documentation, you can
 get the APT+RPM HOWTO at:
 http://bazar.conectiva.com.br/~godoy/apt-howto/
-
-
 

@@ -1,10 +1,10 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: rpmlistparser.h,v 1.15 2001/11/30 20:34:13 kojima Exp $
+// $Id: rpmlistparser.h,v 1.2 2002/07/26 17:39:28 niemeyer Exp $
 /* ######################################################################
    
-   Debian Package List Parser - This implements the abstract parser 
-   interface for rpmian package files
+   RPM Package List Parser - This implements the abstract parser 
+   interface for RPM package files
    
    ##################################################################### 
  */
@@ -16,43 +16,26 @@
 #include <apt-pkg/pkgcachegen.h>
 #include <rpm/rpmlib.h>
 #include <map>
-#include <slist>
 #include <vector>
 #include <regex.h>
 
+using namespace std;
+
+class RPMHandler;
+
 class rpmListParser : public pkgCacheGenerator::ListParser
 {
+   RPMHandler *Handler;
    Header header;
-   FileFd *file;
-   unsigned long offset;
    
+   map<string,unsigned long> *DupPackages;
    vector<string> Essentials;
    vector<string> Importants;
    
-   map<string,int> *filedeps;
-   map<string,string> *multiarchs;
-   
-   map<string,long> *DupPackages;
-   slist<regex_t*> *AllowedDupPackages;
-   bool duplicated;
-   
-   slist<regex_t*> *HoldPackages;   
-   
-   bool parsing_hdlist;
-   
-   char *Arch;
-   char *BaseArch;
-   
-   // Parser Helper
-   struct WordList
-   {
-      char *Str;
-      unsigned char Val;
-   };
+   vector<regex_t*> AllowedDupPackages;
+   bool Duplicated;
    
    bool GetConfig();
-   
-   bool IsMultiArch(string package);
    
    unsigned long UniqFindTagWrite(int Tag);
    bool ParseStatus(pkgCache::PkgIterator Pkg,pkgCache::VerIterator Ver);
@@ -62,14 +45,12 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    bool ParseDepends(pkgCache::VerIterator Ver, unsigned int Type);
    bool ParseProvides(pkgCache::VerIterator Ver);
    
+#ifdef OLD_FILEDEPS
    bool ProcessFileProvides(pkgCache::VerIterator Ver);
+#endif
    
-   Header NextHeader();
-
-   bool ShouldBeIgnored(string pkg);
-
  public:
-
+   
    // These all operate against the current header
    virtual string Package();
    virtual string Version();
@@ -78,15 +59,15 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    virtual unsigned short VersionHash();
    virtual bool UsePackage(pkgCache::PkgIterator Pkg,
 			   pkgCache::VerIterator Ver);
-   virtual unsigned long Offset() {return offset;};
+   virtual unsigned long Offset();
    virtual unsigned long Size();
-   
+   virtual bool CollectFileProvides(pkgCache &Cache,
+				    pkgCache::VerIterator Ver); 
    virtual bool Step();
    
    bool LoadReleaseInfo(pkgCache::PkgFileIterator FileI,FileFd &File);
    
-   rpmListParser(FileFd &File, map<string,int> *fdeps, map<string,string> *marchs);
-   rpmListParser(map<string,int> *fdeps, map<string,string> *marchs);
+   rpmListParser(RPMHandler *Handler);
    ~rpmListParser();
 };
 

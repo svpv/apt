@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire-worker.cc,v 1.2 2001/01/11 02:03:26 kojima Exp $
+// $Id: acquire-worker.cc,v 1.1 2002/07/23 17:54:50 niemeyer Exp $
 /* ######################################################################
 
    Acquire Worker 
@@ -22,16 +22,20 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/strutl.h>
 
+#include <apti18n.h>
+
+#include <iostream>
+#include <fstream>
+    
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
-
-#include <i18n.h>
-
 									/*}}}*/
+
+using namespace std;
 
 // Worker::Worker - Constructor for Queue startup			/*{{{*/
 // ---------------------------------------------------------------------
@@ -114,7 +118,7 @@ bool pkgAcquire::Worker::Start()
    int Pipes[4] = {-1,-1,-1,-1};
    if (pipe(Pipes) != 0 || pipe(Pipes+2) != 0)
    {
-      _error->Errno("pipe",_("Failed to create IPC pipe to subprocess"));
+      _error->Errno("pipe","Failed to create IPC pipe to subprocess");
       for (int I = 0; I != 4; I++)
 	 close(Pipes[I]);
       return false;
@@ -124,14 +128,11 @@ bool pkgAcquire::Worker::Start()
    
    // Fork off the process
    Process = ExecFork();
-
-   // Spawn the subprocess
    if (Process == 0)
    {
       // Setup the FDs
       dup2(Pipes[1],STDOUT_FILENO);
       dup2(Pipes[2],STDIN_FILENO);
-      dup2(((filebuf *)clog.rdbuf())->fd(),STDERR_FILENO);
       SetCloseExec(STDOUT_FILENO,false);
       SetCloseExec(STDIN_FILENO,false);      
       SetCloseExec(STDERR_FILENO,false);
@@ -194,7 +195,7 @@ bool pkgAcquire::Worker::RunMessages()
       char *End;
       int Number = strtol(Message.c_str(),&End,10);
       if (End == Message.c_str())
-	 return _error->Error(_("Invalid message from method %s: %s"),Access.c_str(),Message.c_str());
+	 return _error->Error("Invalid message from method %s: %s",Access.c_str(),Message.c_str());
 
       string URI = LookupTag(Message,"URI");
       pkgAcquire::Queue::QItem *Itm = 0;
@@ -207,7 +208,7 @@ bool pkgAcquire::Worker::RunMessages()
 	 // 100 Capabilities
 	 case 100:
 	 if (Capabilities(Message) == false)
-	    return _error->Error(_("Unable to process Capabilities message from %s"),Access.c_str());
+	    return _error->Error("Unable to process Capabilities message from %s",Access.c_str());
 	 break;
 	 
 	 // 101 Log
@@ -226,7 +227,7 @@ bool pkgAcquire::Worker::RunMessages()
 	 {
 	    if (Itm == 0)
 	    {
-	       _error->Error(_("Method gave invalid 200 URI Start message"));
+	       _error->Error("Method gave invalid 200 URI Start message");
 	       break;
 	    }
 	    
@@ -263,9 +264,9 @@ bool pkgAcquire::Worker::RunMessages()
 	       Log->Pulse(Owner->GetOwner());
 	    
 	    OwnerQ->ItemDone(Itm);
-	    if (TotalSize != 0 && 
+	    if (TotalSize != 0 &&
 		(unsigned)atoi(LookupTag(Message,"Size","0").c_str()) != TotalSize)
-	       _error->Warning(_("Bizzar Error - File size is not what the server reported %s %u"),
+	       _error->Warning("Bizarre Error - File size is not what the server reported %s %lu",
 			       LookupTag(Message,"Size","0").c_str(),TotalSize);
 
 	    Owner->Done(Message,atoi(LookupTag(Message,"Size","0").c_str()),
@@ -294,7 +295,7 @@ bool pkgAcquire::Worker::RunMessages()
 	 {
 	    if (Itm == 0)
 	    {
-	       _error->Error(_("Method gave invalid 400 URI Failure message"));
+	       _error->Error("Method gave invalid 400 URI Failure message");
 	       break;
 	    }
 
@@ -316,7 +317,7 @@ bool pkgAcquire::Worker::RunMessages()
 	 
 	 // 401 General Failure
 	 case 401:
-	 _error->Error(_("Method %s General failure: %s"),LookupTag(Message,"Message").c_str());
+	 _error->Error("Method %s General failure: %s",Access.c_str(),LookupTag(Message,"Message").c_str());
 	 break;
 	 
 	 // 403 Media Change
@@ -370,7 +371,7 @@ bool pkgAcquire::Worker::MediaChange(string Message)
 				    LookupTag(Message,"Drive")) == false)
    {
       char S[300];
-      sprintf(S,"603 Media Changed\nFailed: true\n\n");
+      snprintf(S,sizeof(S),"603 Media Changed\nFailed: true\n\n");
       if (Debug == true)
 	 clog << " -> " << Access << ':' << QuoteString(S,"\n") << endl;
       OutQueue += S;
@@ -379,7 +380,7 @@ bool pkgAcquire::Worker::MediaChange(string Message)
    }
 
    char S[300];
-   sprintf(S,"603 Media Changed\n\n");
+   snprintf(S,sizeof(S),"603 Media Changed\n\n");
    if (Debug == true)
       clog << " -> " << Access << ':' << QuoteString(S,"\n") << endl;
    OutQueue += S;
@@ -408,7 +409,7 @@ bool pkgAcquire::Worker::SendConfiguration()
    {
       if (Top->Value.empty() == false)
       {
-	 string Line = "Config-Item: " + Top->FullTag() + "=";
+	 string Line = "Config-Item: " + QuoteString(Top->FullTag(),"=\"\n") + "=";
 	 Line += QuoteString(Top->Value,"\n") + '\n';
 	 Message += Line;
       }
@@ -465,7 +466,7 @@ bool pkgAcquire::Worker::OutFdReady()
    int Res;
    do
    {
-      Res = write(OutFd,OutQueue.begin(),OutQueue.length());
+      Res = write(OutFd,OutQueue.c_str(),OutQueue.length());
    }
    while (Res < 0 && errno == EINTR);
    
@@ -500,7 +501,7 @@ bool pkgAcquire::Worker::InFdReady()
    read returned -1. */
 bool pkgAcquire::Worker::MethodFailure()
 {
-   _error->Error(_("Method %s has died unexpectedly!"),Access.c_str());
+   _error->Error("Method %s has died unexpectedly!",Access.c_str());
    
    ExecWait(Process,Access.c_str(),true);
    Process = -1;

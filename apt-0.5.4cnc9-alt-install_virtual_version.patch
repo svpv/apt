@@ -1,0 +1,35 @@
+2003-01-21  Anton Kachalov <mouse@altlinux.org>
+
+	* apt-pkg/versionmatch.cc (pkgVersionMatch::Find):
+	Add APT::Install::VirtualVersion support.
+
+--- apt-0.5.4cnc9/apt-pkg/versionmatch.cc.orig	2002-07-23 21:54:50 +0400
++++ apt-0.5.4cnc9/apt-pkg/versionmatch.cc	2003-01-21 16:42:55 +0300
+@@ -15,6 +15,7 @@
+ #pragma implementation "apt-pkg/versionmatch.h"
+ #endif
+ #include <apt-pkg/versionmatch.h>
++#include <apt-pkg/configuration.h>
+ 
+ #include <apt-pkg/strutl.h>
+ #include <apt-pkg/error.h>
+@@ -158,6 +159,19 @@ pkgCache::VerIterator pkgVersionMatch::Find
+ 	    return Ver;
+    }
+       
++   if (_config->FindB("APT::Install::VirtualVersion",false) == false)
++      return Ver;
++
++   pkgCache::PrvIterator Prv = Pkg.ProvidesList();
++   for (; Prv.end() == false; Prv++)
++    {
++      if (Type == Version)
++      {
++	 if (MatchVer(Prv.ProvideVersion(),VerStr,VerPrefixMatch) == true)
++	    return Prv.OwnerVer();
++	 continue;
++      }
++    }
+    // This will be Ended by now.
+    return Ver;
+ }

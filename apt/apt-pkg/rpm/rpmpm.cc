@@ -12,9 +12,15 @@
 #pragma implementation "apt-pkg/rpmpm.h"
 #endif
 
+#include <config.h>
+
+#ifdef HAVE_RPM
+
 #include <apt-pkg/rpmpm.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
+
+#include <apti18n.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -24,19 +30,17 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include <iostream>
 
-#include <string.h>
-
-#include <i18n.h>
 
 #include <rpm/rpmlib.h>
 									/*}}}*/
+
 // RPMPM::pkgRPMPM - Constructor					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-pkgRPMPM::pkgRPMPM(pkgDepCache &Cache) : pkgPackageManager(Cache)
+pkgRPMPM::pkgRPMPM(pkgDepCache *Cache) : pkgPackageManager(Cache)
 {
-    noninteractive = false;
 }
 									/*}}}*/
 // RPMPM::pkgRPMPM - Destructor					/*{{{*/
@@ -67,7 +71,7 @@ bool pkgRPMPM::Configure(PkgIterator Pkg)
       return false;
    }
    
-//   List.push_back(Item(Item::Configure,Pkg));
+   List.push_back(Item(Item::Configure,Pkg));
    return true;
 }
 									/*}}}*/
@@ -79,9 +83,9 @@ bool pkgRPMPM::Remove(PkgIterator Pkg,bool Purge)
    if (Pkg.end() == true)
       return false;
    
-//   if (Purge == true)
-//      List.push_back(Item(Item::Purge,Pkg));
-//   else
+   if (Purge == true)
+      List.push_back(Item(Item::Purge,Pkg));
+   else
       List.push_back(Item(Item::Remove,Pkg));
    return true;
 }
@@ -97,53 +101,42 @@ bool pkgRPMPM::RunScripts(const char *Cnf)
       return true;
    Opts = Opts->Child;
 
-   // Fork for running the system calls
-   pid_t Child = ExecFork();
-   
-   // This is the child
-   if (Child == 0)
+   bool error = false;
+   for (; Opts != 0; Opts = Opts->Next)
    {
-      if (chdir("/tmp/") != 0)
-	 _exit(100);
-	 
-      unsigned int Count = 1;
-      for (; Opts != 0; Opts = Opts->Next, Count++)
+      if (Opts->Value.empty() == true)
+         continue;
+		
+      // Purified Fork for running the script
+      pid_t Process = ExecFork();      
+      if (Process == 0)
       {
-	 if (Opts->Value.empty() == true)
-	    continue;
-	 
-	 if (system(Opts->Value.c_str()) != 0)
-	    _exit(100+Count);
+	 if (chdir("/tmp") != 0)
+	    _exit(100);
+
+	 const char *Args[4];
+	 Args[0] = "/bin/sh";
+	 Args[1] = "-c";
+	 Args[2] = Opts->Value.c_str();
+	 Args[3] = 0;
+	 execv(Args[0],(char **)Args);
+	 _exit(100);
       }
-      _exit(0);
-   }      
-
-   // Wait for the child
-   int Status = 0;
-   while (waitpid(Child,&Status,0) != Child)
-   {
-      if (errno == EINTR)
-	 continue;
-      return _error->Errno("waitpid",_("Couldn't wait() for subprocess"));
+      
+      // Clean up the sub process
+      if (ExecWait(Process,Opts->Value.c_str()) == false) {
+	 _error->Error(_("Problem executing scripts %s '%s'"),Cnf,
+		       Opts->Value.c_str());
+	 error = true;
+      }
    }
-
+ 
    // Restore sig int/quit
    signal(SIGQUIT,SIG_DFL);
    signal(SIGINT,SIG_DFL);   
 
-   // Check for an error code.
-   if (WIFEXITED(Status) == 0 || WEXITSTATUS(Status) != 0)
-   {
-      unsigned int Count = WEXITSTATUS(Status);
-      if (Count > 100)
-      {
-	 Count -= 100;
-	 for (; Opts != 0 && Count != 1; Opts = Opts->Next, Count--);
-	 _error->Error(_("Problem executing scripts %s '%s'"),Cnf,Opts->Value.c_str());
-      }
-      
+   if (error)
       return _error->Error(_("Sub-process returned an error code"));
-   }
    
    return true;
 }
@@ -161,8 +154,7 @@ bool pkgRPMPM::RunScriptsWithPkgs(const char *Cnf)
       return true;
    Opts = Opts->Child;
    
-   unsigned int Count = 1;
-   for (; Opts != 0; Opts = Opts->Next, Count++)
+   for (; Opts != 0; Opts = Opts->Next)
    {
       if (Opts->Value.empty() == true)
          continue;
@@ -170,7 +162,7 @@ bool pkgRPMPM::RunScriptsWithPkgs(const char *Cnf)
       // Create the pipes
       int Pipes[2];
       if (pipe(Pipes) != 0)
-	 return _error->Errno("pipe",_("Failed to create IPC pipe to subprocess"));
+	 return _error->Errno("pipe","Failed to create IPC pipe to subprocess");
       SetCloseExec(Pipes[0],true);
       SetCloseExec(Pipes[1],true);
       
@@ -208,7 +200,7 @@ bool pkgRPMPM::RunScriptsWithPkgs(const char *Cnf)
 	 
 	 /* Feed the filename of each package that is pending install
 	    into the pipe. */
-	 if (Fd.Write(I->File.begin(),I->File.length()) == false || 
+	 if (Fd.Write(I->File.c_str(),I->File.length()) == false || 
 	     Fd.Write("\n",1) == false)
 	 {
 	    kill(Process,SIGINT);	    
@@ -229,118 +221,117 @@ bool pkgRPMPM::RunScriptsWithPkgs(const char *Cnf)
 
 									/*}}}*/
 
-bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
+bool pkgRPMPM::ExecRPM(Item::RPMOps op, list<const char*> &files)
 {
-   // Generate the argument list
    const char *Args[10000];      
+   const char *operation;
    unsigned int n = 0;
-   string options;
-
-   Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
-      
-   // Stick in any custom rpm options
-   Configuration::Item const *Opts = _config->Tree("RPM::Options");
-   if (Opts != 0)
-   {
-      Opts = Opts->Child;
-      for (; Opts != 0; Opts = Opts->Next)
-      {
-	 if (Opts->Value.empty() == true)
-	     continue;
-	 Args[n++] = Opts->Value.c_str();
-      }	 
-   }
-
-   switch (operation) {
-    case OInstall:
-    case OUpgrade:
-      Opts = _config->Tree("RPM::UpgradeOptions");
-      break;
-
-    case ORemove:
-      Opts = _config->Tree("RPM::RemoveOptions");
-      break;
-
-    case OCheckSignature:
-      break;
-   }
+   bool Interactive = _config->FindB("RPM::Interactive",true);
    
-   if (Opts != 0)
-   {
-      Opts = Opts->Child;
-      for (; Opts != 0; Opts = Opts->Next)
-      {
-	 if (Opts->Value.empty() == true)
-	     continue;
-	 Args[n++] = Opts->Value.c_str();
-      }	 
-   }
+   Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
 
+   switch (op)
+   {
+      case Item::RPMInstall:
+	 if (Interactive)
+	    operation = "-ivh";
+	 else
+	    operation = "-i";
+	 break;
+
+      case Item::RPMUpgrade:
+	 if (Interactive)
+	    operation = "-Uvh";
+	 else
+	    operation = "-U";
+	 break;
+
+      case Item::RPMErase:
+	 operation = "-e";
+	 break;
+   }
+   Args[n++] = operation;
+
+   if (Interactive == false && op != Item::RPMErase)
+      Args[n++] = "--percent";
+    
    string rootdir = _config->Find("RPM::RootDir", "");
-   if (!rootdir.empty()) {
+   if (!rootdir.empty()) 
+   {
        Args[n++] = "-r";
        Args[n++] = rootdir.c_str();
    }
-   
 
-   switch (operation) {
-    case OInstall:
-      options = "-i";
-	    
-      Args[n++] = "-i";
-      
-      Args[n++] = "--replacepkgs";
-
-      if (noninteractive)
-	 Args[n++] = "--percent";
-      else
-	 Args[n++] = "-h";
-      
-      if (_config->FindB("RPM::Force", false) == true) 
-	  Args[n++] = "--force";
-      
-      break;
-      
-    case OUpgrade:
-      options = "-U";
-      Args[n++] = "-Uv";
-      
-      Args[n++] = "--replacepkgs";
-
-      if (noninteractive)
-	 Args[n++] = "--percent";
-      else
-	 Args[n++] = "-h";
-      
-      if (_config->FindB("RPM::Force", false) == true)
-	  Args[n++] = "--force";
-      break;
-
-    case ORemove:
-      options = "-e";
-      Args[n++] = "-e";      
-      break;
-
-    case OCheckSignature:
-      options = "-K";
-      Args[n++] = "-Kv";
-      break;
-   }
-    
-   if (nodeps)
-       Args[n++] = "--nodeps";
-
-   
-   for (slist<char*>::iterator i = files->begin();
-	i != files->end() && n < sizeof(Args);
-	i++)
+   Configuration::Item const *Opts;
+   if (op == Item::RPMErase)
    {
-      Args[n++] = *i;
+      bool nodeps = true;
+      Opts = _config->Tree("RPM::Erase-Options");
+      if (Opts != 0)
+      {
+	 Opts = Opts->Child;
+	 for (; Opts != 0; Opts = Opts->Next)
+	 {
+	    if (Opts->Value == "--nodeps")
+	       nodeps = false;
+	    else if (Opts->Value.empty() == true)
+	       continue;
+	    Args[n++] = Opts->Value.c_str();
+	 }
+      }
+      if (nodeps == true)
+	 Args[n++] = "--nodeps";
    }
+   else
+   {
+      bool oldpackage = _config->FindB("RPM::OldPackage",true);
+      bool replacepkgs = _config->FindB("APT::Get::ReInstall",false);
+      bool replacefiles = _config->FindB("APT::Get::ReInstall",false);
+      Opts = _config->Tree("RPM::Install-Options");
+      if (Opts != 0)
+      {
+	 Opts = Opts->Child;
+	 for (; Opts != 0; Opts = Opts->Next)
+	 {
+	    if (Opts->Value == "--oldpackage")
+	       oldpackage = false;
+	    else if (Opts->Value == "--replacepkgs")
+	       replacepkgs = false;
+	    else if (Opts->Value == "--replacefiles")
+	       replacefiles = false;
+	    else if (Opts->Value.empty() == true)
+	       continue;
+	    Args[n++] = Opts->Value.c_str();
+	 }	 
+      }
+      if (oldpackage == true)
+	 Args[n++] = "--oldpackage";
+      if (replacepkgs == true)
+	 Args[n++] = "--replacepkgs";
+      if (replacefiles == true)
+	 Args[n++] = "--replacefiles";
+   }
+
+   Opts = _config->Tree("RPM::Options");
+   if (Opts != 0)
+   {
+      Opts = Opts->Child;
+      for (; Opts != 0; Opts = Opts->Next)
+      {
+	 if (Opts->Value.empty() == true)
+	    continue;
+	 Args[n++] = Opts->Value.c_str();
+      }	 
+   }
+
+   if (_config->FindB("RPM::Order",false) == false)
+      Args[n++] = "--noorder";
+    
+   for (list<const char*>::iterator I = files.begin(); I != files.end(); I++)
+      Args[n++] = *I;
+   
    Args[n++] = 0;
 
-   
-   // spit out command line for debugging
    if (_config->FindB("Debug::pkgRPMPM",false) == true)
    {
       for (unsigned int k = 0; k < n; k++)
@@ -349,7 +340,7 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
       return true;
    }
 
-   cout << _("Executing RPM (")<<options<<")..." << endl;
+   cout << _("Executing RPM (")<<operation<<")..." << endl;
 
    cout << flush;
    clog << flush;
@@ -378,7 +369,7 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
 	 if ((Flags = fcntl(STDIN_FILENO,F_GETFL,dummy)) < 0)
 	     _exit(100);
 	 
-	 // Discard everything in stdin before forking
+	 // Discard everything in stdin before forking dpkg
 	 if (fcntl(STDIN_FILENO,F_SETFL,Flags | O_NONBLOCK) < 0)
 	     _exit(100);
 	 
@@ -389,7 +380,7 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
       }
 
       execvp(Args[0],(char **)Args);
-      cerr << _("Could not exec() ") << Args[0] << endl;
+      cerr << "Could not exec " << Args[0] << endl;
       _exit(100);
    }      
    
@@ -399,7 +390,8 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
    {
       if (errno == EINTR)
 	  continue;
-      return _error->Errno("waitpid",_("Couldn't wait for subprocess"));
+      RunScripts("RPM::Post-Invoke");
+      return _error->Errno("waitpid","Couldn't wait for subprocess");
    }
 
    // Restore sig int/quit
@@ -409,8 +401,9 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
    // Check for an error code.
    if (WIFEXITED(Status) == 0 || WEXITSTATUS(Status) != 0)
    {
-      if (WIFSIGNALED(Status) != 0)
-	  return _error->Error(_("Sub-process %s terminated by signal (%i)") ,Args[0], WTERMSIG(Status) );
+      RunScripts("RPM::Post-Invoke");
+      if (WIFSIGNALED(Status) != 0 && WTERMSIG(Status) == SIGSEGV)
+	  return _error->Error(_("Sub-process %s recieved a segmentation fault."),Args[0]);
       
       if (WIFEXITED(Status) != 0)
 	  return _error->Error(_("Sub-process %s returned an error code (%u)"),Args[0],
@@ -418,41 +411,21 @@ bool pkgRPMPM::ExecRPM(Operation operation, slist<char*> *files, bool nodeps)
       
       return _error->Error(_("Sub-process %s exited unexpectedly"),Args[0]);
    }
-    
+
    return true;
 }
 
 
-bool pkgRPMPM::Process(slist<char*> *install, 
-		       slist<char*> *upgrade,
-		       slist<char*> *uninstall)
+bool pkgRPMPM::Process(list<const char*> &install, 
+		       list<const char*> &upgrade,
+		       list<const char*> &uninstall)
 {
-   if (_config->FindB("RPM::Check-Signatures", false) == true) 
-   {
-      cout << "Verifying signatures for individual packages..." << endl;
-      cout << "Package operations will not be performed." << endl;
-      
-      if (!install->empty())
-	  ExecRPM(OCheckSignature, install, false);
-      
-      if (!upgrade->empty())
-	  ExecRPM(OCheckSignature, upgrade, false);
-      
-      if (_error->PendingError() == true) 
-	  return _error->Error("Errors found while verifying individual package signatures.");
-      else
-	  return true;
-   }
-
-   if (!uninstall->empty())
-       ExecRPM(ORemove, uninstall, true);
-
-   if (!install->empty())
-       ExecRPM(OInstall, install, true);
-   
-   if (!upgrade->empty())
-       ExecRPM(OUpgrade, upgrade, false);
- 
+   if (uninstall.empty() == false)
+       ExecRPM(Item::RPMErase, uninstall);
+   if (install.empty() == false)
+       ExecRPM(Item::RPMInstall, install);
+   if (upgrade.empty() == false)
+       ExecRPM(Item::RPMUpgrade, upgrade);
    return true;
 }
 
@@ -462,103 +435,59 @@ bool pkgRPMPM::Process(slist<char*> *install,
 /* This globs the operations and calls rpm */
 bool pkgRPMPM::Go()
 {
-   bool RPMUpgrade = false;
-    
    if (RunScripts("RPM::Pre-Invoke") == false)
       return false;
 
    if (RunScriptsWithPkgs("RPM::Pre-Install-Pkgs") == false)
       return false;
    
-   slist<char*> *install = new slist<char*>;
-   slist<char*> *upgrade = new slist<char*>;
-   slist<char*> *uninstall = new slist<char*>;
+   list<const char*> install;
+   list<const char*> upgrade;
+   list<const char*> uninstall;
+
+   list<char*> unalloc;
    
    for (vector<Item>::iterator I = List.begin(); I != List.end(); I++)
    {
       switch (I->Op)
       {
-       case Item::Purge:
-       case Item::Remove:
-	 if (strchr(I->Pkg.Name(), '#'))
+      case Item::Purge:
+      case Item::Remove:
+	 if (strchr(I->Pkg.Name(), '#') != NULL)
 	 {
-	    char *ptr = strdup(I->Pkg.Name());
-	    char *p1 = strchr(ptr, '#');
-	    char *p2 = strrchr(ptr, '#');
-	    if (p1 == p2) 
-	    {
-		*p1 = '-';
-	       uninstall->push_front(ptr); // akk: leak
-	    }
-	    else 
-	    {
-	       p2 = strrchr(I->Pkg.Name(), '#');
-	       strcpy(p1, p2);
-	       *p1 = '-';
-	       uninstall->push_front(ptr);
-	    }
+	    const char *pkgname = I->Pkg.Name();
+	    string Name = string(pkgname, strchr(pkgname, '#')-pkgname)
+			  + "-" + string(I->Pkg.CurrentVer().VerStr());
+	    char *name = strdup(Name.c_str());
+	    unalloc.push_back(name);
+	    uninstall.push_back(name);
 	 }
-	 else 
-	 {
-	    uninstall->push_front((char*)I->Pkg.Name());
-	 }
+	 else
+	    uninstall.push_back(I->Pkg.Name());
 	 break;
 
        case Item::Configure:
-//	 cout << __FUNCTION__ << ": ignoring request for configure\n";
 	 break;
 
        case Item::Install:
-	 // eeek!! yuck!!! bleh!!! blame rpm	 
-	 if (strcmp(I->Pkg.Name(), "rpm") == 0
-		|| strcmp(I->Pkg.Name(), "librpm") == 0)
-	     RPMUpgrade = true;
-	 
-	 if (strchr(I->Pkg.Name(), '#'))
-	 {
-	    install->push_front((char*)I->File.c_str());
-	 }
+	 if (strchr(I->Pkg.Name(), '#') != NULL)
+	    install.push_back(I->File.c_str());
 	 else
-	 {
-	    upgrade->push_front((char*)I->File.c_str());
-	 }
+	    upgrade.push_back(I->File.c_str());
 	 break;
 	  
        default:
-	 cout << __FUNCTION__ << "UNKNOWN OPERATION!!!!\n";
-	 break;
+	 return _error->Error("Unknown pkgRPMPM operation.");
       }
    }
-
-   if (RPMUpgrade == true && _config->FindB("RPM::AutoRebuildDB", true) == true)
-   {
-      int res;
-      
-      cerr << (_("Rebuilding RPM database (this may take a few minutes)...")) << endl;
-            
-      res = rpmdbRebuild(_config->FindDir("RPM::RootDir", "/").c_str());
-      if (res != 0)
-	 return _error->Error(_("could not rebuild RPM database for upgrade of RPM"));
-   }
    
-   bool result = Process(install, upgrade, uninstall);
+   if (Process(install, upgrade, uninstall) == false)
+      return false;
    
-   delete install;
-   delete upgrade;
-   delete uninstall;
-
-   if (!result) {
-       RunScripts("RPM::Post-Invoke");
-       return false;
-   }
-    
-   if (RunScripts("RPM::Post-Invoke") == false)
-      return false;
-
-   if (RunScriptsWithPkgs("RPM::Post-Invoke-Pkgs") == false)
-      return false;
-
-   return true;
+   for (list<char *>::iterator I = unalloc.begin(); I != unalloc.end(); I++)
+      free(*I);
+   
+   return RunScripts("RPM::Post-Invoke");
 }
 									/*}}}*/
 // pkgRPMPM::Reset - Dump the contents of the command list		/*{{{*/
@@ -569,3 +498,7 @@ void pkgRPMPM::Reset()
    List.erase(List.begin(),List.end());
 }
 									/*}}}*/
+
+#endif /* HAVE_RPM */
+
+// vim:sts=3:sw=3

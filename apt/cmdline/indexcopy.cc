@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: indexcopy.cc,v 1.1.1.1 2000/08/10 12:42:38 kojima Exp $
+// $Id: indexcopy.cc,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
 
    Index Copying - Aid for copying and verifying the index files
@@ -19,11 +19,13 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/tagfile.h>
 
-#include <iostream.h>
+#include <iostream>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdio.h>
 									/*}}}*/
+
+using namespace std;
 
 // IndexCopy::CopyPackages - Copy the package files from the CD		/*{{{*/
 // ---------------------------------------------------------------------
@@ -94,7 +96,8 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
 	    SetCloseExec(STDOUT_FILENO,false);
 	    
 	    const char *Args[3];
-	    Args[0] = _config->Find("Dir::bin::gzip","gzip").c_str();
+	    string Tmp =  _config->Find("Dir::bin::gzip","gzip");
+	    Args[0] = Tmp.c_str();
 	    Args[1] = "-d";
 	    Args[2] = 0;
 	    execvp(Args[0],(char **)Args);
@@ -107,21 +110,24 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
 	 
 	 Pkg.Seek(0);
       }
-      pkgTagFile Parser(Pkg);
+      pkgTagFile Parser(&Pkg);
       if (_error->PendingError() == true)
 	 return false;
       
       // Open the output file
       char S[400];
-      sprintf(S,"cdrom:[%s]/%s%s",Name.c_str(),(*I).c_str() + CDROM.length(),
-	      GetFileName());
+      snprintf(S,sizeof(S),"cdrom:[%s]/%s%s",Name.c_str(),
+	       (*I).c_str() + CDROM.length(),GetFileName());
       string TargetF = _config->FindDir("Dir::State::lists") + "partial/";
       TargetF += URItoFileName(S);
       if (_config->FindB("APT::CDROM::NoAct",false) == true)
 	 TargetF = "/dev/null";
-      FileFd Target(TargetF,FileFd::WriteEmpty);      
+      FileFd Target(TargetF,FileFd::WriteEmpty);
+      FILE *TargetFl = fdopen(dup(Target.Fd()),"w");
       if (_error->PendingError() == true)
 	 return false;
+      if (TargetFl == 0)
+	 return _error->Errno("fdopen","Failed to reopen fd");
       
       // Setup the progress meter
       Progress.OverallProgress(CurrentSize,TotalSize,FileSize,
@@ -140,7 +146,10 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
 	 string File;
 	 unsigned long Size;
 	 if (GetFile(File,Size) == false)
+	 {
+	    fclose(TargetFl);
 	    return false;
+	 }
 	 
 	 if (Chop != 0)
 	    File = OrigPath + ChopDirs(File,Chop);
@@ -202,21 +211,13 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
 	 Packages++;
 	 Hits++;
 	 
-	 // Copy it to the target package file
-	 if (Chop != 0 || Mangled == true)
+	 if (RewriteEntry(TargetFl,File) == false)
 	 {
-	    if (RewriteEntry(Target,File) == false)
-	       continue;
+	    fclose(TargetFl);
+	    return false;
 	 }
-	 else
-	 {
-	    const char *Start;
-	    const char *Stop;
-	    Section.GetSection(Start,Stop);
-	    if (Target.Write(Start,Stop-Start) == false)
-	       return false;
-	 }	 
       }
+      fclose(TargetFl);
 
       if (Debug == true)
 	 cout << " Processed by using Prefix '" << Prefix << "' and chop " << Chop << endl;
@@ -231,7 +232,8 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
 	    return _error->Errno("rename","Failed to rename");
 
 	 // Copy the release file
-	 sprintf(S,"cdrom:[%s]/%sRelease",Name.c_str(),(*I).c_str() + CDROM.length());
+	 snprintf(S,sizeof(S),"cdrom:[%s]/%sRelease",Name.c_str(),
+		  (*I).c_str() + CDROM.length());
 	 string TargetF = _config->FindDir("Dir::State::lists") + "partial/";
 	 TargetF += URItoFileName(S);
 	 if (FileExists(*I + "Release") == true)
@@ -278,8 +280,8 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
    cout << '.' << endl;
    
    if (Packages == 0)
-      return _error->Warning("No valid records were found.");
-   
+      _error->Warning("No valid records were found.");
+
    if (NotFound + WrongSize > 10)
       cout << "Alot of entries were discarded, something may be wrong." << endl;
 
@@ -383,7 +385,7 @@ bool IndexCopy::ReconstructChop(unsigned long &Chop,string Dir,string File)
 void IndexCopy::ConvertToSourceList(string CD,string &Path)
 {
    char S[300];
-   sprintf(S,"binary-%s",_config->Find("Apt::Architecture").c_str());
+   snprintf(S,sizeof(S),"binary-%s",_config->Find("Apt::Architecture").c_str());
    
    // Strip the cdrom base path
    Path = string(Path,CD.length());
@@ -395,7 +397,7 @@ void IndexCopy::ConvertToSourceList(string CD,string &Path)
       return;
    
    // Not a dists type.
-   if (stringcmp(Path.begin(),Path.begin()+strlen("dists/"),"dists/") != 0)
+   if (stringcmp(Path.c_str(),Path.c_str()+strlen("dists/"),"dists/") != 0)
       return;
       
    // Isolate the dist
@@ -448,44 +450,6 @@ bool IndexCopy::GrabFirst(string Path,string &To,unsigned int Depth)
    return true;
 }
 									/*}}}*/
-// IndexCopy::CopyWithReplace - Copy a section and replace text		/*{{{*/
-// ---------------------------------------------------------------------
-/* */
-bool IndexCopy::CopyWithReplace(FileFd &Target,const char *Tag,string New)
-{
-   // Mangle the output filename
-   const char *Start;
-   const char *Stop;
-   const char *Filename;
-   Section->Find(Tag,Filename,Stop);
-   
-   /* We need to rewrite the filename field so we emit
-      all fields except the filename file and rewrite that one */
-   for (unsigned int I = 0; I != Section->Count(); I++)
-   {
-      Section->Get(Start,Stop,I);
-      if (Start <= Filename && Stop > Filename)
-      {
-	 char S[500];
-	 sprintf(S,"%s: %s\n",Tag,New.c_str());
-	 if (I + 1 == Section->Count())
-	    strcat(S,"\n");
-	 if (Target.Write(S,strlen(S)) == false)
-	    return false;
-      }
-      else
-      {
-	 if (Target.Write(Start,Stop-Start) == false)
-	    return false;
-	 if (Stop[-1] != '\n')
-	    if (Target.Write("\n",1) == false)
-	       return false;
-      }	       
-   }
-   if (Target.Write("\n",1) == false)
-      return false;
-}
-									/*}}}*/
 // PackageCopy::GetFile - Get the file information from the section	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -501,9 +465,15 @@ bool PackageCopy::GetFile(string &File,unsigned long &Size)
 // PackageCopy::RewriteEntry - Rewrite the entry with a new filename	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool PackageCopy::RewriteEntry(FileFd &Target,string File)
+bool PackageCopy::RewriteEntry(FILE *Target,string File)
 {
-   return CopyWithReplace(Target,"Filename",File);
+   TFRewriteData Changes[] = {{"Filename",File.c_str()},
+                              {}};
+   
+   if (TFRewrite(Target,*Section,TFRewritePackageOrder,Changes) == false)
+      return false;
+   fputc('\n',Target);
+   return true;
 }
 									/*}}}*/
 // SourceCopy::GetFile - Get the file information from the section	/*{{{*/
@@ -520,7 +490,7 @@ bool SourceCopy::GetFile(string &File,unsigned long &Size)
    if (Base.empty() == false && Base[Base.length()-1] != '/')
       Base += '/';
    
-   // Iterate over the entire list grabbing each triplet
+   // Read the first file triplet
    const char *C = Files.c_str();
    string sSize;
    string MD5Hash;
@@ -540,9 +510,15 @@ bool SourceCopy::GetFile(string &File,unsigned long &Size)
 // SourceCopy::RewriteEntry - Rewrite the entry with a new filename	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool SourceCopy::RewriteEntry(FileFd &Target,string File)
+bool SourceCopy::RewriteEntry(FILE *Target,string File)
 {
-   return CopyWithReplace(Target,"Directory",
-			  string(File,0,File.rfind('/')));
+   string Dir(File,0,File.rfind('/'));
+   TFRewriteData Changes[] = {{"Directory",Dir.c_str()},
+                              {}};
+   
+   if (TFRewrite(Target,*Section,TFRewriteSourceOrder,Changes) == false)
+      return false;
+   fputc('\n',Target);
+   return true;
 }
 									/*}}}*/

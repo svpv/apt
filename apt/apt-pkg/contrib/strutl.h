@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: strutl.h,v 1.3 2000/10/30 18:49:49 kojima Exp $
+// $Id: strutl.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
 
    String Util - These are some useful string functions
@@ -23,7 +23,19 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <iostream>
 #include <time.h>
+
+using std::string;
+using std::vector;
+using std::ostream;
+
+#ifdef __GNUG__
+// Methods have a hidden this parameter that is visible to this attribute
+#define APT_FORMAT2 __attribute__ ((format (printf, 2, 3)))
+#else
+#define APT_FORMAT2
+#endif    
     
 char *_strstrip(char *String);
 char *_strtabexpand(char *String,size_t Len);
@@ -41,18 +53,48 @@ string LookupTag(string Message,const char *Tag,const char *Default = 0);
 int StringToBool(string Text,int Default = -1);
 bool ReadMessages(int Fd, vector<string> &List);
 bool StrToNum(const char *Str,unsigned long &Res,unsigned Len,unsigned Base = 0);
-bool Hex2Num(const char *Start,const char *End,unsigned char *Num,
-	     unsigned int Length);
+bool Hex2Num(string Str,unsigned char *Num,unsigned int Length);
 bool TokSplitString(char Tok,char *Input,char **List,
 		    unsigned long ListMax);
-   
+void ioprintf(ostream &out,const char *format,...) APT_FORMAT2;
+bool CheckDomainList(string Host,string List);
+
+#define APT_MKSTRCMP(name,func) \
+inline int name(const char *A,const char *AEnd,const char *B) {return func(A,AEnd,B,B+strlen(B));}; \
+inline int name(string A,const char *B) {return func(A.c_str(),A.c_str()+A.length(),B,B+strlen(B));}; \
+inline int name(string A,string B) {return func(A.c_str(),A.c_str()+A.length(),B.c_str(),B.c_str()+B.length());}; \
+inline int name(string A,const char *B,const char *BEnd) {return func(A.c_str(),A.c_str()+A.length(),B,BEnd);}; 
+
+#define APT_MKSTRCMP2(name,func) \
+inline int name(const char *A,const char *AEnd,const char *B) {return func(A,AEnd,B,B+strlen(B));}; \
+inline int name(string A,const char *B) {return func(A.begin(),A.end(),B,B+strlen(B));}; \
+inline int name(string A,string B) {return func(A.begin(),A.end(),B.begin(),B.end());}; \
+inline int name(string A,const char *B,const char *BEnd) {return func(A.begin(),A.end(),B,BEnd);}; 
+
 int stringcmp(const char *A,const char *AEnd,const char *B,const char *BEnd);
-inline int stringcmp(const char *A,const char *AEnd,const char *B) {return stringcmp(A,AEnd,B,B+strlen(B));};
-inline int stringcmp(string A,const char *B) {return stringcmp(A.begin(),A.end(),B,B+strlen(B));};
 int stringcasecmp(const char *A,const char *AEnd,const char *B,const char *BEnd);
-inline int stringcasecmp(const char *A,const char *AEnd,const char *B) {return stringcasecmp(A,AEnd,B,B+strlen(B));};
-inline int stringcasecmp(string A,const char *B) {return stringcasecmp(A.begin(),A.end(),B,B+strlen(B));};
-inline int stringcasecmp(string A,string B) {return stringcasecmp(A.begin(),A.end(),B.begin(),B.end());};
+
+/* We assume that GCC 3 indicates that libstdc++3 is in use too. In that
+   case the definition of string::const_iterator is not the same as
+   const char * and we need these extra functions */
+#if __GNUC__ >= 3
+int stringcmp(string::const_iterator A,string::const_iterator AEnd,
+	      const char *B,const char *BEnd);
+int stringcmp(string::const_iterator A,string::const_iterator AEnd,
+	      string::const_iterator B,string::const_iterator BEnd);
+int stringcasecmp(string::const_iterator A,string::const_iterator AEnd,
+		  const char *B,const char *BEnd);
+int stringcasecmp(string::const_iterator A,string::const_iterator AEnd,
+                  string::const_iterator B,string::const_iterator BEnd);
+
+inline int stringcmp(string::const_iterator A,string::const_iterator Aend,const char *B) {return stringcmp(A,Aend,B,B+strlen(B));};
+inline int stringcasecmp(string::const_iterator A,string::const_iterator Aend,const char *B) {return stringcasecmp(A,Aend,B,B+strlen(B));};
+#endif
+
+APT_MKSTRCMP2(stringcmp,stringcmp);
+APT_MKSTRCMP2(stringcasecmp,stringcasecmp);
+
+inline const char *DeNull(const char *s) {return (s == 0?"(null)":s);};
 
 class URI
 {
@@ -92,5 +134,7 @@ struct RxChoiceList
 };
 unsigned long RegexChoice(RxChoiceList *Rxs,const char **ListBegin,
 		      const char **ListEnd);
+
+#undef APT_FORMAT2
 
 #endif

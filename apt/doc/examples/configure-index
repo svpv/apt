@@ -1,4 +1,4 @@
-// $Id: configure-index,v 1.2 2001/01/04 21:26:14 kojima Exp $
+// $Id: configure-index,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* This file is an index of all APT configuration directives. It should
    NOT actually be used as a real config file, though it is a completely
    valid file. Most of the options have sane default values, unless
@@ -21,10 +21,12 @@
 APT 
 {
   Architecture "i386";
+  Build-Essential "build-essential";
   
   // Options for apt-get
   Get 
   {
+     Arch-Only "false";
      Download-Only "false";
      Simulate "false";
      Assume-Yes "false";
@@ -32,15 +34,15 @@ APT
      Fix-Broken "false";  
      Fix-Missing "false";     
      Show-Upgraded "false";
-     No-Upgrade "false";
+     Upgrade "true";
      Print-URIs "false";
      Compile "false";
-     No-Download "false";
+     Download "true";
      Purge "false";
      List-Cleanup "true";
      ReInstall "false";
      Trivial-Only "false";
-     No-Remove "false";
+     Remove "true";
   };
 
   Cache 
@@ -48,6 +50,7 @@ APT
      Important "false";
      AllVersions "false";
      GivenOnly "false";
+     RecruseDepends "false";
   };
 
   CDROM 
@@ -64,6 +67,7 @@ APT
   Immediate-Configure "true";      // DO NOT turn this off, see the man page
   Force-LoopBreak "false";         // DO NOT turn this on, see the man page
   Cache-Limit "4194304";
+  Default-Release "";
 };
 
 // Options for the downloading routines
@@ -92,22 +96,13 @@ Acquire
     Proxy "ftp://127.0.0.1/";
     Proxy::http.us.debian.org "DIRECT"; // Specific per-host setting
 
-    /* Required script to perform proxy login. This example demonstrates
-       possible options */
+    /* Required script to perform proxy login. This example should work
+       for tisfwtk */
     ProxyLogin
     {
        "USER $(PROXY_USER)";
        "PASS $(PROXY_PASS)";
        "USER $(SITE_USER)@$(SITE):$(SITE_PORT)";
-       "PASS $(SITE_PASS)";
-    };
-
-    /* A script that works with tisfw below.  Please note that you 
-       must also set 'Proxy::Passive "false"' and a Proxy line like:
-       Proxy "ftp://anomymous:ftp.us.debian.org@tisproxy.yourcompany.com/"; */
-    ProxyLogin
-    {
-       "USER $(SITE_USER)@$(SITE)";
        "PASS $(SITE_PASS)";
     };
     
@@ -134,10 +129,10 @@ Acquire
 };
 
 // Directory layout
-Dir 
+Dir "/"
 {
   // Location of the state dir
-  State "/var/state/apt/" 
+  State "var/lib/apt/" 
   {
      lists "lists/";
      xstatus "xstatus";
@@ -147,16 +142,17 @@ Dir
   };
   
   // Location of the cache dir
-  Cache "/var/cache/apt/" {
+  Cache "var/cache/apt/" {
      archives "archives/";
      srcpkgcache "srcpkgcache.bin";
      pkgcache "pkgcache.bin";     
   };
   
   // Config files
-  Etc "/etc/apt/" {
+  Etc "etc/apt/" {
      sourcelist "sources.list";
      main "apt.conf";
+     preferences "preferences";     
   };
   
   // Locations of binaries
@@ -178,6 +174,7 @@ DSelect
    Options "-f";
    UpdateOptions "";
    PromptAfterUpdate "no";
+   CheckDir "no";
 }
 
 DPkg 
@@ -200,9 +197,13 @@ DPkg
 
    // Flush the contents of stdin before forking dpkg.
    FlushSTDIN "true";
+
+   // Control the size of the command line passed to dpkg.
+   MaxBytes 1024;
+   MaxArgs 350;
 }
 
-/* Options you can set to see some debugging text They corrispond to names
+/* Options you can set to see some debugging text They correspond to names
    of classes in the source code */
 Debug 
 {
@@ -210,6 +211,7 @@ Debug
   pkgAcquire "false";
   pkgAcquire::Worker "false";
   pkgDPkgPM "false";
+  pkgOrderList "false";
   
   pkgInitialize "false";   // This one will dump the configuration space
   NoLocking "false";

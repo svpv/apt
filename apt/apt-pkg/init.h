@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: init.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: init.h,v 1.2 2002/07/25 18:07:18 niemeyer Exp $
 /* ######################################################################
 
    Init - Initialize the package library
@@ -10,12 +10,34 @@
    
    ##################################################################### */
 									/*}}}*/
-// Header section: pkglib
 #ifndef PKGLIB_INIT_H
 #define PKGLIB_INIT_H
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/pkgsystem.h>
 
-bool pkgInitialize(Configuration &Cnf);
+// See the makefile
+#define APT_PKG_MAJOR 3
+#define APT_PKG_MINOR 3
+#define APT_PKG_RELEASE 0
+    
+extern const char *pkgVersion;
+extern const char *pkgLibVersion;
+extern const char *pkgOS;
+extern const char *pkgCPU;
+
+bool pkgInitConfig(Configuration &Cnf);
+bool pkgInitSystem(Configuration &Cnf,pkgSystem *&Sys);
+
+#ifdef APT_COMPATIBILITY
+#if APT_COMPATIBILITY != 986
+#warning "Using APT_COMPATIBILITY"
+#endif
+
+inline bool pkgInitialize(Configuration &Cnf) 
+{
+   return pkgInitConfig(Cnf) && pkgInitSystem(Cnf,_system);
+};
+#endif
 
 #endif

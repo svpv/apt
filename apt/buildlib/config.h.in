@@ -16,6 +16,9 @@
 /* The number of bytes in a unsigned short.  */
 #undef SIZEOF_SHORT
 
+/* Define if we have the timegm() function */
+#undef HAVE_TIMEGM
+
 /* These two are used by the statvfs shim for glibc2.0 and bsd */
 /* Define if we have sys/vfs.h */
 #undef HAVE_VFS_H
@@ -25,15 +28,6 @@
 
 /* Define if we have enabled pthread support */
 #undef HAVE_PTHREAD
-
-/* I hate this */
-#undef HAVE_DB1_DB_H
-
-/* The system has rpm installed */
-#undef HAVE_RPM
-
-/* This system uses RPM 4 */
-#undef HAVE_RPM4
 
 /* If there is no socklen_t, define this for the netdb shim */
 #undef NEED_SOCKLEN_T_DEFINE
@@ -49,3 +43,12 @@
 
 /* The package name string */
 #undef PACKAGE
+
+/* CNC:2002-07-03 */
+#undef HAVE_RPM
+#undef HAVE_RPM4
+#undef HAVE_RPM41
+#undef HAVE_SETLOCALE
+#undef HAVE_LOCALE_H
+#undef HAVE_LIBINTL_H
+#undef LOCALEDIR

@@ -1,0 +1,41 @@
+diff -urN -X apt.excludes apt-0.5.4cnc9.orig/apt-pkg/acquire-item.cc apt-0.5.4cnc9.bz2/apt-pkg/acquire-item.cc
+--- apt-0.5.4cnc9.orig/apt-pkg/acquire-item.cc	2002-12-17 12:00:20 +0300
++++ apt-0.5.4cnc9.bz2/apt-pkg/acquire-item.cc	2002-12-19 17:17:41 +0300
+@@ -188,7 +188,7 @@
+ 
+    // Create the item
+    // CNC:2002-07-03
+-   Desc.URI = URI + ".bz2";
++   Desc.URI = URI + _config->Find("Acquire::ComprExtension", ".bz2");
+    Desc.Description = URIDesc;
+    Desc.Owner = this;
+    Desc.ShortDesc = ShortDesc;
+diff -urN -X apt.excludes apt-0.5.4cnc9.orig/apt-pkg/init.cc apt-0.5.4cnc9.bz2/apt-pkg/init.cc
+--- apt-0.5.4cnc9.orig/apt-pkg/init.cc	2002-12-17 12:00:54 +0300
++++ apt-0.5.4cnc9.bz2/apt-pkg/init.cc	2002-12-19 17:28:15 +0300
+@@ -71,6 +71,7 @@
+    Cnf.Set("Dir::Etc::parts","apt.conf.d");
+    Cnf.Set("Dir::Etc::preferences","preferences");
+    Cnf.Set("Dir::Bin::methods","/usr/lib/apt/methods");
++   Cnf.Set("Acquire::ComprExtension", ".bz2");
+ 	      
+    bool Res = true;
+    
+diff -urN -X apt.excludes apt-0.5.4cnc9.orig/methods/file.cc apt-0.5.4cnc9.bz2/methods/file.cc
+--- apt-0.5.4cnc9.orig/methods/file.cc	2002-07-23 21:54:53 +0400
++++ apt-0.5.4cnc9.bz2/methods/file.cc	2002-12-19 17:24:32 +0300
+@@ -52,9 +52,11 @@
+ 	 Res.IMSHit = true;
+    }
+    
+-   // See if we can compute a file without a .gz exentsion
+-   string::size_type Pos = File.rfind(".gz");
+-   if (Pos + 3 == File.length())
++   // See if we can compute a file without a .gz or .bz2 exentsion
++   // Should we check here both .gz and .bz2 extensions?
++   string ComprExtension = _config->Find("Acquire::ComprExtension", ".bz2");
++   string::size_type Pos = File.rfind(ComprExtension);
++   if (Pos + ComprExtension.length() == File.length())
+    {
+       File = string(File,0,Pos);
+       if (stat(File.c_str(),&Buf) == 0)

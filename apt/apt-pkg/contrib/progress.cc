@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: progress.cc,v 1.3 2001/11/13 17:32:08 kojima Exp $
+// $Id: progress.cc,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
    
    OpProgress - Operation Progress
@@ -14,9 +14,14 @@
 #include <apt-pkg/progress.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
+
+#include <apti18n.h>
+
+#include <iostream>
 #include <stdio.h>
 									/*}}}*/
-#include <i18n.h>
+
+using namespace std;
 
 // OpProgress::OpProgress - Constructor					/*{{{*/
 // ---------------------------------------------------------------------
@@ -34,7 +39,10 @@ OpProgress::OpProgress() : Current(0), Total(0), Size(0), SubTotal(1),
    percent of Total SubTotal is. */
 void OpProgress::Progress(unsigned long Cur)
 {
-   Percent = (Current + Cur/((float)SubTotal)*Size)*100.0/Total;
+   if (Total == 0 || Size == 0 || SubTotal == 0)
+      Percent = 0;
+   else
+      Percent = (Current + Cur/((float)SubTotal)*Size)*100.0/Total;
    Update();
 }
 									/*}}}*/
@@ -49,7 +57,10 @@ void OpProgress::OverallProgress(unsigned long Current, unsigned long Total,
    this->Size = Size;
    this->Op = Op;
    SubOp = string();
-   Percent = Current*100.0/Total;
+   if (Total == 0)
+      Percent = 0;
+   else
+      Percent = Current*100.0/Total;
    Update();
 }
 									/*}}}*/
@@ -60,7 +71,10 @@ void OpProgress::SubProgress(unsigned long SubTotal,string Op)
 {
    this->SubTotal = SubTotal;
    SubOp = Op;
-   Percent = Current*100.0/Total;
+   if (Total == 0)
+      Percent = 0;
+   else
+      Percent = Current*100.0/Total;
    Update();
 }
 									/*}}}*/
@@ -70,7 +84,10 @@ void OpProgress::SubProgress(unsigned long SubTotal,string Op)
 void OpProgress::SubProgress(unsigned long SubTotal)
 {
    this->SubTotal = SubTotal;
-   Percent = Current*100.0/Total;
+   if (Total == 0)
+      Percent = 0;
+   else
+      Percent = Current*100.0/Total;
    Update();
 }
 									/*}}}*/
@@ -97,6 +114,9 @@ bool OpProgress::CheckChange(float Interval)
    }
    
    if ((int)LastPercent == (int)Percent)
+      return false;
+   
+   if (Interval == 0)
       return false;
    
    // Check time delta
@@ -131,9 +151,9 @@ void OpTextProgress::Done()
    {
       char S[300];
       if (_error->PendingError() == true)
-	 snprintf(S,sizeof(S),"\r%s... %s",OldOp.c_str(),_("Error!"));
+	 snprintf(S,sizeof(S),_("%c%s... Error!"),'\r',OldOp.c_str());
       else
-	 snprintf(S,sizeof(S),"\r%s... %s",OldOp.c_str(),_("Done"));
+	 snprintf(S,sizeof(S),_("%c%s... Done"),'\r',OldOp.c_str());
       Write(S);
       cout << endl;
       OldOp = string();
@@ -151,7 +171,7 @@ void OpTextProgress::Done()
 /* */
 void OpTextProgress::Update()
 {
-   if (CheckChange(0.1) == false)
+   if (CheckChange((NoUpdate == true?0:0.7)) == false)
       return;
    
    // No percent spinner

@@ -1,0 +1,33 @@
+--- apt-0.5.5cnc1/methods/gpg.cc.orig	2003-01-31 16:58:32 +0300
++++ apt-0.5.5cnc1/methods/gpg.cc	2003-02-07 19:09:05 +0300
+@@ -195,7 +195,7 @@ char *getFileSigner(const char *file, co
+    else if (pid == 0) 
+    {
+       string path = _config->Find("Dir::Bin::gpg", "/usr/bin/gpg");
+-      string pubring = "";
++      string homedir = "";
+       const char *argv[16];
+       int argc = 0;
+       
+@@ -206,17 +206,16 @@ char *getFileSigner(const char *file, co
+       dup2(fd[1], STDERR_FILENO);
+       
+       unsetenv("LANG");
++      unsetenv("LANGUAGE");
+       unsetenv("LC_ALL");
+       unsetenv("LC_MESSAGES");
++      unsetenv("LC_CTYPE");
+ 
+       argv[argc++] = "gpg";
+       argv[argc++] = "--batch";
+       argv[argc++] = "--no-secmem-warning";
+-      pubring = _config->Find("APT::GPG::Pubring");
+-      if (pubring.empty() == false)
+-      {
+-	 argv[argc++] = "--keyring"; argv[argc++] = pubring.c_str();
+-      }
++      homedir = _config->Find("APT::GPG::Homedir", "/usr/lib/alt-gpgkeys");
++      argv[argc++] = "--homedir"; argv[argc++] = homedir.c_str();
+       argv[argc++] = "--status-fd"; argv[argc++] = "2";
+       
+       if (outfile != NULL)

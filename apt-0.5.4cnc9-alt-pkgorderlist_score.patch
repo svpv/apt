@@ -1,0 +1,35 @@
+--- apt-0.5.4cnc9/apt-pkg/orderlist.cc.orig	2002-07-23 21:54:50 +0400
++++ apt-0.5.4cnc9/apt-pkg/orderlist.cc	2003-01-21 18:18:22 +0300
+@@ -293,30 +293,30 @@ int pkgOrderList::Score(PkgIterator Pkg)
+ {
+    // Removal is always done first
+    if (Cache[Pkg].Delete() == true)
+       return 200;
+    
+    // This should never happen..
+    if (Cache[Pkg].InstVerIter(Cache).end() == true)
+       return -1;
+    
+-   int Score = 0;
++   int Score = 1;
+    if ((Pkg->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
+       Score += 100;
+ 
+    if (IsFlag(Pkg,Immediate) == true)
+       Score += 10;
+    
+    for (DepIterator D = Cache[Pkg].InstVerIter(Cache).DependsList(); 
+ 	D.end() == false; D++)
+       if (D->Type == pkgCache::Dep::PreDepends)
+       {
+-	 Score += 50;
++	 Score -= 1;
+ 	 break;
+       }
+       
+    // Important Required Standard Optional Extra
+    signed short PrioMap[] = {0,5,4,3,1,0};
+    if (Cache[Pkg].InstVerIter(Cache)->Priority <= 5)
+       Score += PrioMap[Cache[Pkg].InstVerIter(Cache)->Priority];
+    return Score;
+ }

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire-method.h,v 1.2 2000/09/26 14:22:14 kojima Exp $
+// $Id: acquire-method.h,v 1.1 2002/07/23 17:54:50 niemeyer Exp $
 /* ######################################################################
 
    Acquire Method - Method helper class + functions
@@ -20,9 +20,13 @@
 #pragma interface "apt-pkg/acquire-method.h"
 #endif 
 
+class Hashes;
 class pkgAcqMethod
 {
    protected:
+
+   // CNC:2002-07-11
+   unsigned long Flags;
 
    struct FetchItem
    {
@@ -37,12 +41,16 @@ class pkgAcqMethod
    struct FetchResult
    {
       string MD5Sum;
-      string SignatureKeyID;
+      string SHA1Sum;
+      // CNC:2002-07-03
+      string SignatureFP;
       time_t LastModified;
       bool IMSHit;
       string Filename;
       unsigned long Size;
       unsigned long ResumePoint;
+      
+      void TakeHashes(Hashes &Hash);
       FetchResult();
    };
 
@@ -50,7 +58,8 @@ class pkgAcqMethod
    vector<string> Messages;
    FetchItem *Queue;
    FetchItem *QueueBack;
-      
+   string FailExtra;
+   
    // Handlers for messages
    virtual bool Configuration(string Message);
    virtual bool Fetch(FetchItem * /*Item*/) {return true;};
@@ -75,6 +84,7 @@ class pkgAcqMethod
    void Status(const char *Format,...);
    
    int Run(bool Single = false);
+   inline void SetFailExtraMsg(string Msg) {FailExtra = Msg;};
    
    pkgAcqMethod(const char *Ver,unsigned long Flags = 0);
    virtual ~pkgAcqMethod() {};

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: srcrecords.cc,v 1.4 2001/01/11 02:03:27 kojima Exp $
+// $Id: srcrecords.cc,v 1.2 2003/01/29 18:43:48 niemeyer Exp $
 /* ######################################################################
    
    Source Package Records - Allows access to source package records
@@ -8,8 +8,7 @@
    Parses and allows access to the list of source records and searching by
    source name on that list.
    
-   ##################################################################### 
- */
+   ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
 #ifdef __GNUG__
@@ -18,60 +17,39 @@
 
 #include <apt-pkg/srcrecords.h>
 #include <apt-pkg/error.h>
-#include <apt-pkg/configuration.h>
+#include <apt-pkg/sourcelist.h>
 #include <apt-pkg/strutl.h>
-#include <apt-pkg/systemfactory.h>
+    
+#include <apti18n.h>    
 									/*}}}*/
-
-#include <stdio.h>
-
-#include <i18n.h>
-
 
 // SrcRecords::pkgSrcRecords - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* Open all the source index files */
 pkgSrcRecords::pkgSrcRecords(pkgSourceList &List) : Files(0), Current(0)
 {
-   pkgSourceList::const_iterator I = List.begin();
+   Files = new Parser *[List.end() - List.begin() + 1];
+   memset(Files,0,sizeof(*Files)*(List.end() - List.begin() + 1));
    
-   // Count how many items we will need
    unsigned int Count = 0;
+   pkgSourceList::const_iterator I = List.begin();
    for (; I != List.end(); I++)
-      if (_system->checkSourceType(I->Type(), false))
+   {
+      Files[Count] = (*I)->CreateSrcParser();
+      if (_error->PendingError() == true)
+	 return;
+      if (Files[Count] != 0)
 	 Count++;
-
-   // Doesnt work without any source index files
+   }
+   Files[Count] = 0;
+   
+   // Doesn't work without any source index files
    if (Count == 0)
    {
-      _error->Error(_("Sorry, you must put some 'source' uris"
+      _error->Error(_("You must put some 'source' URIs"
 		    " in your sources.list"));
       return;
    }   
-
-   Files = new Parser *[Count+1];
-   memset(Files,0,sizeof(*Files)*(Count+1));
-   
-   // Create the parser objects
-   Count = 0;
-   string Dir = _config->FindDir("Dir::State::lists");
-   for (I = List.begin(); I != List.end(); I++)
-   {
-      if (!_system->checkSourceType(I->Type(), false))
-	 continue;
-
-      string path = Dir + URItoFileName(I->PackagesURI());
-
-      Files[Count] = _system->CreateSrcRecordParser(path,I);
-       
-      if (Files[Count] == NULL || _error->PendingError() == true)
-      {
-	  if (Files[Count])
-	      delete Files[Count];
-	 return;
-      }
-      Count++;
-   }
 
    Restart();
 }
@@ -87,6 +65,7 @@ pkgSrcRecords::~pkgSrcRecords()
    // Blow away all the parser objects
    for (unsigned int Count = 0; Files[Count] != 0; Count++)
       delete Files[Count];
+   delete [] Files;
 }
 									/*}}}*/
 // SrcRecords::Restart - Restart the search				/*{{{*/
@@ -133,15 +112,29 @@ pkgSrcRecords::Parser *pkgSrcRecords::Find(const char *Package,bool SrcOnly)
       
       if (SrcOnly == true)
 	 continue;
-
+      
       // Check for a binary hit
       const char **I = (*Current)->Binaries();
-      if (I) {
-	 for (; I != 0 && *I != 0; I++)
-	     if (strcmp(Package,*I) == 0)
-		 return *Current;
-      }
+      for (; I != 0 && *I != 0; I++)
+	 if (strcmp(Package,*I) == 0)
+	    return *Current;
    }
 }
 									/*}}}*/
+// Parser::BuildDepType - Convert a build dep to a string		/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+const char *pkgSrcRecords::Parser::BuildDepType(unsigned char Type)
+{
+   const char *fields[] = {"Build-Depends", 
+                           "Build-Depends-Indep",
+			   "Build-Conflicts",
+			   "Build-Conflicts-Indep"};
+   if (Type < 4) 
+      return fields[Type]; 
+   else 
+      return "";
+}
+									/*}}}*/
+
 

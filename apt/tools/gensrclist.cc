@@ -1,42 +1,5 @@
 /*
- * $Id: gensrclist.cc,v 1.11 2001/12/12 14:50:43 kojima Exp $
- *
- * $Log: gensrclist.cc,v $
- * Revision 1.11  2001/12/12 14:50:43  kojima
- * fixed genbasedir for --flat and relative --topdir specifications
- * fixed --flat in gensrclist
- *
- * Revision 1.10  2001/12/11 13:51:03  kojima
- * added --flat option to srclist, patched gensrclist with stelian's patch
- *
- * Revision 1.9  2001/11/09 21:11:46  kojima
- * * Use 'scandir' for directory traversal (instead of opendir/
- *  readdir) like in genpkglist.
- * * Better package progression indicator.
- *
- * Revision 1.8  2001/08/07 20:46:03  kojima
- * Alexander Bokovoy <a.bokovoy@sam-solutions.net>'s patch for cleaning
- * up genpkglist
- *
- * Revision 1.7  2001/07/12 21:47:33  kojima
- * ignore duplicated version/diff deps packages
- * new release (cnc51)
- *
- * Revision 1.6  2000/11/06 12:53:49  kojima
- * fixed compile errors for RedHat 6.x (with gcc -Wall -Werror)
- *
- * Revision 1.5  2000/11/01 21:32:28  kojima
- * added manpage
- *
- * Revision 1.3  2000/10/30 02:17:17  kojima
- * fixed bugs in source d/l
- *
- * Revision 1.2  2000/10/29 20:25:10  kojima
- * added support for source download
- *
- * Revision 1.1  2000/10/28 02:23:17  kojima
- * started source support
- *
+ * $Id: gensrclist.cc,v 1.8 2003/01/30 17:18:21 niemeyer Exp $
  */
 #include <alloca.h>
 #include <ctype.h>
@@ -52,17 +15,20 @@
 #include <assert.h>
 
 #include <map>
-#include <slist>
+#include <list>
+#include <iostream>
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
-#include <apt-pkg/rpminit.h>
+#include <apt-pkg/rpmhandler.h>
 
 #include "cached_md5.h"
 
-
-
-
+#ifdef HAVE_RPM41
+#include <rpm/rpmts.h>
+#endif
+ 
+using namespace std;
 
 int tags[] =  {
    RPMTAG_NAME,
@@ -109,7 +75,7 @@ int selectDirent(const struct dirent *ent)
    }
 }
 
-bool readRPMTable(char *file, map<string, slist<char*>* > &table)
+bool readRPMTable(char *file, map<string, list<char*>* > &table)
 {
    FILE *indexf;
    char buf[512];
@@ -133,14 +99,12 @@ bool readRPMTable(char *file, map<string, slist<char*>* > &table)
       srpm = string(buf);
       
       if (table.find(srpm) != table.end()) {
-	 slist<char*> *list = table[srpm];
-	 
-	 list->push_front(strdup(f));
+	 list<char*> *l = table[srpm];
+	 l->push_front(strdup(f));
       } else {
-	 slist<char*> *list = new slist<char*>;
-	 
-	 list->push_front(strdup(f));
-	 table[srpm] = list;
+	 list<char*> *l = new list<char*>;
+	 l->push_front(strdup(f));
+	 table[srpm] = l;
       }
    }
    
@@ -165,21 +129,14 @@ int main(int argc, char ** argv)
    char buf[300];
    char cwd[200];
    string srpmdir;
-   DIR * dir;
    FD_t outfd, fd;
    struct dirent **dirEntries;
    int rc, i;
    Header h;
-   Header sigs;
-   struct stat sb;
    int_32 size[1];
    int entry_no, entry_cur;
-   int jj;
-   char *suffix;
-   char *directory;
-   char *index;
    CachedMD5 *md5cache;
-   map<string, slist<char*>* > rpmTable; // table that maps srpm -> generated rpm
+   map<string, list<char*>* > rpmTable; // table that maps srpm -> generated rpm
    bool mapi = false;
    bool progressBar = false;
    bool flatStructure = false;
@@ -210,8 +167,8 @@ int main(int argc, char ** argv)
    if (!readRPMTable(arg_srpmindex, rpmTable))
        exit(1);
    
-   md5cache = new CachedMD5(string(arg_dir)+string(arg_suffix));
-   
+   md5cache = new CachedMD5(string(arg_dir)+string(arg_suffix), "gensrclist");
+
    getcwd(cwd, 200);
    if (*arg_dir != '/') {
       strcpy(buf, cwd);
@@ -224,20 +181,35 @@ int main(int argc, char ** argv)
    strcat(buf, arg_suffix);
    
    srpmdir = "SRPMS." + string(arg_suffix);
+#ifdef OLD_FLATSCHEME
    if (flatStructure) {
-      char *prefix;
       // add the last component of the directory to srpmdir
       // that will cancel the effect of the .. used in sourcelist.cc
       // when building the directory from where to fetch srpms in apt
-      
+      char *prefix;
       prefix = strrchr(arg_dir, '/');
-      if (!prefix)
-	  prefix = arg_dir;
+      if (prefix == NULL)
+	 prefix = arg_dir;
       else
-	  prefix++;
-      
-      srpmdir = string(prefix) + '/' + srpmdir;
+	 prefix++;
+      if (*prefix != 0 && *(prefix+strlen(prefix)-1) == '/')
+	 srpmdir = string(prefix) + srpmdir;
+      else
+	 srpmdir = string(prefix) + "/" + srpmdir;
    }
+#else
+   if (!flatStructure) {
+      srpmdir = "../"+srpmdir;
+#ifndef REMOVE_THIS_SOMEDAY
+   /* This code is here just so that code in rpmsrcrecords.cc is able
+    * to detect if that's a "new" style SRPM directory scheme, or an
+    * old style. Someday, when most repositories were already rebuilt
+    * with that new gensrclist tool, this code may be safely removed. */
+   } else {
+      srpmdir = "./"+srpmdir;
+#endif
+   }
+#endif
    
    entry_no = scandir(buf, &dirEntries, selectDirent, alphasort);
    if (entry_no < 0) { 
@@ -247,8 +219,6 @@ int main(int argc, char ** argv)
    }
 
    chdir(buf);
-   
-   
    
    sprintf(buf, "%s/srclist.%s", cwd, arg_suffix);
    
@@ -260,6 +230,13 @@ int main(int argc, char ** argv)
 	  << strerror(errno);
       return 1;
    }
+
+#ifdef HAVE_RPM41
+   rpmts ts = rpmtsCreate();
+   rpmReadConfigFiles(NULL, NULL);
+#else
+   Header sigs;
+#endif   
   
    for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
       struct stat sb;
@@ -284,12 +261,16 @@ int main(int argc, char ** argv)
 	  perror("open");
 	  exit(1);
       }
-	 
+
       size[0] = sb.st_size;
 	 
+#ifdef HAVE_RPM41      
+      rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
+      if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
+#else
       rc = rpmReadPackageInfo(fd, &sigs, &h);
-	 
-      if (!rc) {
+      if (rc == 0) {
+#endif
 	    Header newHeader;
 	    int i;
 	    bool foundInIndex;
@@ -324,7 +305,7 @@ int main(int argc, char ** argv)
 			   size, 1);
 	    
 	    {
-	       unsigned char md5[34];
+	       char md5[34];
 	       
 	       md5cache->MD5ForFile(dirEntries[entry_cur]->d_name, sb.st_mtime, md5);
 	       
@@ -335,24 +316,24 @@ int main(int argc, char ** argv)
 	    foundInIndex = false;
 	    {
 	       int count = 0;
-	       char **list = NULL;
-	       slist<char*> *rpmlist = rpmTable[string(dirEntries[entry_cur]->d_name)];
+	       char **l = NULL;
+	       list<char*> *rpmlist = rpmTable[string(dirEntries[entry_cur]->d_name)];
 	       
 	       if (rpmlist) {
-		  list = new char *[rpmlist->size()];
+		  l = new char *[rpmlist->size()];
 		  
 		  foundInIndex = true;
 		  
-		  for (slist<char*>::const_iterator i = rpmlist->begin();
+		  for (list<char*>::const_iterator i = rpmlist->begin();
 		       i != rpmlist->end();
 		       i++) {
-		     list[count++] = *i;
+		     l[count++] = *i;
 		  }
 	       }
 	       
 	       if (count) {
 		  headerAddEntry(newHeader, CRPMTAG_BINARY,
-				 RPM_STRING_ARRAY_TYPE, list, count);
+				 RPM_STRING_ARRAY_TYPE, l, count);
 	       }
 	    }
 	    if (foundInIndex || !mapi)
@@ -360,14 +341,22 @@ int main(int argc, char ** argv)
 	    
 	    headerFree(newHeader);
 	    headerFree(h);
+#ifndef HAVE_RPM41
 	    rpmFreeSignature(sigs);
+#endif
       }
       fdClose(fd);
    } 
    
    fdClose(outfd);
+
+#ifdef HAVE_RPM41   
+   ts = rpmtsFree(ts);
+#endif   
    
    delete md5cache;
    
    return 0;
 }
+
+// vim:sts=3:sw=3

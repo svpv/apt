@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: crc-16.cc,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: crc-16.cc,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    CRC16 - Compute a 16bit crc very quickly

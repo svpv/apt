@@ -1,138 +1,18 @@
-Important:
-  ash
+Essential:
+  apt
   basesystem
   bash
-  bdflush
-  bzip2
-  chkconfig
   conectiva-release
-  console-tools
-  cracklib
-  cracklib-dicts
   dev
   e2fsprogs
-  ed
-  etcskel
   filesystem
   fileutils
-  findutils
-  gawk
-  gettext
-  glib
-  glibc
-  grep
-  gzip
-  info
+  glibc-base
   initscripts
   kernel
-  lilo
-  losetup
-  MAKEDEV
-  mingetty
-  mkinitrd
-  mktemp
   modutils
   mount
-  ncurses
   pam
   passwd
-  popt
-  procps
-  psmisc
-  pwdb
-  reiserfs-utils
-  rootfiles
   rpm
-  sed
   setup
-  shadow-utils
-  sh-utils
-  slang
-  stat
-  SysVinit
-  tar
-  textutils
-  util-linux
-  zlib
-Required:
-  apt
-  at
-  authconfig
-  cpio
-  cpp
-  crontabs
-  dhcp
-  doc-licenses
-  eject
-  file
-  finger
-  ftp
-  gdbm
-  groff
-  initscripts-translations
-  isapnptools
-  kbdconfig
-  kernel-pcmcia-cs
-  less
-  libgd
-  libpng
-  libstdc++
-  libtermcap
-  linuxconf
-  linux_logo
-  logrotate
-  mailcap
-  man
-  memtest86
-  mkbootdisk
-  mouseconfig
-  mtools
-  netkit-base
-  net-tools
-  newt
-  ntsysv
-  pciutils
-  portmap
-  pump
-  raidtools
-  readline
-  rmt
-  slocate
-  sysklogd
-  tcp_wrappers
-  telnet
-  termcap
-  timeconfig
-  tmpwatch
-  linuxconf-userinfo
-  utempter
-  vim-common
-  vim-minimal
-  vixie-cron
-  which
-  zip
-Standard:
-  bind-utils
-  dhcpcd
-  diffutils
-  fwhois
-  gmp
-  gpm
-  kudzu
-  ncftp
-  nfs-utils
-  openssl
-  perl
-  pidentd
-  python
-  rsh
-  rsync
-  setuptool
-  tcsh
-  timeconfig
-  unzip
-  ypbind
-  yp-tools
-  zlib
-
-

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: packagemanager.cc,v 1.15 2001/11/13 17:32:07 kojima Exp $
+// $Id: packagemanager.cc,v 1.8 2003/01/31 16:32:30 niemeyer Exp $
 /* ######################################################################
 
    Package Manager - Abstacts the package manager
@@ -16,23 +16,27 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/packagemanager.h"
 #endif
+
 #include <apt-pkg/packagemanager.h>
 #include <apt-pkg/orderlist.h>
 #include <apt-pkg/depcache.h>
 #include <apt-pkg/error.h>
-#include <apt-pkg/systemfactory.h>
+#include <apt-pkg/version.h>
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/algorithms.h>
 #include <apt-pkg/configuration.h>
-
-#include <i18n.h>
-
+#include <apt-pkg/sptr.h>
+    
+#include <apti18n.h>    
+#include <iostream>
 									/*}}}*/
+
+using namespace std;
 
 // PM::PackageManager - Constructor					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-pkgPackageManager::pkgPackageManager(pkgDepCache &Cache) : Cache(Cache)
+pkgPackageManager::pkgPackageManager(pkgDepCache *pCache) : Cache(*pCache)
 {
    FileNames = new string[Cache.Head().PackageCount];
    List = 0;
@@ -77,8 +81,8 @@ bool pkgPackageManager::GetArchives(pkgAcquire *Owner,pkgSourceList *Sources,
       // Skip already processed packages
       if (List->IsNow(Pkg) == false)
 	 continue;
-
-       new pkgAcqArchive(Owner,Sources,Recs,Cache[Pkg].InstVerIter(Cache),
+	 
+      new pkgAcqArchive(Owner,Sources,Recs,Cache[Pkg].InstVerIter(Cache),
 			FileNames[Pkg->ID]);
    }
 
@@ -91,7 +95,7 @@ bool pkgPackageManager::GetArchives(pkgAcquire *Owner,pkgSourceList *Sources,
    be downloaded. */
 bool pkgPackageManager::FixMissing()
 {   
-   pkgProblemResolver Resolve(Cache);
+   pkgProblemResolver Resolve(&Cache);
    List->SetFileList(FileNames);
    
    bool Bad = false;
@@ -127,13 +131,17 @@ bool pkgPackageManager::CreateOrderList()
       return true;
    
    delete List;
-   List = new pkgOrderList(Cache);
+   List = new pkgOrderList(&Cache);
    
    bool NoImmConfigure = _config->FindB("APT::Immediate-Configure",false);
    
    // Generate the list of affected packages and sort it
    for (PkgIterator I = Cache.PkgBegin(); I.end() == false; I++)
    {
+      // Ignore no-version packages
+      if (I->VersionList == 0)
+	 continue;
+      
       // Mark the package and its dependends for immediate configuration
       if (((I->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential ||
 	   (I->Flags & pkgCache::Flag::Important) == pkgCache::Flag::Important) &&
@@ -143,7 +151,7 @@ bool pkgPackageManager::CreateOrderList()
 	 
 	 // Look for other packages to make immediate configurea
 	 if (Cache[I].InstallVer != 0)
-	    for (DepIterator D = Cache[I].InstVerIter(Cache).DependsList();
+	    for (DepIterator D = Cache[I].InstVerIter(Cache).DependsList(); 
 		 D.end() == false; D++)
 	       if (D->Type == pkgCache::Dep::Depends || D->Type == pkgCache::Dep::PreDepends)
 		  List->Flag(D.TargetPkg(),pkgOrderList::Immediate);
@@ -196,7 +204,8 @@ bool pkgPackageManager::CheckRConflicts(PkgIterator Pkg,DepIterator D,
 {
    for (;D.end() == false; D++)
    {
-      if (D->Type != pkgCache::Dep::Conflicts && D->Type != pkgCache::Dep::Obsoletes)
+      if (D->Type != pkgCache::Dep::Conflicts &&
+	  D->Type != pkgCache::Dep::Obsoletes)
 	 continue;
 
       // The package hasnt been changed
@@ -207,9 +216,9 @@ bool pkgPackageManager::CheckRConflicts(PkgIterator Pkg,DepIterator D,
       if (D.ParentPkg() == Pkg || D.ParentVer() != D.ParentPkg().CurrentVer())
 	 continue;
       
-      if (_system->checkDep(D.TargetVer(),Ver,D->CompareOp) == false)
+      if (Cache.VS().CheckDep(Ver,D) == false) // CNC:2002-07-10
 	 continue;
-      
+
       if (EarlyRemove(D.ParentPkg()) == false)
 	 return _error->Error("Reverse conflicts early remove for package '%s' failed",
 			      Pkg.Name());
@@ -223,8 +232,8 @@ bool pkgPackageManager::CheckRConflicts(PkgIterator Pkg,DepIterator D,
    that the final configuration is valid. */
 bool pkgPackageManager::ConfigureAll()
 {
-   pkgOrderList OList(Cache);
-    
+   pkgOrderList OList(&Cache);
+   
    // Populate the order list
    for (pkgOrderList::iterator I = List->begin(); I != List->end(); I++)
       if (List->IsFlag(pkgCache::PkgIterator(Cache,*I),
@@ -254,36 +263,29 @@ bool pkgPackageManager::ConfigureAll()
    of it's dependents. */
 bool pkgPackageManager::SmartConfigure(PkgIterator Pkg)
 {
-   pkgOrderList OList(Cache);
+   pkgOrderList OList(&Cache);
+
+   if (DepAdd(OList,Pkg) == false)
+      return false;
    
-   if (DepAdd(OList,Pkg) == false) {
-      cout<<"AAA"<<endl;
+   if (OList.OrderConfigure() == false)
       return false;
-   }
-
-   if (OList.OrderConfigure() == false) {
-      cout<<"BBB"<<endl;
-      return false;
-   }
-
+   
    // Perform the configuring
    for (pkgOrderList::iterator I = OList.begin(); I != OList.end(); I++)
    {
       PkgIterator Pkg(Cache,*I);
       
-      if (Configure(Pkg) == false) {
-	 cout<<"CCC"<<endl;
+      if (Configure(Pkg) == false)
 	 return false;
-      }
       
       List->Flag(Pkg,pkgOrderList::Configured,pkgOrderList::States);
    }
 
    // Sanity Check
-   if (List->IsFlag(Pkg,pkgOrderList::Configured) == false) {
-      cout<<"DDD"<<endl;
+   if (List->IsFlag(Pkg,pkgOrderList::Configured) == false)
       return _error->Error("Internal error, could not immediate configure %s",Pkg.Name());
-   }
+   
    return true;
 }
 									/*}}}*/
@@ -298,8 +300,7 @@ bool pkgPackageManager::DepAdd(pkgOrderList &OList,PkgIterator Pkg,int Depth)
       return true;
    if (List->IsFlag(Pkg,pkgOrderList::UnPacked) == false)
       return false;
-   
-   
+      
    // Put the package on the list
    OList.push_back(Pkg);
    OList.Flag(Pkg,pkgOrderList::Added);
@@ -324,7 +325,7 @@ bool pkgPackageManager::DepAdd(pkgOrderList &OList,PkgIterator Pkg,int Depth)
 	 if (Bad == false)
 	    continue;
 
-	 Version **VList = D.AllTargets();
+	 SPtrArray<Version *> VList = D.AllTargets();
 	 for (Version **I = VList; *I != 0 && Bad == true; I++)
 	 {
 	    VerIterator Ver(Cache,*I);
@@ -342,12 +343,12 @@ bool pkgPackageManager::DepAdd(pkgOrderList &OList,PkgIterator Pkg,int Depth)
 	    if (Cache[Pkg].InstallVer != *I || 
 		(Cache[Pkg].Keep() == true && Pkg.State() == PkgIterator::NeedsNothing))
 	       continue;
+	    
 	    if (List->IsFlag(Pkg,pkgOrderList::UnPacked) == true)
 	       Bad = !DepAdd(OList,Pkg,Depth);
 	    if (List->IsFlag(Pkg,pkgOrderList::Configured) == true)
 	       Bad = false;
 	 }
-	 delete [] VList;
       }
       
       if (Bad == true)
@@ -399,10 +400,10 @@ bool pkgPackageManager::EarlyRemove(PkgIterator Pkg)
    {
       if (_config->FindB("APT::Force-LoopBreak",false) == false)
 	 return _error->Error(_("This installation run will require temporarily "
-			      "removing the essential package %s due to a "
-			      "Conflicts/Pre-Depends loop. This is often bad, "
-			      "but if you really want to do it, activate the "
-			      "APT::Force-LoopBreak option."),Pkg.Name());
+				"removing the essential package %s due to a "
+				"Conflicts/Pre-Depends loop. This is often bad, "
+				"but if you really want to do it, activate the "
+				"APT::Force-LoopBreak option."),Pkg.Name());
    }
    
    bool Res = SmartRemove(Pkg);
@@ -421,8 +422,19 @@ bool pkgPackageManager::SmartRemove(PkgIterator Pkg)
       return true;
 
    List->Flag(Pkg,pkgOrderList::Configured,pkgOrderList::States);
-   if (Cache[Pkg].Replaced())
-      return true;
+   
+   /* CNC:2003-01-29 - Do not remove obsoleted packages. */
+   for (pkgCache::DepIterator D = Pkg.RevDependsList(); D.end() == false; D++)
+   {
+      if (D->Type == pkgCache::Dep::Obsoletes &&
+          Cache[D.ParentPkg()].Install() &&
+          (pkgCache::Version*)D.ParentVer() == Cache[D.ParentPkg()].InstallVer &&
+          Cache.VS().CheckDep(Pkg.CurrentVer().VerStr(), D) == true)
+      {
+         return true;
+      }
+   }
+   
    return Remove(Pkg,(Cache[Pkg].iFlags & pkgDepCache::Purge) == pkgDepCache::Purge);
 }
 									/*}}}*/
@@ -431,16 +443,16 @@ bool pkgPackageManager::SmartRemove(PkgIterator Pkg)
 /* This performs the task of handling pre-depends. */
 bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
 {
+// CNC:2003-01-30 - Configuring makes no sense for rpm packages.
+#if 0
    // Check if it is already unpacked
    if (Pkg.State() == pkgCache::PkgIterator::NeedsConfigure &&
        Cache[Pkg].Keep() == true)
    {
       List->Flag(Pkg,pkgOrderList::UnPacked,pkgOrderList::States);
-      if (List->IsFlag(Pkg,pkgOrderList::Immediate) == true) {
+      if (List->IsFlag(Pkg,pkgOrderList::Immediate) == true)
 	 if (SmartConfigure(Pkg) == false)
-	    return _error->Error("Internal Error, Could not perform immediate configuration: %s",
-				 Pkg.Name());
-      }
+	    return _error->Error("Internal Error, Could not perform immediate configuration (1) on %s",Pkg.Name());
       return true;
    }
 
@@ -457,13 +469,13 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
       while (End->Type == pkgCache::Dep::PreDepends)
       {
 	 // Look for possible ok targets.
-	 Version **VList = Start.AllTargets();
+	 SPtrArray<Version *> VList = Start.AllTargets();
 	 bool Bad = true;
 	 for (Version **I = VList; *I != 0 && Bad == true; I++)
 	 {
 	    VerIterator Ver(Cache,*I);
 	    PkgIterator Pkg = Ver.ParentPkg();
-	     
+	    
 	    // See if the current version is ok
 	    if (Pkg.CurrentVer() == Ver && List->IsNow(Pkg) == true && 
 		Pkg.State() == PkgIterator::NeedsNothing)
@@ -478,7 +490,7 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
 	 {
 	    VerIterator Ver(Cache,*I);
 	    PkgIterator Pkg = Ver.ParentPkg();
-
+	    
 	    // Not the install version 
 	    if (Cache[Pkg].InstallVer != *I || 
 		(Cache[Pkg].Keep() == true && Pkg.State() == PkgIterator::NeedsNothing))
@@ -486,44 +498,51 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
 
 	    Bad = !SmartConfigure(Pkg);
 	 }
-	 
-	 delete [] VList;
 
 	 /* If this or element did not match then continue on to the
-	    next or element until a matching element is found*/
+	    next or element until a matching element is found */
 	 if (Bad == true)
-	 {	    
+	 {
+	    // This triggers if someone make a pre-depends/depend loop.
 	    if (Start == End)
-	       return _error->Error("Internal Error, Couldn't configure a pre-depend: %s",
-				    Pkg.Name());
+	    {
+	       return _error->Error("Couldn't configure pre-depend %s for %s, "
+				    "probably a dependency cycle.",
+				    End.TargetPkg().Name(),Pkg.Name());
+	    }
 	    Start++;
 	 }
 	 else
 	    break;
       }
       
-      if (End->Type == pkgCache::Dep::Conflicts || End->Type == pkgCache::Dep::Obsoletes)
+// CNC:2002-10-18
+// RPM seems to handle well cases where an upgraded package removes
+// a conflict which would be created between the current version of
+// itself and the install version of a second package. OTOH, removing
+// a package temporarily could move a configuration file to a .rpmsave
+// file, or even have catastrophic results (think about glibc).
+      if (End->Type == pkgCache::Dep::Conflicts || 
+	  End->Type == pkgCache::Dep::Obsoletes)
       {
 	 /* Look for conflicts. Two packages that are both in the install
 	    state cannot conflict so we don't check.. */
-	 Version **VList = End.AllTargets();
+	 SPtrArray<Version *> VList = End.AllTargets();
 	 for (Version **I = VList; *I != 0; I++)
 	 {
 	    VerIterator Ver(Cache,*I);
 	    PkgIterator Pkg = Ver.ParentPkg();
 	    
 	    // See if the current version is conflicting
-	    // and that it's not obsoleting a virtual package
-	    if (Pkg.CurrentVer() == Ver && List->IsNow(Pkg) == true && 
-		!(Pkg->ProvidesList == 0 && End->Type == pkgCache::Dep::Obsoletes))
+	    if (Pkg.CurrentVer() == Ver && List->IsNow(Pkg) == true)
 	    {
 	       if (EarlyRemove(Pkg) == false)
 		  return _error->Error("Internal Error, Could not early remove %s",Pkg.Name());
 	    }
 	 }
-	 delete [] VList;
       }
    }
+#endif
 
    // Check for reverse conflicts.
    if (CheckRConflicts(Pkg,Pkg.RevDependsList(),
@@ -538,12 +557,15 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
       return false;
    
    List->Flag(Pkg,pkgOrderList::UnPacked,pkgOrderList::States);
-   
+ 
+// CNC:2003-01-30 - Configuring makes no sense for rpm packages.
+#if 0
    // Perform immedate configuration of the package.
-   if (List->IsFlag(Pkg,pkgOrderList::Immediate) == true) {
+   if (List->IsFlag(Pkg,pkgOrderList::Immediate) == true)
       if (SmartConfigure(Pkg) == false)
-	 return _error->Error("Internal Error, Could not perform immediate configuration");
-   }
+	 return _error->Error("Internal Error, Could not perform immediate configuration (2) on %s",Pkg.Name());
+#endif
+   
    return true;
 }
 									/*}}}*/
@@ -552,29 +574,6 @@ bool pkgPackageManager::SmartUnPack(PkgIterator Pkg)
 /* */
 pkgPackageManager::OrderResult pkgPackageManager::OrderInstall()
 {
-   for (PkgIterator I = Cache.PkgBegin(); I.end() == false; I++)
-   {      
-      // Not interesting
-      if ((Cache[I].Keep() == true || 
-	  Cache[I].InstVerIter(Cache) == I.CurrentVer()) && 
-	  I.State() == pkgCache::PkgIterator::NeedsNothing &&
-	  (Cache[I].iFlags & pkgDepCache::ReInstall) != pkgDepCache::ReInstall &&
-	  (I.Purge() != false || Cache[I].Mode != pkgDepCache::ModeDelete ||
-	   (Cache[I].iFlags & pkgDepCache::Purge) != pkgDepCache::Purge))
-	 continue;
-
-      // Perform a delete or an install
-      if (Cache[I].Delete() == true)
-      {
-	 if (!Cache[I].Replaced() && !Remove(I))
-	    return Failed;
-      }
-      else
-	 if (Install(I, FileNames[I->ID]) == false)
-	    return Failed;
-   }
-   return Completed;   
-#if 0
    if (CreateOrderList() == false)
       return Failed;
 
@@ -653,7 +652,6 @@ pkgPackageManager::OrderResult pkgPackageManager::OrderInstall()
    }   
 	 
    return Completed;
-#endif
 }
 									/*}}}*/
 // PM::DoInstall - Does the installation				/*{{{*/
@@ -669,3 +667,4 @@ pkgPackageManager::OrderResult pkgPackageManager::DoInstall()
    return Res;
 }
 									/*}}}*/
+// vim:sts=3:sw=3

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: file.cc,v 1.2 2001/08/01 21:35:12 kojima Exp $
+// $Id: file.cc,v 1.1 2002/07/23 17:54:53 niemeyer Exp $
 /* ######################################################################
 
    File URI method for APT
@@ -26,7 +26,7 @@ class FileMethod : public pkgAcqMethod
    
    public:
    
-   FileMethod() : pkgAcqMethod("1.0",SingleInstance | LocalOnly | SendConfig) {};
+   FileMethod() : pkgAcqMethod("1.0",SingleInstance | LocalOnly) {};
 };
 
 // FileMethod::Fetch - Fetch a file					/*{{{*/
@@ -53,12 +53,8 @@ bool FileMethod::Fetch(FetchItem *Itm)
    }
    
    // See if we can compute a file without a .gz exentsion
-   string ComprExtension = _config->Find("Acquire::ComprExtension");
-   if(ComprExtension.empty() == true) {
-      ComprExtension = ".bz2";
-   }
-   string::size_type Pos = File.rfind(ComprExtension);
-   if (Pos + ComprExtension.length() == File.length())
+   string::size_type Pos = File.rfind(".gz");
+   if (Pos + 3 == File.length())
    {
       File = string(File,0,Pos);
       if (stat(File.c_str(),&Buf) == 0)

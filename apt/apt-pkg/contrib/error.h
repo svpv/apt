@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: error.h,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: error.h,v 1.2 2003/01/29 13:04:48 niemeyer Exp $
 /* ######################################################################
    
    Global Erorr Class - Global error mechanism
@@ -44,7 +44,18 @@
 #pragma interface "apt-pkg/error.h"
 #endif 
 
+#ifdef __GNUG__
+// Methods have a hidden this parameter that is visible to this attribute
+#define APT_MFORMAT1 __attribute__ ((format (printf, 2, 3)))
+#define APT_MFORMAT2 __attribute__ ((format (printf, 3, 4)))
+#else
+#define APT_MFORMAT1
+#define APT_MFORMAT2    
+#endif    
+    
 #include <string>
+
+using std::string;
 
 class GlobalError
 {
@@ -61,14 +72,25 @@ class GlobalError
    
    public:
 
+#ifndef SWIG
    // Call to generate an error from a library call.
-   bool Errno(const char *Function,const char *Description,...);
-   bool WarningE(const char *Function,const char *Description,...);
+   bool Errno(const char *Function,const char *Description,...) APT_MFORMAT2;
+   bool WarningE(const char *Function,const char *Description,...) APT_MFORMAT2;
 
    /* A warning should be considered less severe than an error, and may be
       ignored by the client. */
-   bool Error(const char *Description,...);
-   bool Warning(const char *Description,...);
+   bool Error(const char *Description,...) APT_MFORMAT1;
+   bool Warning(const char *Description,...) APT_MFORMAT1;
+#else
+   // Call to generate an error from a library call.
+   bool Errno(const char *Function,const char *Description) APT_MFORMAT2;
+   bool WarningE(const char *Function,const char *Description) APT_MFORMAT2;
+
+   /* A warning should be considered less severe than an error, and may be
+      ignored by the client. */
+   bool Error(const char *Description) APT_MFORMAT1;
+   bool Warning(const char *Description) APT_MFORMAT1;
+#endif
 
    // Simple accessors
    inline bool PendingError() {return PendingFlag;};
@@ -85,5 +107,8 @@ class GlobalError
 // The 'extra-ansi' syntax is used to help with collisions. 
 GlobalError *_GetErrorObj();
 #define _error _GetErrorObj()
+
+#undef APT_MFORMAT1
+#undef APT_MFORMAT2
 
 #endif

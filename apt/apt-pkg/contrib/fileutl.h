@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: fileutl.h,v 1.2 2000/09/26 14:22:14 kojima Exp $
+// $Id: fileutl.h,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    File Utilities
@@ -27,6 +27,8 @@
 
 #include <string>
 
+using std::string;
+
 class FileFd
 {
    protected:
@@ -38,9 +40,16 @@ class FileFd
    string FileName;
    
    public:
-   enum OpenMode {ReadOnly,WriteEmpty,WriteExists,WriteAny};
+   enum OpenMode {ReadOnly,WriteEmpty,WriteExists,WriteAny,WriteTemp};
    
-   bool Read(void *To,unsigned long Size,bool AllowEof = false);
+   inline bool Read(void *To,unsigned long Size,bool AllowEof)
+   {
+      unsigned long Jnk;
+      if (AllowEof)
+	 return Read(To,Size,&Jnk);
+      return Read(To,Size);
+   }   
+   bool Read(void *To,unsigned long Size,unsigned long *Actual = 0);
    bool Write(const void *From,unsigned long Size);
    bool Seek(unsigned long To);
    bool Skip(unsigned long To);
@@ -49,7 +58,8 @@ class FileFd
    unsigned long Size();
    bool Open(string FileName,OpenMode Mode,unsigned long Perms = 0666);
    bool Close();
-
+   bool Sync();
+   
    // Simple manipulators
    inline int Fd() {return iFd;};
    inline void Fd(int fd) {iFd = fd;};

@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: acquire-item.h,v 1.6 2001/11/12 16:34:00 kojima Exp $
+// $Id: acquire-item.h,v 1.2 2003/01/29 13:04:48 niemeyer Exp $
 /* ######################################################################
 
    Acquire Item - Item to acquire
@@ -21,7 +21,7 @@
 #define PKGLIB_ACQUIRE_ITEM_H
 
 #include <apt-pkg/acquire.h>
-#include <apt-pkg/sourcelist.h>
+#include <apt-pkg/indexfile.h>
 #include <apt-pkg/pkgrecords.h>
 
 #ifdef __GNUG__
@@ -30,10 +30,9 @@
 
 // Item to acquire
 class pkgAcquire::Item
-{   
+{  
    protected:
-   bool RecheckFile(string path, string MD5, unsigned long Size);
-  
+   
    // Some private helper methods for registering URIs
    pkgAcquire *Owner;
    inline void QueueURI(ItemDesc &Item)
@@ -46,11 +45,13 @@ class pkgAcquire::Item
    public:
 
    // State of the item
-   enum {StatIdle, StatFetching, StatDone, StatError, StatAuthError} Status;
+   /* CNC:2002-11-22
+    * Do not use anonyomus enums, as this breaks swig in some cases */
+   enum StatusFlags {StatIdle, StatFetching, StatDone, StatError} Status;
    string ErrorText;
    unsigned long FileSize;
    unsigned long PartialSize;   
-   char *Mode;
+   const char *Mode;
    unsigned long ID;
    bool Complete;
    bool Local;
@@ -78,16 +79,21 @@ class pkgAcquire::Item
    virtual ~Item();
 };
 
+// CNC:2002-07-03
+class pkgRepository;
+
 // Item class for index files
 class pkgAcqIndex : public pkgAcquire::Item
 {
    protected:
    
-   const pkgSourceList::Item *Location;
    bool Decompression;
    bool Erase;
    pkgAcquire::ItemDesc Desc;
-   unsigned int Retries;
+   string RealURI;
+
+   // CNC:2002-07-03
+   pkgRepository *Repository;
    
    public:
    
@@ -95,9 +101,11 @@ class pkgAcqIndex : public pkgAcquire::Item
    virtual void Done(string Message,unsigned long Size,string Md5Hash,
 		     pkgAcquire::MethodConfig *Cnf);
    virtual string Custom600Headers();
-   virtual string DescURI() {return Location->PackagesURI();};
+   virtual string DescURI() {return RealURI;};
 
-   pkgAcqIndex(pkgAcquire *Owner,const pkgSourceList::Item *Location);
+   // CNC:2002-07-03
+   pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,string URI,
+	       string URIDesc,string ShortDesct);
 };
 
 // Item class for index files
@@ -105,9 +113,14 @@ class pkgAcqIndexRel : public pkgAcquire::Item
 {
    protected:
    
-   const pkgSourceList::Item *Location;
    pkgAcquire::ItemDesc Desc;
-   unsigned int Retries;
+   string RealURI;
+ 
+   // CNC:2002-07-03
+   bool Authentication;
+   bool Master;
+   bool Erase;
+   pkgRepository *Repository;
    
    public:
    
@@ -116,9 +129,11 @@ class pkgAcqIndexRel : public pkgAcquire::Item
    virtual void Done(string Message,unsigned long Size,string Md5Hash,
 		     pkgAcquire::MethodConfig *Cnf);   
    virtual string Custom600Headers();
-   virtual string DescURI() {return Location->ReleaseURI();};
+   virtual string DescURI() {return RealURI;};
    
-   pkgAcqIndexRel(pkgAcquire *Owner,const pkgSourceList::Item *Location);
+   // CNC:2002-07-03
+   pkgAcqIndexRel(pkgAcquire *Owner,pkgRepository *Repository,string URI,
+		  string URIDesc,string ShortDesc,bool Master=false);
 };
 
 // Item class for archive files
@@ -154,29 +169,6 @@ class pkgAcqArchive : public pkgAcquire::Item
 		 string &StoreFilename);
 };
 
-
-// Item class for index files
-class pkgAcqHashes : public pkgAcquire::Item
-{
-   protected:
-   
-   bool Authentication;
-   pkgSourceList::RepositoryItem *Location;
-   pkgAcquire::ItemDesc Desc;
-   unsigned int Retries;
-      
-   public:
-   
-   // Specialized action members
-   virtual void Done(string Message,unsigned long Size,string Md5Hash,
-		     pkgAcquire::MethodConfig *Cnf);   
-   virtual string DescURI() {return Location->HashesURI();};
-   virtual void Failed(string Message,pkgAcquire::MethodConfig *Cnf);
-   
-   pkgAcqHashes(pkgAcquire *Owner,
-		pkgSourceList::RepositoryItem *Location);
-};
-
 // Fetch a generic file to the current directory
 class pkgAcqFile : public pkgAcquire::Item
 {
@@ -194,7 +186,7 @@ class pkgAcqFile : public pkgAcquire::Item
    virtual string DescURI() {return Desc.URI;};
    
    pkgAcqFile(pkgAcquire *Owner,string URI,string MD5,unsigned long Size,
-	      string Desc,string ShortDesc);
+		  string Desc,string ShortDesc);
 };
 
 #endif

@@ -1,0 +1,12 @@
+--- apt-0.5.5cnc1/apt-pkg/init.cc.orig	2003-02-07 19:14:18 +0300
++++ apt-0.5.5cnc1/apt-pkg/init.cc	2003-02-07 19:26:23 +0300
+@@ -98,7 +98,9 @@
+    
+    if (Cnf.Exists("Dir::Locale"))
+    {  
++#ifdef APT_DOMAIN
+       bindtextdomain(APT_DOMAIN,Cnf.FindDir("Dir::Locale").c_str());
++#endif
+       bindtextdomain(textdomain(0),Cnf.FindDir("Dir::Locale").c_str());
+    }
+    

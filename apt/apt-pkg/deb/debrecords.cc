@@ -1,6 +1,6 @@
 // -*- mode: cpp; mode: fold -*-
 // Description								/*{{{*/
-// $Id: debrecords.cc,v 1.1.1.1 2000/08/10 12:42:39 kojima Exp $
+// $Id: debrecords.cc,v 1.1 2002/07/23 17:54:51 niemeyer Exp $
 /* ######################################################################
    
    Debian Package Records - Parser for debian package records
@@ -18,8 +18,9 @@
 // RecordParser::debRecordParser - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-debRecordParser::debRecordParser(FileFd &File,pkgCache &Cache) : 
-                   Tags(File,Cache.Head().MaxVerFileSize + 20)
+debRecordParser::debRecordParser(string FileName,pkgCache &Cache) : 
+                  File(FileName,FileFd::ReadOnly), 
+                  Tags(&File,Cache.Head().MaxVerFileSize + 200)
 {
 }
 									/*}}}*/
@@ -39,12 +40,28 @@ string debRecordParser::FileName()
    return Section.FindS("Filename");
 }
 									/*}}}*/
+// RecordParser::Name - Return the package name				/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+string debRecordParser::Name()
+{
+   return Section.FindS("Package");
+}
+									/*}}}*/
 // RecordParser::MD5Hash - Return the archive hash			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
 string debRecordParser::MD5Hash()
 {
-   return Section.FindS("MD5sum");
+   return Section.FindS("MD5Sum");
+}
+									/*}}}*/
+// RecordParser::SHA1Hash - Return the archive hash			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+string debRecordParser::SHA1Hash()
+{
+   return Section.FindS("SHA1Sum");
 }
 									/*}}}*/
 // RecordParser::Maintainer - Return the maintainer email		/*{{{*/
@@ -85,5 +102,13 @@ string debRecordParser::SourcePkg()
    if (Pos == string::npos)
       return Res;
    return string(Res,0,Pos);
+}
+									/*}}}*/
+// RecordParser::GetRec - Return the whole record			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+void debRecordParser::GetRec(const char *&Start,const char *&Stop)
+{
+   Section.GetSection(Start,Stop);
 }
 									/*}}}*/
