@@ -1,0 +1,760 @@
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-pipe.c apt-0.5.15cnc6/cmdline/apt-pipe.c
+--- apt-0.5.15cnc6-orig/cmdline/apt-pipe.c	1970-01-01 03:00:00 +0300
++++ apt-0.5.15cnc6/cmdline/apt-pipe.c	2005-04-05 19:58:22 +0300
+@@ -0,0 +1,371 @@
++/* ----------------------------------------------------------------------------
++   $Id: apt-pipe.c,v 1.3 2005/03/20 20:56:03 me Exp $
++ */
++
++#ifndef APT_PIPE_PATH
++#define APT_PIPE_PATH "/var/lib/apt/pipe"
++#endif
++
++#include <argz.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <signal.h>
++#include <stdlib.h>
++#include <string.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/socket.h>
++#include <sys/un.h>
++
++#include <setproctitle.h>
++
++/* ----------------------------------------------------------------------------
++*/
++
++extern int aptpipe_init(void);
++extern int aptpipe_main(int, const char **);
++extern int aptpipe_fini(void);
++
++/* ----------------------------------------------------------------------------
++ */
++
++static volatile sig_atomic_t signalled = 0;
++
++/* ----------------------------------------------------------------------------
++  server
++*/
++static void sighandler(int sig)
++{
++	++signalled;
++}
++
++static void set_sighandler(int flags)
++{
++ 	struct sigaction sa;
++
++	sa.sa_handler = sighandler;
++	sigemptyset(&sa.sa_mask);
++	sigaddset(&sa.sa_mask, SIGINT);
++	sigaddset(&sa.sa_mask, SIGTERM);
++	sigaddset(&sa.sa_mask, SIGHUP);
++	sigaddset(&sa.sa_mask, SIGALRM);
++	sa.sa_flags = flags;
++
++	(void) sigaction(SIGINT, &sa, NULL);
++	(void) sigaction(SIGTERM, &sa, NULL);
++	(void) sigaction(SIGHUP, &sa, NULL);
++	(void) sigaction(SIGALRM, &sa, NULL);
++}
++
++static int do_listen()
++{
++	int servsock;
++	struct sockaddr_un sockaddr;
++	
++	servsock = socket(AF_LOCAL, SOCK_STREAM, 0);
++	unlink(APT_PIPE_PATH);
++	memset(&sockaddr, 0, sizeof(sockaddr));
++	sockaddr.sun_family = AF_LOCAL;
++	strncpy(sockaddr.sun_path, APT_PIPE_PATH, sizeof(sockaddr.sun_path));
++	bind(servsock, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
++
++	return ((listen(servsock, 2)) < 0 ? -1 : servsock);
++}
++
++static ssize_t recv_query(int sock, void *buf, size_t bufsize, int *fd)
++{
++	struct msghdr msg;
++	struct iovec iov[1];
++	ssize_t	received = 0;
++	
++	union {
++		struct cmsghdr cm;
++		char control[CMSG_SPACE(sizeof(int))];
++	} control_un;
++	struct cmsghdr	*cmsg;
++
++	msg.msg_name = NULL;
++	msg.msg_namelen = 0;
++
++	iov[0].iov_base = buf;
++	iov[0].iov_len = bufsize;
++	msg.msg_iov = iov;
++	msg.msg_iovlen = 1;
++
++	msg.msg_control = control_un.control;
++	msg.msg_controllen = sizeof(control_un.control);
++
++	if ((received = recvmsg(sock, &msg, MSG_WAITALL)) > 0 &&
++		(cmsg = CMSG_FIRSTHDR(&msg)) != NULL &&
++		cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
++		cmsg->cmsg_level == SOL_SOCKET &&
++		cmsg->cmsg_type == SCM_RIGHTS)
++		*fd = *((int *) CMSG_DATA(cmsg));
++
++	return(received);
++}
++
++static int send_reply(int sock, char *buf, ssize_t bufsize, int fd)
++{
++	int i, ac;
++	char **av = NULL;
++
++	/* minimal sanity check */
++	if (0 != *(buf + bufsize - 1))
++		return -1;
++
++	/* make fd passed by client our stdout/stderr */
++	dup2(fd, STDOUT_FILENO);
++	dup2(fd, STDERR_FILENO);
++	close(fd);
++
++	/* apt's .Parse skips av[0], so fake it */
++	ac = argz_count(buf, bufsize) + 1;
++	av = (char **)calloc(ac + 1, sizeof(char *));
++	*av = "";
++
++	argz_extract(buf, bufsize, ++av);
++	
++	ac = i = aptpipe_main(ac, (const char **)--av);
++	fflush(stdout);
++	fflush(stderr);
++
++	fd = open("/dev/null", O_RDWR);
++	dup2(fd, STDOUT_FILENO);
++	dup2(fd, STDERR_FILENO);
++	close(fd);
++
++	i = (i < 0);
++
++	write(sock, &i, sizeof(int));
++	free(av);
++
++	return(ac > 0);
++}
++
++static void mainloop(int servsock) {
++	int done = 0;
++	char buf[65536];
++
++	while(!signalled && !done) {
++		int cl, fd = -1;
++		size_t received;
++
++		/* TODO check for pending errors on socket */
++
++		/* enable EINTR while in accept */
++		set_sighandler(0);
++		alarm(180);
++		if((cl = accept(servsock, NULL, 0)) < 0) continue;
++
++		alarm(0);
++		set_sighandler(SA_RESTART);
++		if ((received = recv_query(cl, buf, sizeof(buf), &fd)) > 0 && fd != -1)
++			done = send_reply(cl, buf, received, fd);
++		close(cl);
++	}
++}
++
++static int daemonize()
++{
++	pid_t pid;
++	int i, fd;
++	int fds[2] = {-1, -1};
++
++	if (pipe(fds) < 0)
++		return -1;
++
++	if ((pid = fork()) < 0)
++		return -1;
++
++	if (pid) {
++		/* parent */
++		close(fds[1]);
++		/* get child's status */
++		if (read(fds[0], &i, (sizeof(int))) != sizeof(int))
++			return -1;
++		return i;
++	}
++
++	/* child */
++	close(fds[0]);
++	setsid();
++	chdir("/");
++	while (fds[1] <= 2) {
++		fds[1] = dup(fds[1]);
++		if (fds[1] < 0)
++			exit(1);
++	}
++	
++	fd = open("/dev/null", O_RDWR);
++	dup2(fd, 0);
++	dup2(fd, 1);
++	dup2(fd, 2);
++
++	/* closeall */
++	i = sysconf (_SC_OPEN_MAX);
++	for (fd = 3; fd < i; fd++) 
++		if (fd != fds[1])
++			close (fd);
++
++	/* ignore some signals */
++	signal(SIGHUP, SIG_IGN);
++	signal(SIGPIPE, SIG_IGN);
++	signal(SIGUSR1, SIG_IGN);
++	signal(SIGUSR2, SIG_IGN);
++	/* no EINTR please */
++	set_sighandler(SA_RESTART);
++
++	/* open listening socket */
++	if ((fd = do_listen()) < 0)
++		exit(1);
++
++	/* init apt */
++	if (aptpipe_init() < 0)
++		exit(1);
++
++	/* clean up proc title */
++	setproctitle("%s", "ready");
++
++	/* we're still alive, notify parent */
++	i = 0;
++	write(fds[1], &i, sizeof(int));
++	close(fds[1]);
++
++	/* enter main loop */
++	mainloop(fd);
++
++	/* cleanup */
++	aptpipe_fini();
++	unlink(APT_PIPE_PATH);
++	exit(EXIT_SUCCESS);
++}
++
++/* ----------------------------------------------------------------------------
++   client
++*/
++static int do_connect()
++{
++	int sock;
++	struct sockaddr_un servaddr;
++
++	sock = socket(AF_LOCAL, SOCK_STREAM, 0);
++	memset(&servaddr, 0, sizeof(servaddr));
++	servaddr.sun_family = AF_LOCAL;
++	strncpy(servaddr.sun_path, APT_PIPE_PATH, sizeof(servaddr.sun_path));
++	for(;;) {
++		if (connect(sock, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
++			/* ENOENT ECONNREFUSED : (re)spawn daemon */
++			if (errno == ENOENT || errno == ECONNREFUSED) {
++				if (daemonize() < 0) {
++					fprintf(stderr, "daemonize(): %s\n", strerror(errno));
++					exit(1);
++				}
++				continue;
++			} else {
++				/* EACCESS etc -- just die */
++				fprintf(stderr, "connect(): %s\n", strerror(errno));
++				exit(1);
++			}
++		}
++		break;
++	}
++
++	return sock;
++}
++
++static ssize_t send_query(int fd, int ac, char *av[])
++{
++	int i;
++	struct msghdr msg;
++	struct iovec *iov = NULL;
++
++	union {
++		struct cmsghdr cm;
++		char control[CMSG_SPACE(sizeof(int))];
++	} control_un;
++	struct cmsghdr	*cmsg;
++
++	msg.msg_name = NULL;
++	msg.msg_namelen = 0;
++
++	if ((iov = (struct iovec *)calloc(ac, sizeof(struct iovec))) == NULL)
++		return -1;
++
++	msg.msg_iov = iov;
++	msg.msg_iovlen = ac;
++
++	for (i=0; i < ac; iov++, i++) {
++		iov->iov_base = (void *)av[i];
++		iov->iov_len = strlen(av[i]) + 1;
++	}
++
++	/* keep final 0 for a while */
++	(--iov)->iov_len--;
++
++	msg.msg_control = NULL;
++	msg.msg_controllen = 0;
++
++	if (sendmsg(fd, &msg, 0) < 0)
++		return -1;
++
++	/* pass fd and final 0 */
++	i = 0;
++	iov = msg.msg_iov;
++	iov->iov_base = &i;
++	iov->iov_len = 1;
++	msg.msg_iovlen = 1;
++	
++	msg.msg_control = control_un.control;
++	msg.msg_controllen = sizeof(control_un.control);
++
++	cmsg = CMSG_FIRSTHDR(&msg);
++	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
++	cmsg->cmsg_level = SOL_SOCKET;
++	cmsg->cmsg_type = SCM_RIGHTS;
++	*((int *) CMSG_DATA(cmsg)) = STDOUT_FILENO;
++
++	return (sendmsg(fd, &msg, 0));
++}
++
++static int recv_reply(int fd)
++{
++	int i;
++
++	if (read(fd, &i, (sizeof(int))) != sizeof(int))
++		return -1;
++	return i;
++}
++
++/*----------------------------------------------------------------------------*/
++int main(int ac, char *av[])
++{
++	int i, fd;
++
++	if (ac < 2) {
++		fprintf(stderr, "usage: %s <query>\n", av[0]);
++		exit(EXIT_FAILURE);
++	}
++
++	if ((fd = do_connect()) < 0) {
++		fprintf(stderr, "do_connect: %s\n", strerror(errno));
++		exit(EXIT_FAILURE);
++	}
++
++	/* pass our query in av[] and stdout fd to server */
++	if (send_query(fd, --ac, ++av) < 0) {
++		fprintf(stderr, "send_query: %s\n", strerror(errno));
++		exit(EXIT_FAILURE);
++	}
++
++	/* wait for status responce
++	   actual server reply will be passed via passed stdout */
++	if ((i = recv_reply(fd)) < 0) {
++		fprintf(stderr, "recv_reply\n");
++		exit(EXIT_FAILURE);
++	}
++
++	return i;
++}
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-04-05 14:38:35 +0300
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-04-05 19:58:57 +0300
+@@ -1,4 +1,4 @@
+-// -*- mode: cpp; mode: fold -*-
++// -*- mode: c++; mode: folding -*-
+ // Description								/*{{{*/
+ // $Id: apt-get.cc,v 1.126 2003/02/12 16:14:08 doogie Exp $
+ /* ######################################################################
+@@ -40,6 +40,11 @@
+ #include <apt-pkg/sptr.h>
+ #include <apt-pkg/versionmatch.h>
+ 
++#ifdef APT_PIPE
++#include <apt-pkg/policy.h>
++#include <apt-pkg/tagfile.h>
++#endif
++
+ #include <config.h>
+ #include <apti18n.h>
+ 
+@@ -65,8 +70,10 @@
+ #include <regex.h>
+ #include <sys/wait.h>
+ 
++#ifndef APT_PIPE
+ #include <readline/readline.h>
+ #include <readline/history.h>
++#endif
+ #include <fnmatch.h>
+ 									/*}}}*/
+ 
+@@ -3692,7 +3699,169 @@
+         return true;
+    return _error->Error(_("No packages found"));
+ }
++/*}}}*/
++
++#ifdef APT_PIPE
++// DumpAvail - Print out the available list				/*{{{*/
++// ---------------------------------------------------------------------
++/* This is needed to make dpkg --merge happy.. I spent a bit of time to 
++   make this run really fast, perhaps I went a little overboard.. */
++bool DumpAvail(CommandLine &Cmd)
++{
++   pkgCache &Cache = *GCache;
++
++   pkgPolicy Plcy(&Cache);
++   if (ReadPinFile(Plcy) == false)
++      return false;
++   
++   unsigned long Count = Cache.HeaderP->PackageCount+1;
++   pkgCache::VerFile **VFList = new pkgCache::VerFile *[Count];
++   memset(VFList,0,sizeof(*VFList)*Count);
++   
++   // Map versions that we want to write out onto the VerList array.
++   for (pkgCache::PkgIterator P = Cache.PkgBegin(); P.end() == false; P++)
++   {    
++      if (P->VersionList == 0)
++	 continue;
++      
++      /* Find the proper version to use. If the policy says there are no
++         possible selections we return the installed version, if available..
++       	 This prevents dselect from making it obsolete. */
++      pkgCache::VerIterator V = Plcy.GetCandidateVer(P);
++      if (V.end() == true)
++      {
++	 if (P->CurrentVer == 0)
++	    continue;
++	 V = P.CurrentVer();
++      }
++      
++      pkgCache::VerFileIterator VF = V.FileList();
++      for (; VF.end() == false ; VF++)
++	 if ((VF.File()->Flags & pkgCache::Flag::NotSource) == 0)
++	    break;
++      
++      /* Okay, here we have a bit of a problem.. The policy has selected the
++         currently installed package - however it only exists in the
++       	 status file.. We need to write out something or dselect will mark
++         the package as obsolete! Thus we emit the status file entry, but
++         below we remove the status line to make it valid for the 
++         available file. However! We only do this if their do exist *any*
++         non-source versions of the package - that way the dselect obsolete
++         handling works OK. */
++      if (VF.end() == true)
++      {
++	 for (pkgCache::VerIterator Cur = P.VersionList(); Cur.end() != true; Cur++)
++	 {
++	    for (VF = Cur.FileList(); VF.end() == false; VF++)
++	    {	 
++	       if ((VF.File()->Flags & pkgCache::Flag::NotSource) == 0)
++	       {
++		  VF = V.FileList();
++		  break;
++	       }
++	    }
++	    
++	    if (VF.end() == false)
++	       break;
++	 }
++      }
++      
++// CNC:2002-07-24
++#if HAVE_RPM
++      if (VF.end() == false)
++      {
++	 pkgRecords Recs(Cache);
++	 pkgRecords::Parser &P = Recs.Lookup(VF);
++	 const char *Start;
++	 const char *End;
++	 P.GetRec(Start,End);
++	 fwrite(Start,End-Start,1,stdout);
++	 putc('\n',stdout);
++      }
++   }
++   return !_error->PendingError();
++#else
++      VFList[P->ID] = VF;
++   }
++#endif
++   
++   LocalitySort(VFList,Count,sizeof(*VFList));
++
++   // Iterate over all the package files and write them out.
++   char *Buffer = new char[Cache.HeaderP->MaxVerFileSize+10];
++   for (pkgCache::VerFile **J = VFList; *J != 0;)
++   {
++      pkgCache::PkgFileIterator File(Cache,(*J)->File + Cache.PkgFileP);
++      if (File.IsOk() == false)
++      {
++	 _error->Error(_("Package file %s is out of sync."),File.FileName());
++	 break;
++      }
++
++      FileFd PkgF(File.FileName(),FileFd::ReadOnly);
++      if (_error->PendingError() == true)
++	 break;
++      
++      /* Write all of the records from this package file, since we
++       	 already did locality sorting we can now just seek through the
++       	 file in read order. We apply 1 more optimization here, since often
++       	 there will be < 1 byte gaps between records (for the \n) we read that
++       	 into the next buffer and offset a bit.. */
++      unsigned long Pos = 0;
++      for (; *J != 0; J++)
++      {
++	 if ((*J)->File + Cache.PkgFileP != File)
++	    break;
++	 
++	 const pkgCache::VerFile &VF = **J;
++
++	 // Read the record and then write it out again.
++	 unsigned long Jitter = VF.Offset - Pos;
++	 if (Jitter > 8)
++	 {
++	    if (PkgF.Seek(VF.Offset) == false)
++	       break;
++	    Jitter = 0;
++	 }
++	 
++	 if (PkgF.Read(Buffer,VF.Size + Jitter) == false)
++	    break;
++	 Buffer[VF.Size + Jitter] = '\n';
++	 
++	 // See above..
++	 if ((File->Flags & pkgCache::Flag::NotSource) == pkgCache::Flag::NotSource)
++	 {
++	    pkgTagSection Tags;
++	    TFRewriteData RW[] = {{"Status",0},{"Config-Version",0},{}};
++	    const char *Zero = 0;
++	    if (Tags.Scan(Buffer+Jitter,VF.Size+1) == false ||
++		TFRewrite(stdout,Tags,&Zero,RW) == false)
++	    {
++	       _error->Error("Internal Error, Unable to parse a package record");
++	       break;
++	    }
++	    fputc('\n',stdout);
++	 }
++	 else
++	 {
++	    if (fwrite(Buffer+Jitter,VF.Size+1,1,stdout) != 1)
++	       break;
++	 }
++	 
++	 Pos = VF.Offset + VF.Size;
++      }
++
++      fflush(stdout);
++      if (_error->PendingError() == true)
++         break;
++   }
++   
++   delete [] Buffer;
++   delete [] VFList;
++   return !_error->PendingError();
++}
+ 									/*}}}*/
++#endif
+ // --- End of stuff from apt-cache.
+ 
+ 
+@@ -4071,6 +4240,7 @@
+ }
+ 									/*}}}*/
+ 
++#ifndef APT_PIPE
+ // ReadLine* - readline library stuff					/*{{{*/
+ // ---------------------------------------------------------------------
+ /* */
+@@ -4238,6 +4408,7 @@
+       write_history(History.c_str());
+ }
+ 									/*}}}*/
++#endif
+ 
+ CommandLine::Args *CommandArgs(const char *Name)
+ {
+@@ -4356,6 +4527,137 @@
+    }
+ }
+ 									/*}}}*/
++
++#ifdef APT_PIPE
++bool DumpConfig(CommandLine &CmdL)
++{
++	_config->Dump(cout);
++	return true;
++}
++
++bool DoErrors(CommandLine &CmdL)
++{
++	if (_error->empty() == false) {
++		_error->DumpErrors();
++	}
++
++	return true;
++}
++
++extern "C" {
++	int aptpipe_init(void);
++	int aptpipe_main(int ac, const char *av[]);
++	int aptpipe_fini(void);
++}
++
++int aptpipe_init(void)
++{
++	// initialize config
++	CommandLine CmdL(CommandArgs(""), _config);
++
++	_config->Set("quiet", "2");
++
++	// Setup the output streams
++	c0out.rdbuf(devnull.rdbuf());
++	c1out.rdbuf(cout.rdbuf());
++	c2out.rdbuf(cout.rdbuf());
++
++	// Initialize the package library
++	if (pkgInitConfig(*_config) == false ||
++		pkgInitSystem(*_config, _system) == false) {
++		_error->DumpErrors();
++		return 100;
++	}
++
++	// Prepare the cache
++	GCache = new CacheFile();
++	GCache->Open();
++
++	if (_error->empty() == false) {
++		bool Errors = _error->PendingError();
++		_error->DumpErrors();
++		return Errors == true?100:0;
++	}
++
++	// TODO check for unmets
++
++#ifdef WITH_LUA
++	_lua->SetDepCache(*GCache);
++	_lua->RunScripts("Scripts::AptShell::Init");
++	_lua->ResetCaches();
++	bool HasCmdScripts = (_lua->HasScripts("Scripts::AptGet::Command") ||
++						  _lua->HasScripts("Scripts::AptCache::Command"));
++#endif
++
++	return 0;
++}
++
++int aptpipe_main(int ac, const char *av[])
++{
++	int rc;
++	CommandLine::Dispatch Cmds[] = {
++		{"update", &DoUpdate},
++		{"upgrade", &DoUpgrade},
++		{"install", &DoInstall},
++		{"remove", &DoInstall},
++		{"keep", &DoInstall},
++		{"dist-upgrade", &DoDistUpgrade},
++		{"dselect-upgrade", &DoDSelectUpgrade},
++		{"build-dep", &DoBuildDep},
++		{"clean", &DoClean},
++		{"autoclean", &DoAutoClean},
++		{"check", &DoCheck},
++		{"help", &ShowHelp},
++		{"commit", &DoCommit},
++		{"quit", &DoQuit},
++		{"exit", &DoQuit},
++		{"status", &DoStatus},
++		{"script", &DoScript},
++		{"errors", &DoErrors},
++		// apt-cache
++		{"avail", &DumpAvail},
++		{"showpkg", &DumpPackage},
++		{"unmet", &UnMet},
++		{"search", &Search},
++		{"list", &DoList},
++		{"ls", &DoList},
++		{"depends", &Depends},
++		{"whatdepends", &WhatDepends},
++		{"rdepends", &RDepends},
++		{"show", &ShowPackage},
++		// apt-config
++		{"dumpconfig", &DumpConfig},
++		{0, 0}
++	};
++
++	// Make our own copy of the configuration.
++	Configuration _Config(*_config);
++
++	delete _config;
++	_config = new Configuration(_Config);
++
++	// Parse skips av[0]
++	CommandLine CmdL(CommandArgs(av[1]), _config);
++	CmdL.Parse(ac, av);
++	CmdL.DispatchArg(Cmds);
++
++	rc = (_error->PendingError() == false ?
++		  ((_config->FindB("quit") == true) ? 1 : 0) : -1);
++
++	// restore saved config
++	delete _config;
++	_config = new Configuration(_Config);
++
++	return rc;
++}
++
++int aptpipe_fini()
++{
++   delete GCache;
++   return 0;
++}
++
++#else
+ int main(int argc,const char *argv[])
+ {
+    CommandLine::Dispatch Cmds[] = {{"update",&DoUpdate},
+@@ -4574,5 +4876,5 @@
+    
+    return 0;   
+ }
+-
++#endif
+ // vim:sts=3:sw=3
+diff -uNr apt-0.5.15cnc6-orig/cmdline/Makefile.am apt-0.5.15cnc6/cmdline/Makefile.am
+--- apt-0.5.15cnc6-orig/cmdline/Makefile.am	2005-04-05 14:38:35 +0300
++++ apt-0.5.15cnc6/cmdline/Makefile.am	2005-04-05 19:58:22 +0300
+@@ -4,7 +4,7 @@
+ bin_PROGRAMS = apt-get apt-cache apt-cdrom apt-config
+ 
+ if COMPILE_APTSHELL
+-bin_PROGRAMS += apt-shell
++bin_PROGRAMS += apt-shell apt-pipe
+ endif
+ if COMPILE_STATIC
+ bin_PROGRAMS += apt-get-static apt-cache-static apt-cdrom-static
+@@ -16,6 +16,9 @@
+ apt_cache_SOURCES = apt-cache.cc
+ apt_shell_SOURCES = apt-shell.cc acqprogress.cc acqprogress.h
+ apt_shell_LDADD = $(LDADD) -lreadline -ltinfo
++apt_pipe_SOURCES = $(apt_shell_SOURCES) apt-pipe.c
++apt_pipe_CPPFLAGS = -DAPT_PIPE
++apt_pipe_LDADD = $(LDADD) -lsetproctitle
+ apt_config_SOURCES = apt-config.cc
+ apt_cdrom_SOURCES = apt-cdrom.cc rpmindexcopy.cc rpmindexcopy.h
+ 

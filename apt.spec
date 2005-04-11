@@ -1,8 +1,8 @@
-# hey Emacs, its -*- mode: rpm-spec; coding: cyrillic-cp1251; -*-
+# $Id: apt,v 1.5 2005/04/11 13:44:30 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt6.1
+Release: alt7
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -43,7 +43,8 @@ Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
-Patch34: apt-0.5.15cnc6-alt-umount.patch
+Patch34: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch35: apt-0.5.15cnc6-alt-umount.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -69,7 +70,7 @@ BuildPreReq: cvs
 %{?_enable_static:BuildPreReq: glibc-devel-static}
 
 # all the rest.
-BuildPreReq: gcc-c++ libreadline-devel libstdc++-devel libtinfo-devel
+BuildPreReq: gcc-c++ libreadline-devel libstdc++-devel libtinfo-devel setproctitle-devel
 
 %define risk_usage_en This package is still under development.
 
@@ -227,6 +228,7 @@ This package contains method 'rsync' for APT.
 %patch32 -p1
 %patch33 -p1
 %patch34 -p1
+%patch35 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -338,6 +340,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Apr 11 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt7
+- Acquire::CDROM::mount value in apt.conf(5) changed from /mnt/cdrom to /media/cdrom
+- apt-pipe utility added
+
 * Tue Jan 18 2005 ALT QA Team Robot <qa-robot@altlinux.org> 0.5.15cnc6-alt6.1
 - Rebuilt with libstdc++.so.6.
 
@@ -788,6 +794,10 @@ fi
 - It's a just build for Deadalus - not for actual use.
 - I just built it but not test yet.
 
+
 # Local Variables:
+# mode: rpm-spec
+# coding: windows-1251
 # compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:
+
