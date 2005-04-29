@@ -1,11 +1,11 @@
-# $Id: apt,v 1.5 2005/04/11 13:44:30 me Exp $
+# $Id: apt,v 1.8 2005/04/29 09:53:57 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt7
+Release: alt8
 
 Summary: Debian's Advanced Packaging Tool with RPM support
-Summary(ru_RU.CP1251): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
+Summary(ru_RU.KOI8-R): Debian APT - хУПЧЕТЫЕОУФЧПЧБООПЕ УТЕДУФЧП ХРТБЧМЕОЙС РБЛЕФБНЙ У РПДДЕТЦЛПК RPM
 License: GPL
 Group: System/Configuration/Packaging
 Url: https://moin.conectiva.com.br/AptRpm
@@ -16,7 +16,8 @@ Source1: apt.conf
 Source2: genbasedir
 Source3: README.rsync
 Source4: apt.ru.po
-Source5: ChangeLog-rpm.old
+Source5: apt.be.po
+Source6: ChangeLog-rpm.old
 
 Patch9: apt-0.5.15cnc6-alt-aclocal-warnings.patch
 Patch10: apt-0.5.15cnc5-alt-libtool.patch
@@ -43,8 +44,9 @@ Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
-Patch34: apt-0.5.15cnc6-alt-apt-pipe.patch
-Patch35: apt-0.5.15cnc6-alt-umount.patch
+Patch34: apt-0.5.15cnc6-alt-umount.patch
+Patch35: apt-0.5.15cnc6-alt-lsgroup.patch
+Patch36: apt-0.5.15cnc6-alt-apt-pipe.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -83,15 +85,15 @@ capability and several other unique features.
 
 %risk_usage_en
 
-%define risk_usage Данный пакет пока еще находится в стадии разработки.
+%define risk_usage дБООЩК РБЛЕФ РПЛБ ЕЭЕ ОБИПДЙФУС Ч УФБДЙЙ ТБЪТБВПФЛЙ.
 
-%description -l ru_RU.CP1251
-Перенесенные из Debian средства управления пакетами APT, включающие
-в себя поддержку RPM, выполненную компанией Conectiva (Бразилия).
-Этот пакет содержит утилиту apt-get для простой и надежной установки
-и обновления пакетов. APT умеет автоматически разрешать зависимости
-при установке, обеспечивает установку из нескольких источников и
-целый ряд других уникальных возможностей.
+%description -l ru_RU.KOI8-R
+рЕТЕОЕУЕООЩЕ ЙЪ Debian УТЕДУФЧБ ХРТБЧМЕОЙС РБЛЕФБНЙ APT, ЧЛМАЮБАЭЙЕ
+Ч УЕВС РПДДЕТЦЛХ RPM, ЧЩРПМОЕООХА ЛПНРБОЙЕК Conectiva (вТБЪЙМЙС).
+ьФПФ РБЛЕФ УПДЕТЦЙФ ХФЙМЙФХ apt-get ДМС РТПУФПК Й ОБДЕЦОПК ХУФБОПЧЛЙ
+Й ПВОПЧМЕОЙС РБЛЕФПЧ. APT ХНЕЕФ БЧФПНБФЙЮЕУЛЙ ТБЪТЕЫБФШ ЪБЧЙУЙНПУФЙ
+РТЙ ХУФБОПЧЛЕ, ПВЕУРЕЮЙЧБЕФ ХУФБОПЧЛХ ЙЪ ОЕУЛПМШЛЙИ ЙУФПЮОЙЛПЧ Й
+ГЕМЩК ТСД ДТХЗЙИ ХОЙЛБМШОЩИ ЧПЪНПЦОПУФЕК.
 
 %risk_usage
 
@@ -103,14 +105,14 @@ PreReq: librpm >= 4.0.4-alt28
 
 %package -n libapt-devel
 Summary: Development files and documentation for APT's core libs
-Summary(ru_RU.CP1251): Файлы и документация для разработчиков, использующих библиотеки APT
+Summary(ru_RU.KOI8-R): жБКМЩ Й ДПЛХНЕОФБГЙС ДМС ТБЪТБВПФЮЙЛПЧ, ЙУРПМШЪХАЭЙИ ВЙВМЙПФЕЛЙ APT
 Group: Development/C
 Requires: libapt = %version-%release, librpm-devel >= 4.0.4-alt28
 Obsoletes: libapt-0.5-devel
 
 %package -n libapt-devel-static
 Summary: Development static library for APT's libs
-Summary(ru_RU.CP1251): Статическая библиотека APT для разработчиков, использующих библиотеки APT
+Summary(ru_RU.KOI8-R): уФБФЙЮЕУЛБС ВЙВМЙПФЕЛБ APT ДМС ТБЪТБВПФЮЙЛПЧ, ЙУРПМШЪХАЭЙИ ВЙВМЙПФЕЛЙ APT
 Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
 Obsoletes: libapt-0.5-devel-static
@@ -118,7 +120,7 @@ Obsoletes: libapt-0.5-devel-static
 %package utils
 # Analoguous to rpm-build subpackage.
 Summary: Utilities to create APT repositaries (the indices)
-Summary(ru_RU.CP1251): Утилиты для построения APT-репозитариев (индексов)
+Summary(ru_RU.KOI8-R): хФЙМЙФЩ ДМС РПУФТПЕОЙС APT-ТЕРПЪЙФБТЙЕЧ (ЙОДЕЛУПЧ)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
 Requires: gnupg, sed
@@ -126,7 +128,7 @@ Obsoletes: apt-0.5-utils
 
 %package rsync
 Summary: rsync method support for APT
-Summary(ru_RU.CP1251): Поддержка метода rsync для APT
+Summary(ru_RU.KOI8-R): рПДДЕТЦЛБ НЕФПДБ rsync ДМС APT
 Group: Development/Other
 Requires: %name = %version-%release, rsync >= 2.5.5-alt3
 Obsoletes: apt-0.5-rsync
@@ -163,40 +165,40 @@ This package contains method 'rsync' for APT.
 
 %risk_usage_en
 
-%description -n libapt -l ru_RU.CP1251
-В этом пакете находится библиотеки управления пакетами
-из комплекта APT. В отличие от оригинальной версии для Debian, этот
-пакет содержит поддержку для формата RPM.
+%description -n libapt -l ru_RU.KOI8-R
+ч ЬФПН РБЛЕФЕ ОБИПДЙФУС ВЙВМЙПФЕЛЙ ХРТБЧМЕОЙС РБЛЕФБНЙ
+ЙЪ ЛПНРМЕЛФБ APT. ч ПФМЙЮЙЕ ПФ ПТЙЗЙОБМШОПК ЧЕТУЙЙ ДМС Debian, ЬФПФ
+РБЛЕФ УПДЕТЦЙФ РПДДЕТЦЛХ ДМС ЖПТНБФБ RPM.
 
 %risk_usage
 
-%description -n libapt-devel -l ru_RU.CP1251
-В этом пакете находятся заголовочные файлы и библиотеки для разработки
-программ, использующих библиотеки управления пакетами
-из комплекта APT. В отличие от оригинальной версии для Debian, этот
-пакет содержит поддержку для формата RPM.
+%description -n libapt-devel -l ru_RU.KOI8-R
+ч ЬФПН РБЛЕФЕ ОБИПДСФУС ЪБЗПМПЧПЮОЩЕ ЖБКМЩ Й ВЙВМЙПФЕЛЙ ДМС ТБЪТБВПФЛЙ
+РТПЗТБНН, ЙУРПМШЪХАЭЙИ ВЙВМЙПФЕЛЙ ХРТБЧМЕОЙС РБЛЕФБНЙ
+ЙЪ ЛПНРМЕЛФБ APT. ч ПФМЙЮЙЕ ПФ ПТЙЗЙОБМШОПК ЧЕТУЙЙ ДМС Debian, ЬФПФ
+РБЛЕФ УПДЕТЦЙФ РПДДЕТЦЛХ ДМС ЖПТНБФБ RPM.
 
 %risk_usage
 
-%description -n libapt-devel-static -l ru_RU.CP1251
-В этом пакете находятся статические библиотеки для разработки программ,
-использующих библиотеки управления пакетами из
-комплекта APT. В отличие от оригинальной версии для Debian, этот пакет
-содержит поддержку для формата RPM.
+%description -n libapt-devel-static -l ru_RU.KOI8-R
+ч ЬФПН РБЛЕФЕ ОБИПДСФУС УФБФЙЮЕУЛЙЕ ВЙВМЙПФЕЛЙ ДМС ТБЪТБВПФЛЙ РТПЗТБНН,
+ЙУРПМШЪХАЭЙИ ВЙВМЙПФЕЛЙ ХРТБЧМЕОЙС РБЛЕФБНЙ ЙЪ
+ЛПНРМЕЛФБ APT. ч ПФМЙЮЙЕ ПФ ПТЙЗЙОБМШОПК ЧЕТУЙЙ ДМС Debian, ЬФПФ РБЛЕФ
+УПДЕТЦЙФ РПДДЕТЦЛХ ДМС ЖПТНБФБ RPM.
 
 %risk_usage
 
-%description utils -l ru_RU.CP1251
-В этом пакете находятся программы-утилиты, которые могут репозитарий
-бинарных и исходных пакетов RPM приготовить для доступа с помощью APT
-(сгенерировать индексы).
+%description utils -l ru_RU.KOI8-R
+ч ЬФПН РБЛЕФЕ ОБИПДСФУС РТПЗТБННЩ-ХФЙМЙФЩ, ЛПФПТЩЕ НПЗХФ ТЕРПЪЙФБТЙК
+ВЙОБТОЩИ Й ЙУИПДОЩИ РБЛЕФПЧ RPM РТЙЗПФПЧЙФШ ДМС ДПУФХРБ У РПНПЭША APT
+(УЗЕОЕТЙТПЧБФШ ЙОДЕЛУЩ).
 
-Он относится к пакету 'apt' аналогично тому, как 'rpm'к 'rpm-build'.
+пО ПФОПУЙФУС Л РБЛЕФХ 'apt' БОБМПЗЙЮОП ФПНХ, ЛБЛ 'rpm'Л 'rpm-build'.
 
 %risk_usage
 
-%description rsync -l ru_RU.CP1251
-В этом пакете находится метод 'rsync' для APT
+%description rsync -l ru_RU.KOI8-R
+ч ЬФПН РБЛЕФЕ ОБИПДЙФУС НЕФПД 'rsync' ДМС APT
 
 %risk_usage
 
@@ -229,6 +231,7 @@ This package contains method 'rsync' for APT.
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
+%patch36 -p1
 
 # Use system-wide lua5
 pushd lua
@@ -239,8 +242,10 @@ popd
 # Turn it on only if you want to see the debugging messages:
 #%patch101 -p1 -b .getsrc-debug
 
-%__install -p -m644 %SOURCE3 %SOURCE5 .
+%__install -p -m644 %SOURCE3 %SOURCE6 .
 %__install -p -m644 %SOURCE4 po/ru.po
+%__install -p -m644 %SOURCE5 po/be.po
+%__subst 's|^\(.\+\)$|\1 be|' po/LINGUAS
 
 %build
 # Fix url.
@@ -285,7 +290,7 @@ unset RPM_PYTHON
 %triggerun -- apt < 0:0.5.4
 CONF=/etc/apt/apt.conf
 if [ -s "$CONF" ]; then
-	%__subst 's/HoldPkgs/Hold/;s/AllowedDupPkgs/Allow-Duplicated/;s/IgnorePkgs/Ignore/;s/PostInstall/Post-Install/;s|Methods .*|Methods "/usr/lib/apt/methods";|;s|PubringPath *"\([^"]*\)"|Pubring "\1/pubring.gpg"|g' "$CONF"
+	%__subst 's/HoldPkgs/Hold/;s/AllowedDupPkgs/Allow-Duplicated/;s/IgnorePkgs/Ignore/;s/PostInstall/Post-Install/;s|Methods .*|Methods "/usr/lib/apt/methods";|;s|PubringPath *"\([^\"]*\)"|Pubring "\1/pubring.gpg"|g' "$CONF"
 fi
 
 %triggerun -- apt < 0:0.5.15cnc5-alt2
@@ -340,6 +345,11 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Apr 28 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt8
+- belarusian translation updated
+- apt-shell: ls -g/-G implemented (rider@)
+- apt-pipe minor cleanups
+
 * Mon Apr 11 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt7
 - Acquire::CDROM::mount value in apt.conf(5) changed from /mnt/cdrom to /media/cdrom
 - apt-pipe utility added
@@ -794,10 +804,9 @@ fi
 - It's a just build for Deadalus - not for actual use.
 - I just built it but not test yet.
 
-
 # Local Variables:
 # mode: rpm-spec
-# coding: windows-1251
+# coding: koi8-r
 # compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:
 

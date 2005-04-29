@@ -1,0 +1,68 @@
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-04-29 12:41:14 +0400
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-04-29 12:41:58 +0400
+@@ -3500,8 +3500,11 @@
+ 
+    bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
+    bool ShowSummary = _config->FindB("APT::Cache::ShowSummary", false);
++   const char *MatchSection = _config->Find("APT::Cache::MatchGroup","").c_str();
++   bool ShowGroup = _config->FindB("APT::Cache::ShowGroup", false);
+ 
+    const char *PkgName;
++   const char *PkgSection;
+    int Matches[Cache->Head().PackageCount];
+    int NumMatches = 0;
+    int Len, NameMaxLen = 0, VerMaxLen = 0;
+@@ -3517,6 +3520,10 @@
+       if (ShowUpgradable &&
+ 	  (Pkg->CurrentVer == 0 || Cache[Pkg].Upgradable() == false))
+ 	 continue;
++      PkgSection = Pkg.Section();
++      if (strlen(MatchSection) > 0 && strcmp(MatchSection,PkgSection) != 0)
++	continue;
++      
+       PkgName = Pkg.Name();
+       if (MatchAll == true)
+ 	 Matched = true;
+@@ -3622,6 +3629,7 @@
+       Blank[ColumnLen] = 0;
+ 
+       const char *Str;
++      const char *PkgSection;
+       int StrLen;
+       unsigned int K;
+       for (unsigned int Line = 0; Line != NumLines; Line++) {
+@@ -3631,13 +3639,20 @@
+ 	       break;
+ 	    pkgCache::PkgIterator Pkg(Cache,Cache.List[Matches[K]]);
+ 	    Str = Pkg.Name();
++	    PkgSection = Pkg.Section();
+ 	    StrLen = strlen(Str);
+-	    if (Len < ColumnLen-1)
++	    if (Len < ColumnLen-1 && !ShowGroup)
+ 	       c2out << Str << Blank+StrLen;
+ 	    else
+-	       c2out << Str << " ";
++	     {
++	       if (ShowGroup)
++		c2out << PkgSection << "\t" << Str << endl;
++	       else
++	        c2out << Str << " ";
++	     }
+ 	 }
+-	 c2out << endl;
++	 if (!ShowGroup)
++	  c2out << endl;
+       }
+    }
+    
+@@ -4313,6 +4328,8 @@
+       {'i',"installed","APT::Cache::ShowInstalled",0},
+       {'v',"version","APT::Cache::ShowVersion",0},
+       {'s',"summary","APT::Cache::ShowSummary",0},
++      {'g',"showgroup","APT::Cache::ShowGroup",0},
++      {'G',"groupmember","APT::Cache::MatchGroup",CommandLine::HasArg},
+       {'n',"installed","APT::Cache::Installed",0},
+       {'c',"config-file",0,CommandLine::ConfigFile},
+       {'o',"option",0,CommandLine::ArbItem},
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc.orig apt-0.5.15cnc6/cmdline/apt-shell.cc.orig
