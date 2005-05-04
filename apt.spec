@@ -1,8 +1,8 @@
-# $Id: apt,v 1.8 2005/04/29 09:53:57 me Exp $
+# $Id: apt,v 1.9 2005/05/04 09:29:39 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt8
+Release: alt9
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -74,29 +74,6 @@ BuildPreReq: cvs
 # all the rest.
 BuildPreReq: gcc-c++ libreadline-devel libstdc++-devel libtinfo-devel setproctitle-devel
 
-%define risk_usage_en This package is still under development.
-
-%description
-A port of Debian's APT tools for RPM based distributions,
-or at least for Conectiva. It provides the apt-get utility that
-provides a simpler, safer way to install and upgrade packages.
-APT features complete installation ordering, multiple source
-capability and several other unique features.
-
-%risk_usage_en
-
-%define risk_usage Данный пакет пока еще находится в стадии разработки.
-
-%description -l ru_RU.KOI8-R
-Перенесенные из Debian средства управления пакетами APT, включающие
-в себя поддержку RPM, выполненную компанией Conectiva (Бразилия).
-Этот пакет содержит утилиту apt-get для простой и надежной установки
-и обновления пакетов. APT умеет автоматически разрешать зависимости
-при установке, обеспечивает установку из нескольких источников и
-целый ряд других уникальных возможностей.
-
-%risk_usage
-
 %package -n libapt
 Summary: APT's core libraries
 Group: System/Libraries
@@ -132,6 +109,30 @@ Summary(ru_RU.KOI8-R): Поддержка метода rsync для APT
 Group: Development/Other
 Requires: %name = %version-%release, rsync >= 2.5.5-alt3
 Obsoletes: apt-0.5-rsync
+
+# {{{ descriptions 
+%define risk_usage_en This package is still under development.
+
+%description
+A port of Debian's APT tools for RPM based distributions,
+or at least for Conectiva. It provides the apt-get utility that
+provides a simpler, safer way to install and upgrade packages.
+APT features complete installation ordering, multiple source
+capability and several other unique features.
+
+%risk_usage_en
+
+%define risk_usage Данный пакет пока еще находится в стадии разработки.
+
+%description -l ru_RU.KOI8-R
+Перенесенные из Debian средства управления пакетами APT, включающие
+в себя поддержку RPM, выполненную компанией Conectiva (Бразилия).
+Этот пакет содержит утилиту apt-get для простой и надежной установки
+и обновления пакетов. APT умеет автоматически разрешать зависимости
+при установке, обеспечивает установку из нескольких источников и
+целый ряд других уникальных возможностей.
+
+%risk_usage
 
 %description -n libapt
 This package contains APT's package manipulation library,
@@ -201,6 +202,8 @@ This package contains method 'rsync' for APT.
 В этом пакете находится метод 'rsync' для APT
 
 %risk_usage
+
+# }}}
 
 %prep
 %setup -q
@@ -345,6 +348,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed May  4 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt9
+- apt-shell: ls -G redo (rider@)
+
 * Thu Apr 28 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt8
 - belarusian translation updated
 - apt-shell: ls -g/-G implemented (rider@)
@@ -806,6 +812,7 @@ fi
 
 # Local Variables:
 # mode: rpm-spec
+# mode: folding
 # coding: koi8-r
 # compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:

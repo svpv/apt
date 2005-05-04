@@ -1,6 +1,6 @@
 diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
---- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-04-29 12:41:14 +0400
-+++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-04-29 12:41:58 +0400
+--- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-05-04 13:22:13 +0400
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-05-04 13:23:12 +0400
 @@ -3500,8 +3500,11 @@
  
     bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
@@ -32,31 +32,37 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        int StrLen;
        unsigned int K;
        for (unsigned int Line = 0; Line != NumLines; Line++) {
-@@ -3631,13 +3639,20 @@
+@@ -3631,13 +3639,24 @@
  	       break;
  	    pkgCache::PkgIterator Pkg(Cache,Cache.List[Matches[K]]);
  	    Str = Pkg.Name();
 +	    PkgSection = Pkg.Section();
  	    StrLen = strlen(Str);
 -	    if (Len < ColumnLen-1)
-+	    if (Len < ColumnLen-1 && !ShowGroup)
- 	       c2out << Str << Blank+StrLen;
- 	    else
+-	       c2out << Str << Blank+StrLen;
+-	    else
 -	       c2out << Str << " ";
-+	     {
-+	       if (ShowGroup)
++    	    string status = "available";
++	    if (Pkg->CurrentVer != 0) status = "installed";
++	    if (Pkg->CurrentVer != 0 && Cache[Pkg].Upgradable() == true) status = "upgradable";
++	    if (Cache[Pkg].NewInstall()) status = "be-installed";
++	    if (Cache[Pkg].Delete()) status = "be-removed";
++	    if (Cache[Pkg].Upgrade() == true && Cache[Pkg].NewInstall() != true) status = "be-upgraded";
++           if (ShowGroup)
 +		c2out << PkgSection << "\t" << Str << endl;
-+	       else
-+	        c2out << Str << " ";
-+	     }
++	   else
++	    {
++	        c2out << Str;
++		if (strlen(MatchSection) > 0)
++		    cout << "\t" << status;
++		cout << endl;
++	    }
  	 }
 -	 c2out << endl;
-+	 if (!ShowGroup)
-+	  c2out << endl;
        }
     }
     
-@@ -4313,6 +4328,8 @@
+@@ -4313,6 +4332,8 @@
        {'i',"installed","APT::Cache::ShowInstalled",0},
        {'v',"version","APT::Cache::ShowVersion",0},
        {'s',"summary","APT::Cache::ShowSummary",0},
