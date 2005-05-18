@@ -1,7 +1,7 @@
-diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/init.cc apt-0.5.15cnc5/apt-pkg/init.cc
---- apt-0.5.15cnc5.orig/apt-pkg/init.cc	2004-01-16 15:21:38 +0300
-+++ apt-0.5.15cnc5/apt-pkg/init.cc	2004-01-16 15:21:01 +0300
-@@ -40,44 +40,44 @@ bool pkgInitConfig(Configuration &Cnf)
+diff -uNr apt-0.5.15cnc6-orig/apt-pkg/init.cc apt-0.5.15cnc6/apt-pkg/init.cc
+--- apt-0.5.15cnc6-orig/apt-pkg/init.cc	2004-03-16 01:10:41 +0300
++++ apt-0.5.15cnc6/apt-pkg/init.cc	2005-05-17 17:22:40 +0400
+@@ -40,44 +40,44 @@
     // General APT things
     if (strcmp(COMMON_OS,"linux") == 0 ||
         strcmp(COMMON_OS,"unknown") == 0)
@@ -68,73 +68,76 @@ diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/init.cc apt-0.5.15cnc5/apt-pkg/init.
  	      
     bool Res = true;
     
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cache.cc apt-0.5.15cnc5/cmdline/apt-cache.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-cache.cc	2003-12-23 23:31:15 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-cache.cc	2004-01-16 15:21:01 +0300
-@@ -1952,8 +1952,8 @@ int main(int argc,const char *argv[])
- 
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-cache.cc apt-0.5.15cnc6/cmdline/apt-cache.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-cache.cc	2004-03-19 17:21:45 +0300
++++ apt-0.5.15cnc6/cmdline/apt-cache.cc	2005-05-17 17:24:31 +0400
+@@ -1959,8 +1959,8 @@
     // Parse the command line and initialize the package library
     CommandLine CmdL(Args,_config);
--   if (pkgInitConfig(*_config) == false ||
+    if (pkgInitConfig(*_config) == false ||
 -       CmdL.Parse(argc,argv) == false ||
-+   if (CmdL.Parse(argc,argv) == false ||
-+       pkgInitConfig(*_config) == false ||
-        pkgInitSystem(*_config,_system) == false)
+-       pkgInitSystem(*_config,_system) == false)
++       pkgInitSystem(*_config,_system) == false ||
++       CmdL.Parse(argc,argv) == false)
     {
        _error->DumpErrors();
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc apt-0.5.15cnc5/cmdline/apt-cdrom.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc	2003-12-23 23:31:19 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-cdrom.cc	2004-01-16 15:21:01 +0300
-@@ -901,8 +901,8 @@ int main(int argc,const char *argv[])
- 
+       return 100;
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-cache.cc.orig apt-0.5.15cnc6/cmdline/apt-cache.cc.orig
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-cdrom.cc apt-0.5.15cnc6/cmdline/apt-cdrom.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-cdrom.cc	2005-05-17 17:22:23 +0400
++++ apt-0.5.15cnc6/cmdline/apt-cdrom.cc	2005-05-17 17:24:31 +0400
+@@ -902,8 +902,8 @@
     // Parse the command line and initialize the package library
     CommandLine CmdL(Args,_config);
--   if (pkgInitConfig(*_config) == false ||
+    if (pkgInitConfig(*_config) == false ||
 -       CmdL.Parse(argc,argv) == false ||
-+   if (CmdL.Parse(argc,argv) == false ||
-+       pkgInitConfig(*_config) == false ||
-        pkgInitSystem(*_config,_system) == false)
+-       pkgInitSystem(*_config,_system) == false)
++       pkgInitSystem(*_config,_system) == false ||
++       CmdL.Parse(argc,argv) == false)
     {
        _error->DumpErrors();
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-config.cc apt-0.5.15cnc5/cmdline/apt-config.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-config.cc	2003-12-23 23:31:21 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-config.cc	2004-01-16 15:21:01 +0300
-@@ -109,8 +109,8 @@ int main(int argc,const char *argv[])
- 
+       return 100;
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-config.cc apt-0.5.15cnc6/cmdline/apt-config.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-config.cc	2003-02-14 22:48:39 +0300
++++ apt-0.5.15cnc6/cmdline/apt-config.cc	2005-05-17 17:24:31 +0400
+@@ -110,8 +110,8 @@
     // Parse the command line and initialize the package library
     CommandLine CmdL(Args,_config);
--   if (pkgInitConfig(*_config) == false ||
+    if (pkgInitConfig(*_config) == false ||
 -       CmdL.Parse(argc,argv) == false ||
-+   if (CmdL.Parse(argc,argv) == false ||
-+       pkgInitConfig(*_config) == false ||
-        pkgInitSystem(*_config,_system) == false)
+-       pkgInitSystem(*_config,_system) == false)
++       pkgInitSystem(*_config,_system) == false ||
++       CmdL.Parse(argc,argv) == false)
     {
        _error->DumpErrors();
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-get.cc apt-0.5.15cnc5/cmdline/apt-get.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-get.cc	2003-12-23 23:30:50 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-get.cc	2004-01-16 15:21:01 +0300
-@@ -3067,8 +3067,8 @@ int main(int argc,const char *argv[])
- 
+       return 100;
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-get.cc apt-0.5.15cnc6/cmdline/apt-get.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-get.cc	2005-05-17 17:22:23 +0400
++++ apt-0.5.15cnc6/cmdline/apt-get.cc	2005-05-17 17:24:31 +0400
+@@ -3157,8 +3157,8 @@
     // Parse the command line and initialize the package library
     CommandLine CmdL(Args,_config);
--   if (pkgInitConfig(*_config) == false ||
+    if (pkgInitConfig(*_config) == false ||
 -       CmdL.Parse(argc,argv) == false ||
-+   if (CmdL.Parse(argc,argv) == false ||
-+       pkgInitConfig(*_config) == false ||
-        pkgInitSystem(*_config,_system) == false)
+-       pkgInitSystem(*_config,_system) == false)
++       pkgInitSystem(*_config,_system) == false ||
++       CmdL.Parse(argc,argv) == false)
     {
        if (_config->FindB("version") == true)
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-shell.cc apt-0.5.15cnc5/cmdline/apt-shell.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-shell.cc	2003-12-23 23:31:46 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-shell.cc	2004-01-16 15:21:01 +0300
-@@ -4303,8 +4303,8 @@ int main(int argc,const char *argv[])
- 
+ 	 ShowHelp(CmdL);
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-get.cc.orig apt-0.5.15cnc6/cmdline/apt-get.cc.orig
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
+--- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-05-17 17:22:23 +0400
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-05-17 17:24:31 +0400
+@@ -4376,8 +4376,8 @@
     // Parse the command line and initialize the package library
     CommandLine CmdL(CommandArgs(""),_config);
--   if (pkgInitConfig(*_config) == false ||
+    if (pkgInitConfig(*_config) == false ||
 -       CmdL.Parse(argc,argv) == false ||
-+   if (CmdL.Parse(argc,argv) == false ||
-+       pkgInitConfig(*_config) == false ||
-        pkgInitSystem(*_config,_system) == false)
+-       pkgInitSystem(*_config,_system) == false)
++       pkgInitSystem(*_config,_system) == false ||
++       CmdL.Parse(argc,argv) == false)
     {
        if (_config->FindB("version") == true)
+ 	 ShowHelp(CmdL);
+diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc.orig apt-0.5.15cnc6/cmdline/apt-shell.cc.orig

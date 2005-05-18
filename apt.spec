@@ -1,8 +1,8 @@
-# $Id: apt,v 1.9 2005/05/04 09:29:39 me Exp $
+# $Id: apt,v 1.12 2005/05/17 13:28:24 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt9
+Release: alt11
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -29,7 +29,7 @@ Patch15: apt-0.5.15cnc5-alt-debsystem.patch
 Patch16: apt-0.5.15cnc6-alt-defaults.patch
 Patch17: apt-0.5.5cnc5-alt-rsync.patch
 Patch18: apt-0.5.15cnc5-alt-getsrc.patch
-Patch19: apt-0.5.15cnc5-alt-parseargs.patch
+Patch19: apt-0.5.15cnc6-alt-parseargs.patch
 Patch20: apt-0.5.15cnc5-alt-rpm_cmd.patch
 Patch21: apt-0.5.15cnc6-alt-rpm-fancypercent.patch
 Patch22: apt-0.5.15cnc5-alt-methods_gpg_homedir.patch
@@ -45,8 +45,9 @@ Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
 Patch34: apt-0.5.15cnc6-alt-umount.patch
-Patch35: apt-0.5.15cnc6-alt-lsgroup.patch
-Patch36: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch35: apt-0.5.15cnc6-alt-apt-get-TryToInstall.patch
+Patch36: apt-0.5.15cnc6-alt-lsgroup.patch
+Patch37: apt-0.5.15cnc6-alt-apt-pipe.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -235,6 +236,9 @@ This package contains method 'rsync' for APT.
 %patch34 -p1
 %patch35 -p1
 %patch36 -p1
+%patch37 -p1
+
+find -type f -name \*.orig -delete -print
 
 # Use system-wide lua5
 pushd lua
@@ -348,6 +352,14 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed May 18 2005 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt11
+- apt-get: corrected virtual package remove algorithm (#6276).
+- Updated default cdrom mount point (#6152).
+
+* Tue May 17 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt10
+- Changed command line parsing order (zerg@, fixes #6815)
+- apt-shell: ls -G improvements (rider@)
+
 * Wed May  4 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt9
 - apt-shell: ls -G redo (rider@)
 

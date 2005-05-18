@@ -1,7 +1,7 @@
 diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
---- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-05-04 13:22:13 +0400
-+++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-05-04 13:23:12 +0400
-@@ -3500,8 +3500,11 @@
+--- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-05-15 20:35:30 +0400
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-05-15 20:37:58 +0400
+@@ -3500,11 +3500,14 @@
  
     bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
     bool ShowSummary = _config->FindB("APT::Cache::ShowSummary", false);
@@ -12,8 +12,12 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
 +   const char *PkgSection;
     int Matches[Cache->Head().PackageCount];
     int NumMatches = 0;
-    int Len, NameMaxLen = 0, VerMaxLen = 0;
-@@ -3517,6 +3520,10 @@
+-   int Len, NameMaxLen = 0, VerMaxLen = 0;
++   int Len = 0, NameMaxLen = 0, VerMaxLen = 0;
+    bool Matched;
+    for (unsigned int J = 0; J < Cache->Head().PackageCount; J++)
+    {
+@@ -3517,7 +3520,12 @@
        if (ShowUpgradable &&
  	  (Pkg->CurrentVer == 0 || Cache[Pkg].Upgradable() == false))
  	 continue;
@@ -22,9 +26,11 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
 +	continue;
 +      
        PkgName = Pkg.Name();
++
        if (MatchAll == true)
  	 Matched = true;
-@@ -3622,6 +3629,7 @@
+       else for (int i=0; i != NumPatterns; i++) {
+@@ -3622,6 +3630,7 @@
        Blank[ColumnLen] = 0;
  
        const char *Str;
@@ -32,7 +38,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        int StrLen;
        unsigned int K;
        for (unsigned int Line = 0; Line != NumLines; Line++) {
-@@ -3631,13 +3639,24 @@
+@@ -3631,13 +3640,33 @@
  	       break;
  	    pkgCache::PkgIterator Pkg(Cache,Cache.List[Matches[K]]);
  	    Str = Pkg.Name();
@@ -44,6 +50,15 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
 -	       c2out << Str << " ";
 +    	    string status = "available";
 +	    if (Pkg->CurrentVer != 0) status = "installed";
++            if (Pkg->CurrentVer != 0)
++              for (pkgCache::DepIterator D = Pkg.RevDependsList(); D.end() == false; D++)
++               {
++	          pkgCache::PkgIterator P = D.ParentPkg();
++                  if ((P->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential &&
++	          (P->Flags & pkgCache::Flag::Important) != pkgCache::Flag::Important)
++	             continue;
++	          status = "locked";
++               }
 +	    if (Pkg->CurrentVer != 0 && Cache[Pkg].Upgradable() == true) status = "upgradable";
 +	    if (Cache[Pkg].NewInstall()) status = "be-installed";
 +	    if (Cache[Pkg].Delete()) status = "be-removed";
@@ -62,7 +77,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        }
     }
     
-@@ -4313,6 +4332,8 @@
+@@ -4313,6 +4342,8 @@
        {'i',"installed","APT::Cache::ShowInstalled",0},
        {'v',"version","APT::Cache::ShowVersion",0},
        {'s',"summary","APT::Cache::ShowSummary",0},

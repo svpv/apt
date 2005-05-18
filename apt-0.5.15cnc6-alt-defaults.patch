@@ -1,6 +1,6 @@
-diff -upr apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc
---- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc	2004-03-09 04:44:08 +1200
-+++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc	2004-04-13 19:47:27 +1300
+diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc	2004-03-08 16:44:08 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmpackagedata.cc	2005-05-18 16:07:03 +0000
 @@ -21,7 +21,7 @@ RPMPackageData::RPMPackageData()
  #endif
  {
@@ -10,9 +10,37 @@ diff -upr apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc apt-0.5.15cnc6/apt-p
     FileFd F(FileName, FileFd::ReadOnly);
     if (_error->PendingError()) 
     {
-diff -upr apt-0.5.15cnc6.orig/buildlib/archtable apt-0.5.15cnc6/buildlib/archtable
---- apt-0.5.15cnc6.orig/buildlib/archtable	2003-04-15 06:15:31 +1300
-+++ apt-0.5.15cnc6/buildlib/archtable	2004-04-13 19:50:20 +1300
+diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc	2005-05-18 16:01:23 +0000
++++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc	2005-05-18 16:07:32 +0000
+@@ -129,13 +129,13 @@ pkgPackageManager *rpmSystem::CreatePM(p
+ bool rpmSystem::Initialize(Configuration &Cnf)
+ {
+    Cnf.CndSet("Dir::Bin::rpm","/bin/rpm");
+-   Cnf.CndSet("Dir::Etc::rpmpriorities", "rpmpriorities");
++   Cnf.CndSet("Dir::Etc::pkgpriorities", "pkgpriorities");
+    Cnf.CndSet("Dir::Etc::translatelist", "translate.list");
+    Cnf.CndSet("Dir::Etc::translateparts", "translate.list.d");
+    Cnf.CndSet("Dir::State::prefetch", "prefetch");
+    Cnf.CndSet("Dir::Locale","/usr/share/locale");
+    Cnf.CndSet("Acquire::DistroID","ALT Linux"); // hee hee
+-   Cnf.CndSet("Acquire::CDROM::Mount", "/mnt/cdrom");
++   Cnf.CndSet("Acquire::CDROM::Mount", "/media/cdrom");
+    Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
+ 
+    // Compatibility with obsoleted options
+@@ -530,7 +530,7 @@ unsigned long rpmSystem::OptionsHash() c
+    HashOption(Hash, "RPM::Architecture");
+    HashOptionTree(Hash, "RPM::Allow-Duplicated");
+    HashOptionTree(Hash, "RPM::Ignore");
+-   HashOptionFile(Hash, "Dir::Etc::rpmpriorities");
++   HashOptionFile(Hash, "Dir::Etc::pkgpriorities");
+    return Hash;
+ }
+ 									/*}}}*/
+diff -upk.orig apt-0.5.15cnc6.orig/buildlib/archtable apt-0.5.15cnc6/buildlib/archtable
+--- apt-0.5.15cnc6.orig/buildlib/archtable	2003-04-14 17:15:31 +0000
++++ apt-0.5.15cnc6/buildlib/archtable	2005-05-18 16:07:03 +0000
 @@ -5,8 +5,10 @@
  
  # The left side is a regex for awk
