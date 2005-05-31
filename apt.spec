@@ -1,8 +1,8 @@
-# $Id: apt,v 1.12 2005/05/17 13:28:24 me Exp $
+# $Id: apt,v 1.14 2005/05/31 09:04:36 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt11
+Release: alt12
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -352,6 +352,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue May 31 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt12
+- apt-pipe: inactivity timeout removed
+- apt-pipe: do not copy packages from cdrom during install
+
 * Wed May 18 2005 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt11
 - apt-get: corrected virtual package remove algorithm (#6276).
 - Updated default cdrom mount point (#6152).
@@ -828,4 +832,5 @@ fi
 # coding: koi8-r
 # compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:
+
 
