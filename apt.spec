@@ -1,8 +1,8 @@
-# $Id: apt,v 1.14 2005/05/31 09:04:36 me Exp $
+# $Id: apt,v 1.16 2005/06/16 11:19:22 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt12
+Release: alt13
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -47,7 +47,8 @@ Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
 Patch34: apt-0.5.15cnc6-alt-umount.patch
 Patch35: apt-0.5.15cnc6-alt-apt-get-TryToInstall.patch
 Patch36: apt-0.5.15cnc6-alt-lsgroup.patch
-Patch37: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch37: apt-0.5.15cnc6-alt-apt-shell-dl.patch
+Patch38: apt-0.5.15cnc6-alt-apt-pipe.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -237,6 +238,7 @@ This package contains method 'rsync' for APT.
 %patch35 -p1
 %patch36 -p1
 %patch37 -p1
+%patch38 -p1
 
 find -type f -name \*.orig -delete -print
 
@@ -352,6 +354,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Jun 16 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt13
+- apt-shell: possible fix of #4707 (rider@)
+
 * Tue May 31 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt12
 - apt-pipe: inactivity timeout removed
 - apt-pipe: do not copy packages from cdrom during install
