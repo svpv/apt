@@ -1,0 +1,11 @@
+diff -urN apt-0.5.15cnc6.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15cnc6/apt-pkg/contrib/cmndline.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/contrib/cmndline.cc	2003-03-06 22:39:48 +0300
++++ apt-0.5.15cnc6/apt-pkg/contrib/cmndline.cc	2005-06-22 18:25:34 +0400
+@@ -333,6 +333,7 @@
+ bool CommandLine::DispatchArg(Dispatch *Map,bool NoMatch)
+ {
+    int I;
++   if (FileSize() == 0) return false;
+    for (I = 0; Map[I].Match != 0; I++)
+    {
+       if (strcmp(FileList[0],Map[I].Match) == 0)
