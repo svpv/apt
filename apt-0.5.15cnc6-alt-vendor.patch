@@ -1,0 +1,160 @@
+diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc apt-0.5.15cnc6/apt-pkg/acquire-item.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc	2005-07-08 15:02:30 +0400
++++ apt-0.5.15cnc6/apt-pkg/acquire-item.cc	2005-07-08 16:14:04 +0400
+@@ -476,14 +476,29 @@ void pkgAcqIndexRel::Done(string Message
+ 	    return;
+ 	 }
+ 
+-	 // Match fingerprint of Release file
+-	 if (Repository->Vendor->FingerPrint != FingerPrint)
++	 bool found = false;
++	 for (vector<string>::const_iterator I = Repository->Vendor->FingerPrint.begin();
++	      I != Repository->Vendor->FingerPrint.end(); I++)
++	 {
++	    // Match fingerprint of Release file
++	    if ((*I) == FingerPrint)
++	    {
++	       found = true;
++	       break;
++	    }
++	 }
++
++	 if (!found)
+ 	 {
+ 	    Status = StatError;
+-	    ErrorText = _("Signature fingerprint of Release file does not match (expected ")
+-	       +Repository->Vendor->FingerPrint+_(", got ")+FingerPrint+")";
++	    ErrorText = _("Signature fingerprint of Release file does not match (expected ");
++	    for (vector<string>::const_iterator I = Repository->Vendor->FingerPrint.begin();
++		 I != Repository->Vendor->FingerPrint.end(); I++)
++	      ErrorText += "\n"+(*I);
++	    ErrorText += _(", got ")+FingerPrint+")";
+ 	    return;
+ 	 }
++
+       }
+ 
+       // Done, move it into position
+diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sourcelist.cc
+--- apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc	2003-12-10 14:56:28 +0300
++++ apt-0.5.15cnc6/apt-pkg/sourcelist.cc	2005-07-08 17:20:32 +0400
+@@ -145,7 +145,7 @@ pkgSourceList::~pkgSourceList()
+ {
+    for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
+       delete *I;
+-   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
++   for (vector<Vendor *>::iterator I = VendorList.begin(); 
+ 	I != VendorList.end(); I++)
+       delete *I;
+ }
+@@ -169,38 +169,54 @@ bool pkgSourceList::ReadVendors()
+       if (ReadConfigFile(Cnf,CnfFile,true) == false)
+ 	 return false;
+ 
+-   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
++   for (vector<Vendor *>::iterator I = VendorList.begin(); 
+ 	I != VendorList.end(); I++)
+       delete *I;
+    VendorList.erase(VendorList.begin(),VendorList.end());
+-   
++
+    // Process 'simple-key' type sections
+    const Configuration::Item *Top = Cnf.Tree("simple-key");
+    for (Top = (Top == 0?0:Top->Child); Top != 0; Top = Top->Next)
+    {
+       Configuration Block(Top);
+-      Vendor *Vendor;
++      Vendor *Vendor = 0;
++      string Group = Block.Find("Group");
++      bool New = true;
+       
+-      Vendor = new pkgSourceList::Vendor;
+-      
+-      Vendor->VendorID = Top->Tag;
+-      Vendor->FingerPrint = Block.Find("Fingerprint");
+-      Vendor->Description = Block.Find("Name");
++      for (vector<pkgSourceList::Vendor *>::iterator I = VendorList.begin(); 
++	   I != VendorList.end(); I++)
++      {
++        if ((*I)->VendorID == Group)
++	{
++	  Vendor = *I;
++	  New = false;
++	  break;
++	}
++      }
++
++      if (!Vendor)
++      {
++        Vendor = new pkgSourceList::Vendor;
++
++        Vendor->Description = Block.Find("Name");
++	Vendor->VendorID = Top->Tag;
++      }
++      string FingerPrint = Block.Find("Fingerprint");
+ 
+       // CNC:2002-08-15
+-      char *buffer = new char[Vendor->FingerPrint.length()+1];
++      char *buffer = new char[FingerPrint.length()+1];
+       char *p = buffer;;
+-      for (string::const_iterator I = Vendor->FingerPrint.begin();
+-	   I != Vendor->FingerPrint.end(); I++)
++      for (string::const_iterator I = FingerPrint.begin();
++	   I != FingerPrint.end(); I++)
+       {
+ 	 if (*I != ' ' && *I != '\t')
+ 	    *p++ = *I;
+       }
+       *p = 0;
+-      Vendor->FingerPrint = buffer;
++      Vendor->FingerPrint.push_back(string(buffer));
+       delete [] buffer;
+       
+-      if (Vendor->FingerPrint.empty() == true || 
++      if (Vendor->FingerPrint.size() == 0 || 
+ 	  Vendor->Description.empty() == true)
+       {
+          _error->Error(_("Vendor block %s is invalid"), Vendor->VendorID.c_str());
+@@ -208,7 +225,8 @@ bool pkgSourceList::ReadVendors()
+ 	 continue;
+       }
+       
+-      VendorList.push_back(Vendor);
++      if (New)
++         VendorList.push_back(Vendor);
+    }
+ 
+    /* XXX Process 'group-key' type sections
+@@ -350,7 +368,7 @@ bool pkgSourceList::ReadAppend(string Fi
+ 	     return _error->Error(_("Malformed line %u in source list %s (vendor id)"),CurLine,File.c_str());
+ 	 VendorID = string(VendorID,1,VendorID.size()-2);
+ 	 
+-	 for (vector<Vendor const *>::const_iterator iter = VendorList.begin();
++	 for (vector<Vendor *>::iterator iter = VendorList.begin();
+ 	      iter != VendorList.end(); iter++) 
+ 	 {
+ 	    if ((*iter)->VendorID == VendorID)
+diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.h apt-0.5.15cnc6/apt-pkg/sourcelist.h
+--- apt-0.5.15cnc6.orig/apt-pkg/sourcelist.h	2003-03-03 23:15:04 +0300
++++ apt-0.5.15cnc6/apt-pkg/sourcelist.h	2005-07-08 17:07:17 +0400
+@@ -48,8 +48,8 @@ class pkgSourceList
+    struct Vendor
+    {
+       string VendorID;
+-      string FingerPrint;
++      vector<string> FingerPrint;
+       string Description;
+ 
+       /* Lets revisit these..
+       bool MatchFingerPrint(string FingerPrint);
+@@ -87,8 +88,8 @@ class pkgSourceList
+    protected:
+ 
+    vector<pkgIndexFile *> SrcList;
+-   vector<Vendor const *> VendorList;
+-   
++   vector<Vendor *> VendorList;
++
+    public:
+ 
+    bool ReadMainList();

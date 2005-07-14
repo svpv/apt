@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt14
+Release: alt15
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -50,6 +50,7 @@ Patch36: apt-0.5.15cnc6-alt-lsgroup.patch
 Patch37: apt-0.5.15cnc6-alt-apt-shell-dl.patch
 Patch38: apt-0.5.15cnc6-alt-dash-cmd.patch
 Patch39: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch40: apt-0.5.15cnc6-alt-vendor.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -241,6 +242,7 @@ This package contains method 'rsync' for APT.
 %patch37 -p1
 %patch38 -p1
 %patch39 -p1
+%patch40 -p1
 
 find -type f -name \*.orig -delete -print
 
@@ -356,6 +358,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Jul 08 2005 Kachalov Anton <mouse@altlinux.ru> 0.5.15cnc6-alt15
+- apt-pkg/sourcelist.cc:
+  Added support for multiple fingerprints for the same vendor name
+
 * Mon Jun 27 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt14
 - apt-shell: #5401 fixed (rider@)
 - apt-pipe: race during shutting down fixed
