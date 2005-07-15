@@ -1,8 +1,8 @@
-# $Id: apt,v 1.21 2005/06/27 18:38:02 me Exp $
+# $Id: apt,v 1.22 2005/07/15 17:25:46 me Exp $
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt15
+Release: alt16
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -49,8 +49,9 @@ Patch35: apt-0.5.15cnc6-alt-apt-get-TryToInstall.patch
 Patch36: apt-0.5.15cnc6-alt-lsgroup.patch
 Patch37: apt-0.5.15cnc6-alt-apt-shell-dl.patch
 Patch38: apt-0.5.15cnc6-alt-dash-cmd.patch
-Patch39: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch39: apt-0.5.15cnc6-alt-quiet-update.patch
 Patch40: apt-0.5.15cnc6-alt-vendor.patch
+Patch41: apt-0.5.15cnc6-alt-apt-pipe.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -243,6 +244,7 @@ This package contains method 'rsync' for APT.
 %patch38 -p1
 %patch39 -p1
 %patch40 -p1
+%patch41 -p1
 
 find -type f -name \*.orig -delete -print
 
@@ -358,6 +360,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Jul 15 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt16
+- apt-shell: -q option for update added
+
 * Fri Jul 08 2005 Kachalov Anton <mouse@altlinux.ru> 0.5.15cnc6-alt15
 - apt-pkg/sourcelist.cc:
   Added support for multiple fingerprints for the same vendor name
@@ -849,5 +854,6 @@ fi
 # coding: koi8-r
 # compile-command: "rpmbuild -ba --target=i586 apt.spec"
 # End:
+
 
 

@@ -1,0 +1,23 @@
+--- apt-0.5.15cnc6/cmdline/apt-shell.cc..quiet	2005-07-15 19:37:52 +0300
++++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-07-15 20:10:11 +0300
+@@ -4356,6 +4356,10 @@
+       {'o',"option",0,CommandLine::ArbItem},
+       {0,0,0,0}};
+ 
++   static CommandLine::Args UpdateArgs[] = {
++      {'q',"quiet","quiet",CommandLine::IntLevel},
++      {0,0,0,0}};
++
+    static CommandLine::Args NoArgs[] = {
+       {'h',"help","help",0},
+       {'v',"version","version",0},
+@@ -4389,6 +4393,9 @@
+       case 655: // ls
+ 	 return ListArgs;
+ 
++   case 451231: // update
++	   return UpdateArgs;
++	   
+       default:
+ 	 return NoArgs;
+    }
