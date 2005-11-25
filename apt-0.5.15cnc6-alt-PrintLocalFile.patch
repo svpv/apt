@@ -1,0 +1,44 @@
+--- apt-0.5.15cnc6/cmdline/apt-get.cc.orig	2005-11-25 16:23:26 +0000
++++ apt-0.5.15cnc6/cmdline/apt-get.cc	2005-11-25 19:12:14 +0000
+@@ -1025,6 +1025,13 @@ bool InstallPackages(CacheFile &Cache,bo
+    // Just print out the uris an exit if the --print-uris flag was used
+    if (_config->FindB("APT::Get::Print-URIs") == true)
+    {
++      if (_config->FindB("APT::Get::PrintLocalFile"))
++      {
++         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
++            if (((*I)->Local))                                          
++               cout << (*I)->DestFile << endl;
++         return true;
++      }
+       pkgAcquire::UriIterator I = Fetcher.UriBegin();
+       for (; I != Fetcher.UriEnd(); I++)
+ 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 
+@@ -1719,6 +1726,13 @@ bool DoUpdate(CommandLine &CmdL)
+    // Just print out the uris an exit if the --print-uris flag was used
+    if (_config->FindB("APT::Get::Print-URIs") == true)
+    {
++      if (_config->FindB("APT::Get::PrintLocalFile"))
++      {
++         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
++            if (((*I)->Local))                                          
++               cout << (*I)->DestFile << endl;
++         return true;
++      }
+       pkgAcquire::UriIterator I = Fetcher.UriBegin();
+       for (; I != Fetcher.UriEnd(); I++)
+ 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 
+@@ -2533,6 +2547,13 @@ bool DoSource(CommandLine &CmdL)
+    // Just print out the uris an exit if the --print-uris flag was used
+    if (_config->FindB("APT::Get::Print-URIs") == true)
+    {
++      if (_config->FindB("APT::Get::PrintLocalFile"))
++      {
++         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
++            if (((*I)->Local))                                          
++               cout << (*I)->DestFile << endl;
++         return true;
++      }
+       pkgAcquire::UriIterator I = Fetcher.UriBegin();
+       for (; I != Fetcher.UriEnd(); I++)
+ 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 

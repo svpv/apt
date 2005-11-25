@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt16
+Release: alt17
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -52,6 +52,8 @@ Patch38: apt-0.5.15cnc6-alt-dash-cmd.patch
 Patch39: apt-0.5.15cnc6-alt-quiet-update.patch
 Patch40: apt-0.5.15cnc6-alt-vendor.patch
 Patch41: apt-0.5.15cnc6-alt-apt-pipe.patch
+Patch42: apt-0.5.15cnc6-alt-PrintLocalFile.patch
+Patch43: apt-0.5.15cnc6-apt-utils-locale.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -102,7 +104,7 @@ Obsoletes: libapt-0.5-devel-static
 %package utils
 # Analoguous to rpm-build subpackage.
 Summary: Utilities to create APT repositaries (the indices)
-Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозитариев (индексов)
+Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
 Requires: gnupg, sed
@@ -160,7 +162,7 @@ package manipulation library, modified for RPM.
 %description utils
 This package contains the utility programs that can prepare a repositary of
 RPMS binary and source packages for future access by APT (by generating
-the indices).
+the indices): genbasedir, genpkglist, gensrclist.
 
 It relates to 'apt' package analoguously to how 'rpm' relates to 'rpm-build' package.
 
@@ -195,9 +197,9 @@ This package contains method 'rsync' for APT.
 %risk_usage
 
 %description utils -l ru_RU.KOI8-R
-В этом пакете находятся программы-утилиты, которые могут репозитарий
+В этом пакете находятся программы-утилиты, которые могут репозиторий
 бинарных и исходных пакетов RPM приготовить для доступа с помощью APT
-(сгенерировать индексы).
+(сгенерировать индексы): genbasedir, genpkglist, gensrclist.
 
 Он относится к пакету 'apt' аналогично тому, как 'rpm'к 'rpm-build'.
 
@@ -245,6 +247,8 @@ This package contains method 'rsync' for APT.
 %patch39 -p1
 %patch40 -p1
 %patch41 -p1
+%patch42 -p1
+%patch43 -p1
 
 find -type f -name \*.orig -delete -print
 
@@ -266,7 +270,7 @@ popd
 # Fix url.
 %__subst -p 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
 
-autoreconf -fisv -I buildlib
+autoreconf -fisv
 
 # --disable-dependency-tracking Speeds up one-time builds
 %configure --includedir=%_includedir/apt-pkg %{subst_enable static}
@@ -360,6 +364,11 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Nov 25 2005 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt17
+- apt-utils: Set locale to "C" (#2587).
+- apt-utils: Added list of utilities to package description (#3564).
+- apt-get: Implemented APT::Get::PrintLocalFile option.
+
 * Fri Jul 15 2005 Sergey Bolshakov <sbolshakov@altlinux.ru> 0.5.15cnc6-alt16
 - apt-shell: -q option for update added
 
@@ -809,7 +818,7 @@ fi
 * Wed Jul 31 2002 Anton V. Denisov <avd@altlinux.ru> 0.5.4cnc4-alt0.1
 - Fixed:
     + apt.conf syntax a little
-    + %doc syntax a little
+    + %%doc syntax a little
 - Updated:
     + APT-0.5.4cnc4
     + BuildRequires
@@ -828,7 +837,7 @@ fi
     + apt-0.5 requires
     + select-genlist.patch for new version
     + Spec file
-    + %doc section
+    + %%doc section
 - Added:
     + Patch for some debug in md5 operations.
     + apt-0.5.4cnc3-alt-configure-version.patch
