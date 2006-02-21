@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15cnc6
-Release: alt17.1
+Release: alt18
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -364,6 +364,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Feb 21 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt18
+- apt-get: Fixed APT::Get::PrintLocalFile for local files (#8902).
+
 * Fri Dec 30 2005 ALT QA Team Robot <qa-robot@altlinux.org> 0.5.15cnc6-alt17.1
 - Rebuilt with libreadline.so.5.
 
