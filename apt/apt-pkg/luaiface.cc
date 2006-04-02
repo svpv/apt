@@ -76,7 +76,7 @@ static int AptLua_pkgcomp(lua_State *L);
 Lua::Lua()
       : DepCache(0), Cache(0), CacheControl(0), Fix(0), DontFix(0)
 {
-   _config->CndSet("Dir::Bin::scripts", "/usr/lib/apt/scripts");
+   _config->CndSet("Dir::Bin::scripts", "/usr/share/apt/scripts");
 
    const luaL_reg lualibs[] = {
       {"base", luaopen_base},
@@ -693,9 +693,10 @@ inline int AptAux_PushBool(lua_State *L, bool Value)
    return 0;
 }
 
-#define MARK_KEEP    0
-#define MARK_INSTALL 1
-#define MARK_REMOVE  2
+#define MARK_KEEP      0
+#define MARK_INSTALL   1
+#define MARK_REINSTALL 2
+#define MARK_REMOVE    3
 
 static int AptAux_mark(lua_State *L, int Kind)
 {
@@ -718,6 +719,9 @@ static int AptAux_mark(lua_State *L, int Kind)
 	 case MARK_INSTALL:
 	    DepCache->MarkInstall(PkgI);
 	    break;
+	 case MARK_REINSTALL:
+	    DepCache->SetReInstall(PkgI, true);
+	    break;
 	 case MARK_REMOVE:
 	    Fix->Remove(PkgI);
 	    DepCache->MarkDelete(PkgI);
@@ -732,6 +736,32 @@ static int AptAux_mark(lua_State *L, int Kind)
 	 }
       }
       delete MyFix;
+   }
+   return 0;
+}
+
+static int AptAux_marksimple(lua_State *L, int Kind)
+{
+   pkgCache::Package *Pkg = AptAux_ToPackage(L, 1);
+   if (Pkg != NULL) {
+      pkgDepCache *DepCache = _lua->GetDepCache(L);
+      if (DepCache == NULL)
+	 return 0;
+      pkgCache::PkgIterator PkgI(DepCache->GetCache(), Pkg);
+      pkgDepCache::State state(DepCache);
+      switch (Kind) {
+	 case MARK_KEEP:
+	    DepCache->MarkKeep(PkgI);
+	    break;
+	 case MARK_INSTALL:
+	    DepCache->MarkInstall(PkgI, false);
+	    break;
+	 case MARK_REMOVE:
+	    DepCache->MarkDelete(PkgI);
+	    break;
+      }
+      if (DepCache->BrokenCount() > 0)
+	 state.Restore();
    }
    return 0;
 }
@@ -768,7 +798,11 @@ static int AptLua_confset(lua_State *L)
 {
    const char *key = luaL_checkstring(L, 1);
    const char *val = luaL_checkstring(L, 2);
-   const int cnd = luaL_optint(L, 3, 0);
+   int cnd = 0;
+   if (lua_gettop(L) >= 3 && lua_isboolean(L, 3))
+      cnd = lua_toboolean(L, 3);
+   else
+      cnd = luaL_optint(L, 3, 0);
    if (key != NULL && val != NULL) {
       if (cnd != 0)
 	 _config->CndSet(key, val);
@@ -999,6 +1033,9 @@ static int AptLua_verprovlist(lua_State *L)
    int i = 1;
    for (; PrvI.end() == false; PrvI++) {
       lua_newtable(L);
+      lua_pushstring(L, "pkg");
+      pushudata(pkgCache::Package*, PrvI.ParentPkg());
+      lua_settable(L, -3);
       lua_pushstring(L, "name");
       lua_pushstring(L, PrvI.Name());
       lua_settable(L, -3);
@@ -1113,9 +1150,30 @@ static int AptLua_markinstall(lua_State *L)
    return AptAux_mark(L, MARK_INSTALL);
 }
 
+static int AptLua_markreinstall(lua_State *L)
+{
+   _config->Set("Apt::Get::ReInstall", true);
+   return AptAux_mark(L, MARK_REINSTALL);
+}
+
 static int AptLua_markremove(lua_State *L)
 {
    return AptAux_mark(L, MARK_REMOVE);
+}
+
+static int AptLua_marksimplekeep(lua_State *L)
+{
+   return AptAux_marksimple(L, MARK_KEEP);
+}
+
+static int AptLua_marksimpleinstall(lua_State *L)
+{
+   return AptAux_marksimple(L, MARK_INSTALL);
+}
+
+static int AptLua_marksimpleremove(lua_State *L)
+{
+   return AptAux_marksimple(L, MARK_REMOVE);
 }
 
 static int AptLua_markdistupgrade(lua_State *L)
@@ -1152,7 +1210,9 @@ static int AptLua_statkeep(lua_State *L)
    SPtr<pkgCache::PkgIterator> PkgI = AptAux_ToPkgIterator(L, 1);
    if (PkgI == NULL)
       return 0;
-   return AptAux_PushBool(L, (*DepCache)[*PkgI].Keep());
+   return AptAux_PushBool(L,
+	        (*DepCache)[*PkgI].Keep() &&
+		!((*DepCache)[*PkgI].iFlags & pkgDepCache::ReInstall));
 }
 
 static int AptLua_statinstall(lua_State *L)
@@ -1186,6 +1246,19 @@ static int AptLua_statnewinstall(lua_State *L)
    if (PkgI == NULL)
       return 0;
    return AptAux_PushBool(L, (*DepCache)[*PkgI].NewInstall());
+}
+
+static int AptLua_statreinstall(lua_State *L)
+{
+   pkgDepCache *DepCache = _lua->GetDepCache(L);
+   if (DepCache == NULL)
+      return 0;
+   SPtr<pkgCache::PkgIterator> PkgI = AptAux_ToPkgIterator(L, 1);
+   if (PkgI == NULL)
+      return 0;
+   return AptAux_PushBool(L,
+	        (*DepCache)[*PkgI].Keep() &&
+		((*DepCache)[*PkgI].iFlags & pkgDepCache::ReInstall));
 }
 
 static int AptLua_statupgrade(lua_State *L)
@@ -1270,6 +1343,12 @@ static int AptLua_statstr(lua_State *L)
       } else {
 	 lua_pushstring(L, "downgrade");
       }
+   } else if (S.Keep() && (S.iFlags & pkgDepCache::ReInstall)) {
+      if (S.NowBroken()) {
+	 lua_pushstring(L, "reinstall(broken)");
+      } else {
+	 lua_pushstring(L, "reinstall");
+      }
    } else if (S.Keep()) {
       if (S.NowBroken()) {
 	 lua_pushstring(L, "keep(broken)");
@@ -1346,13 +1425,18 @@ static const luaL_reg aptlib[] = {
    {"verstrcmp",	AptLua_verstrcmp},
    {"markkeep",		AptLua_markkeep},
    {"markinstall",	AptLua_markinstall},
+   {"markreinstall",	AptLua_markreinstall},
    {"markremove",	AptLua_markremove},
+   {"marksimplekeep",	AptLua_marksimpleinstall},
+   {"marksimpleinstall",AptLua_marksimpleinstall},
+   {"marksimpleremove",	AptLua_marksimpleinstall},
    {"markdistupgrade",  AptLua_markdistupgrade},
    {"markupgrade",	AptLua_markupgrade},
    {"statkeep",		AptLua_statkeep},
    {"statinstall",	AptLua_statinstall},
    {"statremove",	AptLua_statremove},
    {"statnewinstall",	AptLua_statnewinstall},
+   {"statreinstall",	AptLua_statreinstall},
    {"statupgrade",	AptLua_statupgrade},
    {"statupgradable",	AptLua_statupgradable},
    {"statdowngrade",	AptLua_statdowngrade},

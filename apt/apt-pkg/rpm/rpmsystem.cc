@@ -33,10 +33,17 @@
     
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <rpm/rpmlib.h>
 #include <assert.h>
 									/*}}}*/
+// for distrover
+#if RPM_VERSION >= 0x040101
+#include <rpmdb.h>
+#endif
+
 #if RPM_VERSION >= 0x040201
 extern int _rpmds_nopromote;
 #endif
@@ -229,6 +236,7 @@ signed rpmSystem::Score(Configuration const &Cnf)
 {
    signed Score = 0;
 
+   rpmReadConfigFiles(NULL, NULL);
    if (FileExists(RPMDBHandler::DataPath(false)))
       Score += 10;
    if (FileExists(Cnf.FindFile("Dir::Bin::rpm","/bin/rpm")) == true)
@@ -236,6 +244,38 @@ signed rpmSystem::Score(Configuration const &Cnf)
 
    return Score;
 }
+
+string rpmSystem::DistroVer(Configuration const &Cnf)
+{
+   string DistroVerPkg = _config->Find("Apt::DistroVerPkg");
+   string DistroVersion = "";
+
+
+   if (! DistroVerPkg.empty()) {
+      rpmts ts;
+      char *version;
+      int type, count, rc;
+      rpmdbMatchIterator iter;
+
+      ts = rpmtsCreate();
+      rpmtsSetVSFlags(ts, (rpmVSFlags_e)-1);
+      rpmtsSetRootDir(ts, NULL);
+      rc = rpmtsOpenDB(ts, O_RDWR);
+
+      Header hdr;
+      iter = rpmtsInitIterator(ts, (rpmTag)RPMDBI_LABEL, DistroVerPkg.c_str(), 0);
+      while ((hdr = rpmdbNextIterator(iter)) != NULL) {
+         headerGetEntry(hdr, RPMTAG_VERSION, &type, (void **)&version, &count);
+	 DistroVersion = version;
+         break;
+      }
+      rpmdbFreeIterator(iter);
+      rpmtsFree(ts);
+   }
+   
+   return DistroVersion;
+}
+
 									/*}}}*/
 // System::AddStatusFiles - Register the status files			/*{{{*/
 // ---------------------------------------------------------------------
@@ -261,7 +301,7 @@ bool rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
 	 const string &S = Top->Value;
 	 if (FileExists(S) && flExtension(S) == "rpm")
 	 {
-	    if (S.length() > 8 and string(S, S.length()-8) == ".src.rpm")
+	    if (S.length() > 8 && string(S, S.length()-8) == ".src.rpm")
 	       List.push_back(new rpmSingleSrcIndex(S));
 	    else
 	       List.push_back(new rpmSinglePkgIndex(S));
@@ -505,6 +545,12 @@ static void HashString(unsigned long &Hash, const char *Str)
    for (const char *I = Str; *I != 0; I++)
       Hash = 5*Hash + *I;
 }
+static void HashEnv(unsigned long &Hash, const char *Name)
+{
+   const char *Value = getenv(Name);
+   if (Value)
+      HashString(Hash, Value);
+}
 static void HashOption(unsigned long &Hash, const char *Name)
 {
    const Configuration::Item *Top = _config->Tree(Name);
@@ -530,8 +576,12 @@ unsigned long rpmSystem::OptionsHash() const
    unsigned long Hash = 0;
    HashOption(Hash, "RPM::Architecture");
    HashOptionTree(Hash, "RPM::Allow-Duplicated");
+   HashOptionTree(Hash, "RPM::MultiArch");
    HashOptionTree(Hash, "RPM::Ignore");
    HashOptionFile(Hash, "Dir::Etc::rpmpriorities");
+   HashEnv(Hash, "LANG");
+   HashEnv(Hash, "LC_ALL");
+   HashEnv(Hash, "LC_MESSAGES");
    return Hash;
 }
 									/*}}}*/

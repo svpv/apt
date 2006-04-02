@@ -164,6 +164,20 @@ bool pkgAcquire::Worker::Start()
    if (OwnerQ != 0)
       SendConfiguration();
    
+   // CNC:2004-04-27
+   if (Config->HasPreferredURI == true &&
+       Config->DonePreferredURI == false &&
+       Config->PreferredURI.empty() == true) {
+      SetNonBlock(InFd,false);
+      SetNonBlock(OutFd,false);
+      OutQueue += "679 Preferred URI\n\n";
+      Config->PreferredURI = "<none>";
+      if (OutFdReady() == true)
+	 while (InFdReady() == true && Config->PreferredURI == "<none>");
+      SetNonBlock(InFd,true);
+      SetNonBlock(OutFd,true);
+   }
+
    return true;
 }
 									/*}}}*/
@@ -221,6 +235,26 @@ bool pkgAcquire::Worker::RunMessages()
 	 case 102:
 	 Status = LookupTag(Message,"Message");
 	 break;
+
+	 // CNC:2004-04-27
+	 // 179 Preferred URI
+	 case 179:
+	 Config->PreferredURI = LookupTag(Message, "PreferredURI");
+	 break;
+
+	 // 103 Redirect
+	 case 103:
+	 {
+	    if (Itm == 0)
+	    {
+	       _error->Error("Method gave invalid 103 Redirect message");
+	       break;
+	    }
+
+	    string NewURI = LookupTag(Message,"New-URI",URI.c_str());
+	    Itm->URI = NewURI;
+	    break;
+	 }
 	    
 	 // 200 URI Start
 	 case 200:
@@ -324,6 +358,11 @@ bool pkgAcquire::Worker::RunMessages()
 	 case 403:
 	 MediaChange(Message); 
 	 break;
+
+	 // 404 Authenticate
+	 case 404:
+	 Authenticate(Message);
+	 break;
       }      
    }
    return true;
@@ -345,6 +384,8 @@ bool pkgAcquire::Worker::Capabilities(string Message)
    Config->LocalOnly = StringToBool(LookupTag(Message,"Local-Only"),false);
    Config->NeedsCleanup = StringToBool(LookupTag(Message,"Needs-Cleanup"),false);
    Config->Removable = StringToBool(LookupTag(Message,"Removable"),false);
+   // CNC:2004-04-27
+   Config->HasPreferredURI = StringToBool(LookupTag(Message,"Has-Preferred-URI"),false);
 
    // Some debug text
    if (Debug == true)
@@ -356,7 +397,9 @@ bool pkgAcquire::Worker::Capabilities(string Message)
 	      " SendConfig:" << Config->SendConfig << 
 	      " LocalOnly: " << Config->LocalOnly << 
 	      " NeedsCleanup: " << Config->NeedsCleanup << 
-	      " Removable: " << Config->Removable << endl;
+	      // CNC:2004-04-27
+	      " Removable: " << Config->Removable <<
+	      " HasPreferredURI: " << Config->HasPreferredURI << endl;
    }
    
    return true;
@@ -381,6 +424,34 @@ bool pkgAcquire::Worker::MediaChange(string Message)
 
    char S[300];
    snprintf(S,sizeof(S),"603 Media Changed\n\n");
+   if (Debug == true)
+      clog << " -> " << Access << ':' << QuoteString(S,"\n") << endl;
+   OutQueue += S;
+   OutReady = true;
+   return true;
+}
+									/*}}}*/
+// Worker::Authenticate - Request authentication       			/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+bool pkgAcquire::Worker::Authenticate(string Message)
+{
+   string User, Pass;
+   if (Log == 0 || Log->Authenticate(LookupTag(Message,"Description"),
+				     User,Pass) == false)
+   {
+      char S[300];
+      snprintf(S,sizeof(S),"604 Authenticated\nFailed: true\n\n");
+      if (Debug == true)
+	 clog << " -> " << Access << ':' << QuoteString(S,"\n") << endl;
+      OutQueue += S;
+      OutReady = true;
+      return true;
+   }
+
+   char S[300];
+   snprintf(S,sizeof(S),"604 Authenticated\nUser: %s\nPassword: %s\n\n",
+	    User.c_str(), Pass.c_str());
    if (Debug == true)
       clog << " -> " << Access << ':' << QuoteString(S,"\n") << endl;
    OutQueue += S;
@@ -546,3 +617,5 @@ void pkgAcquire::Worker::ItemDone()
    Status = string();
 }
 									/*}}}*/
+
+// vim:sts=3:sw=3

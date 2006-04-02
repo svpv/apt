@@ -71,18 +71,23 @@ class pkgAcqMethod
    void URIStart(FetchResult &Res);
    void URIDone(FetchResult &Res,FetchResult *Alt = 0);
    bool MediaFail(string Required,string Drive);
+   bool NeedAuth(string Description,string &User,string &Pass);
    virtual void Exit() {};
+   // CNC:2004-04-27
+   virtual string PreferredURI() { return ""; };
 
    public:
 
    enum CnfFlags {SingleInstance = (1<<0),
                   Pipeline = (1<<1), SendConfig = (1<<2),
                   LocalOnly = (1<<3), NeedsCleanup = (1<<4), 
-                  Removable = (1<<5)};
+                  // CNC:2004-04-27
+                  Removable = (1<<5), HasPreferredURI = (1<<6)};
 
    void Log(const char *Format,...);
    void Status(const char *Format,...);
-   
+   void Redirect(const string &NewURI);
+
    int Run(bool Single = false);
    inline void SetFailExtraMsg(string Msg) {FailExtra = Msg;};
    
@@ -91,3 +96,5 @@ class pkgAcqMethod
 };
 
 #endif
+
+// vim:sts=3:sw=3

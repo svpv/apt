@@ -1,0 +1,23 @@
+--- apt-0.5.15lorg2/cmdline/apt-shell.cc.orig	2006-03-30 12:21:31 +0400
++++ apt-0.5.15lorg2/cmdline/apt-shell.cc	2006-03-30 12:22:24 +0400
+@@ -4644,6 +4644,7 @@
+    // Make a copy of the configuration. Each command will modify its
+    // own copy of the whole configuration.
+    Configuration GlobalConfig(*_config);
++   Configuration _Config(*_config);
+ 
+    ReadLineInit();
+    c1out << _("Welcome to the APT shell. Type \"help\" for more information.") << endl;
+@@ -4758,6 +4759,12 @@
+ 	 CmdL.DispatchArg(Cmds);
+       
+       free(line);
++      if (!_config->FindB("quit"))
++      {
++        // restore saved config
++        delete _config;
++        _config = new Configuration(_Config);
++      }
+    }
+ 
+    ReadLineFinish();

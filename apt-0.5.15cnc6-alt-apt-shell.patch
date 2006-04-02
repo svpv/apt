@@ -1,5 +1,5 @@
---- apt-0.5.15cnc6/cmdline/apt-shell.cc.orig	2004-06-07 18:53:30 +0400
-+++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2004-06-07 19:13:44 +0400
+--- apt-0.5.15lorg2/cmdline/apt-shell.cc.orig	2006-03-17 17:56:01 +0300
++++ apt-0.5.15lorg2/cmdline/apt-shell.cc	2006-03-17 17:56:02 +0300
 @@ -1285,10 +1285,24 @@
     if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0)
     {
@@ -36,25 +36,7 @@
  	    continue;
  	 }
  	 pkgCache::VerIterator PrvPkgCandVer =
-@@ -1324,13 +1340,15 @@
- 	 {
- 	    // Yes, it is. This is a good solution.
- 	    GoodSolutions.push_back(PrvPkg);
-+	    if (instVirtual)
-+		break;
- 	    continue;
- 	 }
-       }
-       vector<string> GoodSolutionNames;
--      for (unsigned int i = 0; i != GoodSolutionNames.size(); i++)
-+      for (unsigned int i = 0; i != GoodSolutions.size(); i++)
-       {
--	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[0]);
-+	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
- 	 GoodSolutionNames.push_back(GoodPkg.Name());
-       }
- #ifdef WITH_LUA
-@@ -4511,8 +4514,8 @@
+@@ -4536,8 +4552,8 @@
        largv[largc] = 0;
        
        // Make our own copy of the configuration.

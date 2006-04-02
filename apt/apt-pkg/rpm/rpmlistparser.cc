@@ -35,6 +35,8 @@
 
 #define WITH_VERSION_CACHING 1
 
+string MultilibArchs[] = {"x86_64", "ia64", "ppc64", "sparc64"};
+
 // ListParser::rpmListParser - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -44,13 +46,17 @@ rpmListParser::rpmListParser(RPMHandler *Handler)
    Handler->Rewind();
    header = NULL;
    if (Handler->IsDatabase() == true)
+   {
 #ifdef WITH_HASH_MAP
       SeenPackages = new SeenPackagesType(517);
 #else
       SeenPackages = new SeenPackagesType;
 #endif
+   }
    else
+   {
       SeenPackages = NULL;
+   }
    RpmData = RPMPackageData::Singleton();
 }
                                                                         /*}}}*/
@@ -85,6 +91,7 @@ unsigned long rpmListParser::UniqFindTagWrite(int Tag)
    
    return WriteUniqString(Start,Stop - Start);
 }
+
                                                                         /*}}}*/
 // ListParser::Package - Return the package name			/*{{{*/
 // ---------------------------------------------------------------------
@@ -114,6 +121,12 @@ string rpmListParser::Package()
 
    bool IsDup = false;
    string Name = str;
+
+   if (RpmData->IsMultilibSys() && RpmData->IsCompatArch(Architecture())) {
+	 Name += ".32bit";	 
+	 CurrentName = Name;
+   }
+
    
    // If this package can have multiple versions installed at
    // the same time, then we make it so that the name of the
@@ -153,6 +166,7 @@ string rpmListParser::Package()
    CurrentName = Name;
    return Name;
 }
+
                                                                         /*}}}*/
 // ListParser::Arch - Return the architecture string			/*{{{*/
 // ---------------------------------------------------------------------
@@ -390,13 +404,39 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
       if (DepMode == true) {
 	 if (flagl[i] & RPMSENSE_PREREQ)
 	    Type = pkgCache::Dep::PreDepends;
+#if RPM_VERSION >= 0x040403
+	 else if (flagl[i] & RPMSENSE_MISSINGOK)
+	    Type = pkgCache::Dep::Suggests;
+#endif
 	 else
 	    Type = pkgCache::Dep::Depends;
       }
-      
-      if (namel[i][0] == 'r' && strncmp(namel[i], "rpmlib", 6) == 0) 
+
+#if RPM_VERSION >= 0x040404
+      if (namel[i][0] == 'g' && strncmp(namel[i], "getconf", 7) == 0)
       {
-#if RPM_VERSION >= 0x040100
+        rpmds getconfProv = NULL;
+        rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
+                               namel[i], verl?verl[i]:NULL, flagl[i]);
+        rpmdsGetconf(&getconfProv, NULL);
+        int res = rpmdsSearch(getconfProv, ds) >= 0;
+        rpmdsFree(ds);
+        rpmdsFree(getconfProv);
+        if (res) continue;
+      }
+#endif
+      
+      if (namel[i][0] == 'r' && strncmp(namel[i], "rpmlib", 6) == 0)
+      {
+#if RPM_VERSION >= 0x040404
+        rpmds rpmlibProv = NULL;
+        rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
+                               namel[i], verl?verl[i]:NULL, flagl[i]);
+        rpmdsRpmlib(&rpmlibProv, NULL);
+        int res = rpmdsSearch(rpmlibProv, ds) >= 0;
+        rpmdsFree(ds);
+        rpmdsFree(rpmlibProv);
+#elif RPM_VERSION >= 0x040100
 	 rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
 			        namel[i], verl?verl[i]:NULL, flagl[i]);
 	 int res = rpmCheckRpmlibProvides(ds);
@@ -494,6 +534,30 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
       res = headerGetEntry(header, RPMTAG_CONFLICTFLAGS, &type,
 			   (void **)&flagl, &count);
       break;
+#if RPM_VERSION >= 0x040403
+   case pkgCache::Dep::Suggests:
+      res = headerGetEntry(header, RPMTAG_SUGGESTSNAME, &type, 
+			   (void **)&namel, &count);
+      if (res != 1)
+	  return true;
+      res = headerGetEntry(header, RPMTAG_SUGGESTSVERSION, &type, 
+			   (void **)&verl, &count);
+      res = headerGetEntry(header, RPMTAG_SUGGESTSFLAGS, &type,
+			   (void **)&flagl, &count);
+      break;
+#if 0 // Enhances is not even known to apt, sigh...
+   case pkgCache::Dep::Enhances:
+      res = headerGetEntry(header, RPMTAG_ENHANCESNAME, &type, 
+			   (void **)&namel, &count);
+      if (res != 1)
+	  return true;
+      res = headerGetEntry(header, RPMTAG_ENHANCESVERSION, &type, 
+			   (void **)&verl, &count);
+      res = headerGetEntry(header, RPMTAG_ENHANCESFLAGS, &type,
+			   (void **)&flagl, &count);
+      break;
+#endif
+#endif
    }
    
    ParseDepends(Ver, namel, verl, flagl, count, Type);
@@ -624,6 +688,7 @@ bool rpmListParser::Step()
 #endif
       
       string RealName = Package();
+
       if (Duplicated == true)
 	 RealName = RealName.substr(0,RealName.find('#'));
       if (RpmData->IgnorePackage(RealName) == true)

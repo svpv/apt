@@ -348,14 +348,18 @@ int selectDirent(const struct dirent *ent)
 
 void usage()
 {
+   cerr << "genpkglist " << VERSION << endl;
    cerr << "usage: genpkglist [<options>] <dir> <suffix>" << endl;
    cerr << "options:" << endl;
    cerr << " --index <file>  file to write srpm index data to" << endl;
    cerr << " --info <file>   file to read update info from" << endl;
+   cerr << " --meta <suffix> create package file list with given suffix" << endl;
    cerr << " --bloat         do not strip the package file list. Needed for some" << endl;
    cerr << "                 distributions that use non-automatically generated" << endl;
    cerr << "                 file dependencies" << endl;
+   cerr << " --append        append to the package file list, don't overwrite" << endl;
    cerr << " --progress      show a progress bar" << endl;
+   cerr << " --cachedir=DIR  use a custom directory for package md5sum cache"<<endl;
 }
 
 
@@ -496,6 +500,14 @@ int main(int argc, char ** argv)
 	    cout << "genpkglist: argument missing for option --meta"<<endl;
 	    exit(1);
 	 }
+      } else if (strcmp(argv[i], "--cachedir") == 0) {
+	 i++;
+	 if (i < argc) {
+            _config->Set("Dir::Cache", argv[i]);
+	 } else {
+            cout << "genpkglist: argument missing for option --cachedir"<<endl;
+	    exit(1);
+	 }
       } else {
 	 break;
       }
@@ -592,14 +604,14 @@ int main(int argc, char ** argv)
       if (progressBar) {
          if (entry_cur)
             printf("\b\b\b\b\b\b\b\b\b\b");
-         printf("%04i/%04i ", entry_cur + 1, entry_no);
+         printf(" %04i/%04i", entry_cur + 1, entry_no);
          fflush(stdout);
       }
 
       if (stat(dirEntries[entry_cur]->d_name, &sb) < 0) {
-	    cerr << dirEntries[entry_cur] << ":";
-	    perror("stat");
-	    exit(1);
+	    cerr << "\nWarning: " << strerror(errno) << ": " << 
+		    dirEntries[entry_cur]->d_name << endl;
+	    continue;
       }
 
       {
@@ -609,9 +621,9 @@ int main(int argc, char ** argv)
 	 fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
 
 	 if (!fd) {
-	    cerr << dirEntries[entry_cur]->d_name << ":";
-	    perror("open");
-	    exit(1);
+	    cerr << "\nWarning: " << strerror(errno) << ": " << 
+		    dirEntries[entry_cur]->d_name << endl;
+	    continue;
 	 }
 	 
 #if RPM_VERSION >= 0x040100
@@ -638,6 +650,9 @@ int main(int argc, char ** argv)
 	    
 	    headerFree(newHeader);
 	    headerFree(h);
+	 } else {
+	    cerr << "\nWarning: Skipping malformed RPM: " << 
+		    dirEntries[entry_cur]->d_name << endl;
 	 }
 	 Fclose(fd);
       }

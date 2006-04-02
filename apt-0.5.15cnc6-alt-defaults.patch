@@ -6,14 +6,14 @@ diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmpackagedata.cc apt-0.5.15cnc6/
  {
     // Populate priorities
 -   string FileName = _config->FindFile("Dir::Etc::rpmpriorities");
-+   string FileName = _config->FindFile("Dir::Etc") + "pkgpriorities";
++   string FileName = _config->FindFile("Dir::Etc::pkgpriorities");
     FileFd F(FileName, FileFd::ReadOnly);
     if (_error->PendingError()) 
     {
 diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc
 --- apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc	2005-05-18 16:01:23 +0000
 +++ apt-0.5.15cnc6/apt-pkg/rpm/rpmsystem.cc	2005-05-18 16:07:32 +0000
-@@ -129,13 +129,13 @@ pkgPackageManager *rpmSystem::CreatePM(p
+@@ -136,13 +136,13 @@
  bool rpmSystem::Initialize(Configuration &Cnf)
  {
     Cnf.CndSet("Dir::Bin::rpm","/bin/rpm");
@@ -29,15 +29,15 @@ diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-p
     Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
  
     // Compatibility with obsoleted options
-@@ -530,7 +530,7 @@ unsigned long rpmSystem::OptionsHash() c
-    HashOption(Hash, "RPM::Architecture");
+@@ -577,7 +577,7 @@
     HashOptionTree(Hash, "RPM::Allow-Duplicated");
+    HashOptionTree(Hash, "RPM::MultiArch");
     HashOptionTree(Hash, "RPM::Ignore");
 -   HashOptionFile(Hash, "Dir::Etc::rpmpriorities");
 +   HashOptionFile(Hash, "Dir::Etc::pkgpriorities");
-    return Hash;
- }
- 									/*}}}*/
+    HashEnv(Hash, "LANG");
+    HashEnv(Hash, "LC_ALL");
+    HashEnv(Hash, "LC_MESSAGES");
 diff -upk.orig apt-0.5.15cnc6.orig/buildlib/archtable apt-0.5.15cnc6/buildlib/archtable
 --- apt-0.5.15cnc6.orig/buildlib/archtable	2003-04-14 17:15:31 +0000
 +++ apt-0.5.15cnc6/buildlib/archtable	2005-05-18 16:07:03 +0000
@@ -54,3 +54,27 @@ diff -upk.orig apt-0.5.15cnc6.orig/buildlib/archtable apt-0.5.15cnc6/buildlib/ar
  sparc	sparc
  sparc64	sparc
  alpha.*	alpha
+diff -upk.orig apt-0.5.15lorg2.orig/cmdline/apt-get.cc apt-0.5.15lorg2/cmdline/apt-get.cc
+--- apt-0.5.15lorg2.orig/cmdline/apt-get.cc	2006-01-17 18:41:29 +0000
++++ apt-0.5.15lorg2/cmdline/apt-get.cc	2006-04-01 16:26:19 +0000
+@@ -1752,7 +1752,7 @@ bool DoUpdate(CommandLine &CmdL)
+ #endif
+ 
+    // CNC:2004-04-19
+-   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",true) == true)
++   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",false) == true)
+    {
+       UpdateLogCleaner Cleaner;
+       Cleaner.Go(_config->FindDir("Dir::Cache::archives"), *Cache);
+diff -upk.orig apt-0.5.15lorg2.orig/cmdline/apt-shell.cc apt-0.5.15lorg2/cmdline/apt-shell.cc
+--- apt-0.5.15lorg2.orig/cmdline/apt-shell.cc	2006-01-16 23:10:47 +0000
++++ apt-0.5.15lorg2/cmdline/apt-shell.cc	2006-04-01 16:26:29 +0000
+@@ -1812,7 +1812,7 @@ bool DoUpdate(CommandLine &CmdL)
+ #endif
+ 
+    // CNC:2004-04-19
+-   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",true) == true)
++   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",false) == true)
+    {
+       UpdateLogCleaner Cleaner;
+       Cleaner.Go(_config->FindDir("Dir::Cache::archives"), *GCache);

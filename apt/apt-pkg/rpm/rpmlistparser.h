@@ -42,7 +42,7 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    typedef map<const char*,bool,cstr_lt_pred> SeenPackagesType;
 #endif
    SeenPackagesType *SeenPackages;
-   
+
    bool Duplicated;
    
    unsigned long UniqFindTagWrite(int Tag);
@@ -84,6 +84,7 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    bool LoadReleaseInfo(pkgCache::PkgFileIterator FileI,FileFd &File);
 
    void VirtualizePackage(string Name);
+   void CompatArchPackage(string Name);
    
    rpmListParser(RPMHandler *Handler);
    ~rpmListParser();

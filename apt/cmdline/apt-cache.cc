@@ -1569,11 +1569,14 @@ bool Search(CommandLine &CmdL)
       bool Match = true;
       if (J->NameMatch == false)
       {
-	 string LongDesc = P.LongDesc();
+	 string LongDesc = P.LongDesc(); 
+	 // CNC 2004-04-10
+	 string ShortDesc = P.ShortDesc();
 	 Match = NumPatterns != 0;
 	 for (unsigned I = 0; I != NumPatterns; I++)
 	 {
-	    if (regexec(&Patterns[I],LongDesc.c_str(),0,0,0) == 0)
+	    if (regexec(&Patterns[I],LongDesc.c_str(),0,0,0) == 0 ||
+		regexec(&Patterns[I],ShortDesc.c_str(),0,0,0) == 0)
 	       Match &= true;
 	    else
 	       Match = false;
@@ -1623,6 +1626,27 @@ bool ShowPackage(CommandLine &CmdL)
       }
 
       ++found;
+
+      // CNC:2004-07-09
+      // If it's a virtual package, require user to select similarly to apt-get
+      if (Pkg.VersionList().end() == true and Pkg->ProvidesList != 0)
+      {
+         ioprintf(cout, _("Package %s is a virtual package provided by:\n"),
+                  Pkg.Name());
+         for (pkgCache::PrvIterator Prv = Pkg.ProvidesList();
+             Prv.end() == false; Prv++)
+         {
+	    pkgCache::VerIterator V = Plcy.GetCandidateVer(Prv.OwnerPkg());
+            if (V.end() == true)
+               continue;
+            if (V != Prv.OwnerVer())
+               continue;
+            cout << "  " << Prv.OwnerPkg().Name() << " " << V.VerStr() << endl;
+         }
+         cout << _("You should explicitly select one to show.") << endl;
+         _error->Error(_("Package %s is a virtual package with multiple providers."), Pkg.Name());
+         return false;
+      }
 
       // Find the proper version to use.
       if (_config->FindB("APT::Cache::AllVersions","true") == true)
@@ -1809,7 +1833,11 @@ bool Policy(CommandLine &CmdL)
 	    cout << " *** " << V.VerStr();
 	 else
 	    cout << "     " << V.VerStr();
-	 cout << " " << Plcy.GetPriority(Pkg) << endl;
+	 // CNC:2004-05-29
+	 if (Plcy.GetCandidateVer(Pkg) == V)
+	    cout << " " << Plcy.GetPriority(Pkg) << endl;
+	 else
+	    cout << " 0" << endl;
 	 for (pkgCache::VerFileIterator VF = V.FileList(); VF.end() == false; VF++)
 	 {
 	    // Locate the associated index files so we can derive a description

@@ -825,10 +825,10 @@ bool CacheFile::CheckDeps(bool AllowBroken)
    }
    else
    {
-      c1out << _("You might want to run `apt-get -f install' to correct these.") << endl;
+      c1out << _("You might want to run `apt-get --fix-broken install' to correct these.") << endl;
       ShowBroken(c1out,*this,true);
 
-      return _error->Error(_("Unmet dependencies. Try using -f."));
+      return _error->Error(_("Unmet dependencies. Try using --fix-broken."));
    }
       
    return true;
@@ -1213,7 +1213,7 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 		  unsigned int &ExpectedInst,bool AllowFail = true)
 {
    // CNC:2004-03-03 - Improved virtual package handling.
-   if (Cache[Pkg].CandidateVer == 0 && Pkg->ProvidesList != 0)
+   if (Pkg->VersionList == 0 && Pkg->ProvidesList != 0)
    {
       vector<pkgCache::Package *> GoodSolutions;
       for (pkgCache::PrvIterator Prv = Pkg.ProvidesList();
@@ -1605,6 +1605,18 @@ pkgSrcRecords::Parser *FindSrc(const char *Name,pkgRecords &Recs,
 // DoUpdate - Update the package lists					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
+
+// CNC:2004-04-19
+class UpdateLogCleaner : public pkgArchiveCleaner
+{
+   protected:
+   virtual void Erase(const char *File,string Pkg,string Ver,struct stat &St) 
+   {
+      c1out << "Del " << Pkg << " " << Ver << " [" << SizeToStr(St.st_size) << "B]" << endl;
+      unlink(File);      
+   };
+};
+
 bool DoUpdate(CommandLine &CmdL)
 {
 // CNC:2003-03-27
@@ -1738,6 +1750,15 @@ bool DoUpdate(CommandLine &CmdL)
    _lua->RunScripts("Scripts::AptGet::Update::Post");
 #endif
 #endif
+
+   // CNC:2004-04-19
+   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",true) == true)
+   {
+      UpdateLogCleaner Cleaner;
+      Cleaner.Go(_config->FindDir("Dir::Cache::archives"), *Cache);
+      Cleaner.Go(_config->FindDir("Dir::Cache::archives") + "partial/",
+	         *Cache);
+   }
    
    if (Failed == true)
       return _error->Error(_("Some index files failed to download, they have been ignored, or old ones used instead."));
@@ -2037,10 +2058,10 @@ bool DoInstall(CommandLine &CmdL)
       packages */
    if (BrokenFix == true && Cache->BrokenCount() != 0)
    {
-      c1out << _("You might want to run `apt-get -f install' to correct these:") << endl;
+      c1out << _("You might want to run `apt-get --fix-broken install' to correct these:") << endl;
       ShowBroken(c1out,Cache,false);
 
-      return _error->Error(_("Unmet dependencies. Try 'apt-get -f install' with no packages (or specify a solution)."));
+      return _error->Error(_("Unmet dependencies. Try 'apt-get --fix-broken install' with no packages (or specify a solution)."));
    }
    
    // Call the scored problem resolver
@@ -2093,12 +2114,13 @@ bool DoInstall(CommandLine &CmdL)
 	 if ((*Cache)[I].Install() == false)
 	    continue;
 
-	 const char **J;
-	 for (J = CmdL.FileList + 1; *J != 0; J++)
-	    if (strcmp(*J,I.Name()) == 0)
+	 // CNC:2004-06-15
+	 const char **K;
+	 for (K = CmdL.FileList + 1; *K != 0; K++)
+	    if (strcmp(*K,I.Name()) == 0)
 		break;
 	 
-	 if (*J == 0) {
+	 if (*K == 0) {
 	    List += string(I.Name()) + " ";
         VersionsList += string(Cache[I].CandVersion) + "\n";
      }
@@ -2428,8 +2450,38 @@ bool DoSource(CommandLine &CmdL)
    unsigned J = 0;
    for (const char **I = CmdL.FileList + 1; *I != 0; I++, J++)
    {
+      // CNC:2004-09-23 - Try to handle unknown file items.
+      unsigned int Length = strlen(*I);
+      char S[300];
+      if (Length >= sizeof(S))
+        continue;
+      strcpy(S,*I);
+
+      if (S[0] == '/')
+      {
+	 pkgRecords Recs(Cache);
+	 if (_error->PendingError() == true)
+	    return false;
+	 pkgCache::PkgIterator Pkg = (*Cache).PkgBegin();
+	 for (; Pkg.end() == false; Pkg++)
+	 {
+	    // Should we try on all versions?
+	    pkgCache::VerIterator Ver = (*Cache)[Pkg].CandidateVerIter(*Cache);
+	    if (Ver.end() == false)
+	    {
+	       pkgRecords::Parser &Parse = Recs.Lookup(Ver.FileList());
+	       if (Parse.HasFile(S)) {
+		  ioprintf(c1out,_("Selecting %s for '%s'\n"),
+			   Pkg.Name(),S);
+		  strcpy(S, Pkg.Name());
+		  break;
+	       }
+	    }
+	 }
+      }
+
       string Src;
-      pkgSrcRecords::Parser *Last = FindSrc(*I,Recs,SrcRecs,Src,*Cache);
+      pkgSrcRecords::Parser *Last = FindSrc(S,Recs,SrcRecs,Src,*Cache);
       
       if (Last == 0)
 	 return _error->Error(_("Unable to find a source package for %s"),Src.c_str());
@@ -2643,7 +2695,9 @@ bool DoSource(CommandLine &CmdL)
 bool DoBuildDep(CommandLine &CmdL)
 {
    CacheFile Cache;
-   if (Cache.Open(true) == false)
+   // CNC:2004-04-06
+   if (Cache.OpenForInstall() == false || 
+       Cache.CheckDeps() == false)
       return false;
 
    if (CmdL.FileSize() <= 1)
@@ -2892,8 +2946,12 @@ bool DoBuildDep(CommandLine &CmdL)
       
       // Now we check the state of the packages,
       if (Cache->BrokenCount() != 0)
+      {
+         // CNC:2004-07-05
+         ShowBroken(c1out, Cache, false);
 	 return _error->Error(_("Some broken packages were found while trying to process build-dependencies for %s.\n"
-				"You might want to run `apt-get -f install' to correct these."),*I);
+				"You might want to run `apt-get --fix-broken install' to correct these."),*I);
+      }
    }
   
    if (InstallPackages(Cache, false, true) == false)

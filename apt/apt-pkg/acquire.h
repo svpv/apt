@@ -240,6 +240,10 @@ struct pkgAcquire::MethodConfig
    bool LocalOnly;
    bool NeedsCleanup;
    bool Removable;
+   // CNC:2004-04-27
+   bool HasPreferredURI;
+   bool DonePreferredURI;
+   string PreferredURI;
    
    MethodConfig();
 };
@@ -269,6 +273,9 @@ class pkgAcquireStatus
    
    // Called to change media
    virtual bool MediaChange(string Media,string Drive) = 0;
+
+   // Called to authenticate
+   virtual bool Authenticate(string Desc,string &User,string &Pass);
    
    // Each of these is called by the workers when an event occures
    virtual void IMSHit(pkgAcquire::ItemDesc &/*Itm*/) {};
@@ -284,3 +291,5 @@ class pkgAcquireStatus
 };
 
 #endif
+
+// vim:sts=3:sw=3

@@ -150,7 +150,7 @@ class AutoReOpenCache
 	 if ((*Cache)->CheckDeps(true) == false) {
 	    c1out << _("There are broken packages. ")
 		  << _("Run `check' to see them.") << endl;
-	    c1out << _("You can try to fix them automatically with `install -f'.") << endl;
+	    c1out << _("You can try to fix them automatically with `install --fix-broken'0.") << endl;
 	 }
       }
    };
@@ -930,10 +930,10 @@ bool CacheFile::CheckDeps(bool AllowBroken)
    }
    else
    {
-      c1out << _("You might want to run `install -f' to correct these.") << endl;
+      c1out << _("You might want to run `install --fix-broken' to correct these.") << endl;
       ShowBroken(c1out,*this,true);
 
-      return _error->Error(_("Unmet dependencies. Try using -f."));
+      return _error->Error(_("Unmet dependencies. Try using --fix-broken."));
    }
       
    return true;
@@ -1328,9 +1328,9 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	 }
       }
       vector<string> GoodSolutionNames;
-      for (int i = 0; i != GoodSolutionNames.size(); i++)
+      for (int i = 0; i != GoodSolutions.size(); i++)
       {
-	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[0]);
+	 pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
 	 GoodSolutionNames.push_back(GoodPkg.Name());
       }
 #ifdef WITH_LUA
@@ -1339,6 +1339,7 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	 vector<string> VS;
 	 _lua->SetDepCache(&Cache);
 	 _lua->SetDontFix();
+	 _lua->SetGlobal("virtualname", Pkg.Name());
 	 _lua->SetGlobal("packages", GoodSolutions);
 	 _lua->SetGlobal("packagenames", GoodSolutionNames);
 	 _lua->SetGlobal("selected");
@@ -1680,6 +1681,18 @@ pkgSrcRecords::Parser *FindSrc(const char *Name,pkgRecords &Recs,
 // DoUpdate - Update the package lists					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
+
+// CNC:2004-04-19
+class UpdateLogCleaner : public pkgArchiveCleaner
+{
+   protected:
+   virtual void Erase(const char *File,string Pkg,string Ver,struct stat &St) 
+   {
+      c1out << "Del " << Pkg << " " << Ver << " [" << SizeToStr(St.st_size) << "B]" << endl;
+      unlink(File);      
+   };
+};
+
 bool DoUpdate(CommandLine &CmdL)
 {
    if (CheckHelp(CmdL) == true)
@@ -1797,6 +1810,15 @@ bool DoUpdate(CommandLine &CmdL)
    _lua->RunScripts("Scripts::AptGet::Update::Post");
    _lua->ResetCaches();
 #endif
+
+   // CNC:2004-04-19
+   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",true) == true)
+   {
+      UpdateLogCleaner Cleaner;
+      Cleaner.Go(_config->FindDir("Dir::Cache::archives"), *GCache);
+      Cleaner.Go(_config->FindDir("Dir::Cache::archives") + "partial/",
+	         *GCache);
+   }
    
    if (Failed == true)
       return _error->Error(_("Some index files failed to download, they have been ignored, or old ones used instead."));
@@ -2114,7 +2136,7 @@ bool DoInstall(CommandLine &CmdL)
       ConfirmChanges(Cache, StateGuard);
       c1out << _("There are still broken packages. ")
 	    << _("Run `check' to see them.") << endl;
-      c1out << _("You can try to fix them automatically with `install -f'.") << endl;
+      c1out << _("You can try to fix them automatically with `install --fix-broken'.") << endl;
       return true;
    }
 
@@ -2651,7 +2673,7 @@ bool DoBuildDep(CommandLine &CmdL)
       // Now we check the state of the packages,
       if (Cache->BrokenCount() != 0)
 	 return _error->Error(_("Some broken packages were found while trying to process build-dependencies for %s.\n"
-				"You might want to run `apt-get -f install' to correct these."),*I);
+				"You might want to run `apt-get --fix-broken install' to correct these."),*I);
    }
   
    ConfirmChanges(Cache, StateGuard);
@@ -3430,10 +3452,13 @@ bool Search(CommandLine &CmdL)
       if (J->NameMatch == false)
       {
 	 string LongDesc = P.LongDesc();
+	 // CNC 2004-2004-04-10
+	 string ShortDesc = P.ShortDesc();
 	 Match = NumPatterns != 0;
 	 for (unsigned I = 0; I != NumPatterns; I++)
 	 {
-	    if (regexec(&Patterns[I],LongDesc.c_str(),0,0,0) == 0)
+	    if (regexec(&Patterns[I],LongDesc.c_str(),0,0,0) == 0 ||
+	        regexec(&Patterns[I],ShortDesc.c_str(),0,0,0) == 0)
 	       Match &= true;
 	    else
 	       Match = false;
@@ -4420,7 +4445,7 @@ int main(int argc,const char *argv[])
    if (GCache->CheckDeps(true) == false) {
       c1out << _("There are broken packages. ")
 	    << _("Run `check' to see them.") << endl;
-      c1out << _("You can try to fix them automatically with `install -f'.") << endl;
+      c1out << _("You can try to fix them automatically with `install --fix-broken'.") << endl;
    }
 
    // Make a copy of the configuration. Each command will modify its
@@ -4520,7 +4545,7 @@ int main(int argc,const char *argv[])
 
 // CNC:2003-03-19
 #ifdef WITH_LUA
-      if (HasCmdScripts == true) {
+      if (HasCmdScripts == true && _error->PendingError() == false) {
 	 _lua->SetDepCache(*GCache);
 	 _lua->SetGlobal("command_args", CmdL.FileList);
 	 _lua->SetGlobal("command_consume", 0.0);

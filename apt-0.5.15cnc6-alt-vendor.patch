@@ -1,44 +1,60 @@
-diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc apt-0.5.15cnc6/apt-pkg/acquire-item.cc
---- apt-0.5.15cnc6.orig/apt-pkg/acquire-item.cc	2005-07-08 15:02:30 +0400
-+++ apt-0.5.15cnc6/apt-pkg/acquire-item.cc	2005-07-08 16:14:04 +0400
-@@ -476,14 +476,29 @@ void pkgAcqIndexRel::Done(string Message
+diff -ur apt-0.5.15lorg2.orig/apt-pkg/acquire-item.cc apt-0.5.15lorg2.vendor/apt-pkg/acquire-item.cc
+--- apt-0.5.15lorg2.orig/apt-pkg/acquire-item.cc	2006-03-20 20:30:36 +0300
++++ apt-0.5.15lorg2.vendor/apt-pkg/acquire-item.cc	2006-03-20 20:31:00 +0300
+@@ -476,14 +476,29 @@
  	    return;
  	 }
  
 -	 // Match fingerprint of Release file
--	 if (Repository->Vendor->FingerPrint != FingerPrint)
-+	 bool found = false;
-+	 for (vector<string>::const_iterator I = Repository->Vendor->FingerPrint.begin();
-+	      I != Repository->Vendor->FingerPrint.end(); I++)
-+	 {
-+	    // Match fingerprint of Release file
-+	    if ((*I) == FingerPrint)
-+	    {
-+	       found = true;
-+	       break;
-+	    }
-+	 }
-+
-+	 if (!found)
- 	 {
- 	    Status = StatError;
+-	 if (Repository->FingerPrint != FingerPrint)
+-	 {
+-	    Status = StatError;
 -	    ErrorText = _("Signature fingerprint of Release file does not match (expected ")
--	       +Repository->Vendor->FingerPrint+_(", got ")+FingerPrint+")";
-+	    ErrorText = _("Signature fingerprint of Release file does not match (expected ");
-+	    for (vector<string>::const_iterator I = Repository->Vendor->FingerPrint.begin();
-+		 I != Repository->Vendor->FingerPrint.end(); I++)
-+	      ErrorText += "\n"+(*I);
-+	    ErrorText += _(", got ")+FingerPrint+")";
- 	    return;
- 	 }
+-	       +Repository->FingerPrint+_(", got ")+FingerPrint+")";
+-	    return;
+-	 }
++ 	 bool found = false;
++ 	 for (vector<string>::const_iterator I = Repository->FingerPrint.begin();
++ 	      I != Repository->FingerPrint.end(); I++)
++ 	 {
++ 	    // Match fingerprint of Release file
++ 	    if ((*I) == FingerPrint)
++ 	    {
++ 	       found = true;
++ 	       break;
++ 	    }
++ 	 }
++ 
++ 	 if (!found)
++ 	 {
++ 	    Status = StatError;
++ 	    ErrorText = _("Signature fingerprint of Release file does not match (expected ");
++ 	    for (vector<string>::const_iterator I = Repository->FingerPrint.begin();
++ 		 I != Repository->FingerPrint.end(); I++)
++ 	      ErrorText += "\n"+(*I);
++ 	    ErrorText += _(", got ")+FingerPrint+")";
++  	    return;
++  	 }
 +
        }
  
        // Done, move it into position
-diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sourcelist.cc
---- apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc	2003-12-10 14:56:28 +0300
-+++ apt-0.5.15cnc6/apt-pkg/sourcelist.cc	2005-07-08 17:20:32 +0400
-@@ -145,7 +145,7 @@ pkgSourceList::~pkgSourceList()
+diff -ur apt-0.5.15lorg2.orig/apt-pkg/repository.h apt-0.5.15lorg2.vendor/apt-pkg/repository.h
+--- apt-0.5.15lorg2.orig/apt-pkg/repository.h	2006-01-17 02:10:47 +0300
++++ apt-0.5.15lorg2.vendor/apt-pkg/repository.h	2006-03-20 20:32:17 +0300
+@@ -33,7 +33,7 @@
+ 
+    string URI;
+    string Dist;
+-   string FingerPrint;
++   vector<string> FingerPrint;
+    string RootURI;
+ 
+    bool Acquire;
+diff -ur apt-0.5.15lorg2.orig/apt-pkg/sourcelist.cc apt-0.5.15lorg2.vendor/apt-pkg/sourcelist.cc
+--- apt-0.5.15lorg2.orig/apt-pkg/sourcelist.cc	2006-02-06 22:11:06 +0300
++++ apt-0.5.15lorg2.vendor/apt-pkg/sourcelist.cc	2006-03-20 20:31:00 +0300
+@@ -150,7 +150,7 @@
  {
     for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
        delete *I;
@@ -47,7 +63,7 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sou
  	I != VendorList.end(); I++)
        delete *I;
  }
-@@ -169,38 +169,54 @@ bool pkgSourceList::ReadVendors()
+@@ -174,38 +174,54 @@
        if (ReadConfigFile(Cnf,CnfFile,true) == false)
  	 return false;
  
@@ -89,7 +105,7 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sou
 +        Vendor = new pkgSourceList::Vendor;
 +
 +        Vendor->Description = Block.Find("Name");
-+	Vendor->VendorID = Top->Tag;
++        Vendor->VendorID = Top->Tag;
 +      }
 +      string FingerPrint = Block.Find("Fingerprint");
  
@@ -115,7 +131,7 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sou
  	  Vendor->Description.empty() == true)
        {
           _error->Error(_("Vendor block %s is invalid"), Vendor->VendorID.c_str());
-@@ -208,7 +225,8 @@ bool pkgSourceList::ReadVendors()
+@@ -213,7 +229,8 @@
  	 continue;
        }
        
@@ -125,7 +141,7 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sou
     }
  
     /* XXX Process 'group-key' type sections
-@@ -350,7 +368,7 @@ bool pkgSourceList::ReadAppend(string Fi
+@@ -355,7 +372,7 @@
  	     return _error->Error(_("Malformed line %u in source list %s (vendor id)"),CurLine,File.c_str());
  	 VendorID = string(VendorID,1,VendorID.size()-2);
  	 
@@ -134,10 +150,10 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.cc apt-0.5.15cnc6/apt-pkg/sou
  	      iter != VendorList.end(); iter++) 
  	 {
  	    if ((*iter)->VendorID == VendorID)
-diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.h apt-0.5.15cnc6/apt-pkg/sourcelist.h
---- apt-0.5.15cnc6.orig/apt-pkg/sourcelist.h	2003-03-03 23:15:04 +0300
-+++ apt-0.5.15cnc6/apt-pkg/sourcelist.h	2005-07-08 17:07:17 +0400
-@@ -48,8 +48,8 @@ class pkgSourceList
+diff -ur apt-0.5.15lorg2.orig/apt-pkg/sourcelist.h apt-0.5.15lorg2.vendor/apt-pkg/sourcelist.h
+--- apt-0.5.15lorg2.orig/apt-pkg/sourcelist.h	2006-01-17 02:10:47 +0300
++++ apt-0.5.15lorg2.vendor/apt-pkg/sourcelist.h	2006-03-20 20:31:00 +0300
+@@ -48,7 +48,7 @@
     struct Vendor
     {
        string VendorID;
@@ -146,8 +162,7 @@ diff -Naurp apt-0.5.15cnc6.orig/apt-pkg/sourcelist.h apt-0.5.15cnc6/apt-pkg/sour
        string Description;
  
        /* Lets revisit these..
-       bool MatchFingerPrint(string FingerPrint);
-@@ -87,8 +88,8 @@ class pkgSourceList
+@@ -87,8 +87,8 @@
     protected:
  
     vector<pkgIndexFile *> SrcList;

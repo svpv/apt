@@ -1,8 +1,8 @@
 # $Id: apt,v 1.22 2005/07/15 17:25:46 me Exp $
 
 Name: apt
-Version: 0.5.15cnc6
-Release: alt18
+Version: 0.5.15lorg2
+Release: alt3
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -19,27 +19,27 @@ Source4: apt.ru.po
 Source5: apt.be.po
 Source6: ChangeLog-rpm.old
 
-Patch9: apt-0.5.15cnc6-alt-aclocal-warnings.patch
-Patch10: apt-0.5.15cnc5-alt-libtool.patch
-Patch11: apt-0.5.15cnc6-alt-fixes.patch
-Patch12: apt-0.5.15cnc5-alt-tinfo.patch
-Patch13: apt-0.5.15cnc5-alt-rpm-build.patch
-Patch14: apt-0.5.15cnc5-alt-distro.patch
-Patch15: apt-0.5.15cnc5-alt-debsystem.patch
-Patch16: apt-0.5.15cnc6-alt-defaults.patch
-Patch17: apt-0.5.5cnc5-alt-rsync.patch
-Patch18: apt-0.5.15cnc5-alt-getsrc.patch
-Patch19: apt-0.5.15cnc6-alt-parseargs.patch
-Patch20: apt-0.5.15cnc5-alt-rpm_cmd.patch
-Patch21: apt-0.5.15cnc6-alt-rpm-fancypercent.patch
-Patch22: apt-0.5.15cnc5-alt-methods_gpg_homedir.patch
-Patch23: apt-0.5.15cnc5-alt-md5hash-debug.patch
-Patch24: apt-0.5.15cnc5-alt-packagemanager-CheckRConflicts.patch
-Patch25: apt-0.5.5cnc4.1-alt-fixpriorsort.patch
-Patch26: apt-0.5.4cnc9-alt-pkgorderlist_score.patch
-Patch27: apt-0.5.15cnc6-alt-virtual_scores.patch
-Patch28: apt-0.5.15cnc5-alt-system-lua5.patch
-Patch29: apt-0.5.15cnc5-alt-findrepos.patch
+Patch9: apt-0.5.15lorg2-alt-buildlib.patch
+Patch10: apt-0.5.15lorg2-alt-rpmSystem-DistroVer.patch
+Patch11: apt-0.5.15lorg2-alt-fixes.patch
+Patch12: apt-0.5.15cnc5-alt-libtool.patch
+Patch13: apt-0.5.15lorg2-alt-readline.patch
+Patch14: apt-0.5.15cnc5-alt-rpm-build.patch
+Patch15: apt-0.5.15cnc5-alt-distro.patch
+Patch16: apt-0.5.15cnc5-alt-debsystem.patch
+Patch17: apt-0.5.15cnc6-alt-defaults.patch
+Patch18: apt-0.5.5cnc5-alt-rsync.patch
+Patch19: apt-0.5.15cnc5-alt-getsrc.patch
+Patch20: apt-0.5.15cnc6-alt-parseargs.patch
+Patch21: apt-0.5.15cnc5-alt-execrpm-cmd.patch
+Patch22: apt-0.5.15cnc6-alt-rpm-fancypercent.patch
+Patch23: apt-0.5.15cnc5-alt-gpg-homedir.patch
+Patch24: apt-0.5.15cnc5-alt-md5hash-debug.patch
+Patch25: apt-0.5.15cnc5-alt-packagemanager-CheckRConflicts.patch
+Patch26: apt-0.5.5cnc4.1-alt-PrioComp.patch
+Patch27: apt-0.5.4cnc9-alt-pkgorderlist-score.patch
+Patch28: apt-0.5.15cnc6-alt-virtual-scores.patch
+Patch29: apt-0.5.15cnc5-alt-system-lua5.patch
 Patch30: apt-0.5.15cnc5-alt-gettext.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
@@ -54,6 +54,8 @@ Patch40: apt-0.5.15cnc6-alt-vendor.patch
 Patch41: apt-0.5.15cnc6-alt-apt-pipe.patch
 Patch42: apt-0.5.15cnc6-alt-PrintLocalFile.patch
 Patch43: apt-0.5.15cnc6-apt-utils-locale.patch
+Patch44: apt-0.5.15lorg2-alt-apt-shell-resetconfig.patch
+Patch45: apt-0.5.15lorg2-alt-pkgInitConfig-cpu.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -72,14 +74,17 @@ BuildPreReq: docbook-utils
 # lua5.
 BuildPreReq: liblua5-devel
 
-# autopoint
+# for autopoint.
 BuildPreReq: cvs
+
+# for apt-pipe.
+BuildPreReq: setproctitle-devel
 
 %def_disable static
 %{?_enable_static:BuildPreReq: glibc-devel-static}
 
 # all the rest.
-BuildPreReq: gcc-c++ libreadline-devel libstdc++-devel libtinfo-devel setproctitle-devel
+BuildPreReq: gcc-c++ libreadline-devel
 
 %package -n libapt
 Summary: APT's core libraries
@@ -249,58 +254,62 @@ This package contains method 'rsync' for APT.
 %patch41 -p1
 %patch42 -p1
 %patch43 -p1
+%patch44 -p1
+%patch45 -p1
 
 find -type f -name \*.orig -delete -print
 
 # Use system-wide lua5
 pushd lua
 # keep only local/ and lua/
-%__rm -rfv include lib luac *.[ch]
+rm -rfv include lib luac *.[ch]
 popd
 
 # Turn it on only if you want to see the debugging messages:
 #%patch101 -p1 -b .getsrc-debug
 
-%__install -p -m644 %SOURCE3 %SOURCE6 .
-%__install -p -m644 %SOURCE4 po/ru.po
-%__install -p -m644 %SOURCE5 po/be.po
+install -p -m644 %SOURCE3 %SOURCE6 .
+install -p -m644 %SOURCE4 po/ru.po
+install -p -m644 %SOURCE5 po/be.po
 %__subst 's|^\(.\+\)$|\1 be|' po/LINGUAS
 
 %build
 # Fix url.
 %__subst -p 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
 
+# Unhide potential cc/c++ errors.
+%__subst 's, > /dev/null 2>&1,,' buildlib/tools.m4
+
 autoreconf -fisv
 
-# --disable-dependency-tracking Speeds up one-time builds
 %configure --includedir=%_includedir/apt-pkg %{subst_enable static}
 
 # Probably this obsolete now?
 find -type f -print0 |
-	xargs -r0 %__grep -EZl '/var(/lib)?/state/apt' -- |
+	xargs -r0 grep -EZl '/var(/lib)?/state/apt' -- |
 	xargs -r0 %__subst -p 's,/var\(/lib\)\?/state/apt,%_localstatedir/%name,g' --
 %make_build
 
 %install
-%__mkdir_p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list}.d
-%__mkdir_p %buildroot%_libdir/%name/scripts
-%__mkdir_p %buildroot%_localstatedir/%name/{lists/partial,prefetch}
-%__mkdir_p %buildroot%_cachedir/%name/{archives/partial,gen{pkg,src}list}
+mkdir -p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list}.d
+mkdir -p %buildroot%_libdir/%name/scripts
+mkdir -p %buildroot%_localstatedir/%name/{lists/partial,prefetch}
+mkdir -p %buildroot%_cachedir/%name/{archives/partial,gen{pkg,src}list}
 
 %makeinstall includedir=%buildroot%_includedir/apt-pkg
 
-%__install -p -m755 %SOURCE2 %buildroot%_bindir/
-%__install -p -m644 %SOURCE1 %buildroot%_sysconfdir/%name/
+install -p -m755 %SOURCE2 %buildroot%_bindir/
+install -p -m644 %SOURCE1 %buildroot%_sysconfdir/%name/
 
 # This is still needed.
-%__ln_s -f rsh %buildroot%_libdir/%name/methods/ssh
-%__ln_s -f gzip %buildroot%_libdir/%name/methods/bzip2
+ln -sf rsh %buildroot%_libdir/%name/methods/ssh
+ln -sf gzip %buildroot%_libdir/%name/methods/bzip2
 
 # Cleanup
-find %buildroot%_includedir -type f -name rpmshowprogress.h -print -delete
-%__rm -f %buildroot%_libdir/*.la
+find %buildroot%_includedir -type f -name rpmshowprogress.h -delete -print
+rm -f %buildroot%_libdir/*.la
 
-%__bzip2 -9fk ChangeLog-rpm.old
+bzip2 -9fk ChangeLog-rpm.old
 
 %find_lang %name
 
@@ -364,6 +373,15 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sat Apr 01 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt3
+- Resolved a few issues introduced after cnc6.
+
+* Wed Mar 29 2006 Anton Farygin <rider@altlinux.ru> 0.5.15lorg2-alt2
+- apt-shell: use string for MatchSection.
+
+* Tue Mar 21 2006 Anton Farygin <rider@altlinux.ru> 0.5.15lorg2-alt1
+- Updated to 0.5.15lorg2.
+
 * Tue Feb 21 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15cnc6-alt18
 - apt-get: Fixed APT::Get::PrintLocalFile for local files (#8902).
 

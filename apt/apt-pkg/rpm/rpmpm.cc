@@ -239,6 +239,9 @@ bool pkgRPMPM::RunScriptsWithPkgs(const char *Cnf)
 /* This globs the operations and calls rpm */
 bool pkgRPMPM::Go()
 {
+   if (List.empty() == true)
+      return true;
+
    if (RunScripts("RPM::Pre-Invoke") == false)
       return false;
 
@@ -323,6 +326,7 @@ bool pkgRPMPM::Go()
       _lua->ResetCaches();
       _lua->ResetGlobals();
       if (_error->PendingError() == true) {
+	 _error->DumpErrors();
 	 Ret = false;
 	 goto exit;
       }
@@ -344,6 +348,7 @@ bool pkgRPMPM::Go()
       _lua->ResetCaches();
       _lua->ResetGlobals();
       if (_error->PendingError() == true) {
+	 _error->DumpErrors();
 	 Ret = false;
 	 goto exit;
       }
@@ -778,6 +783,27 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    TS = rpmtransCreateSet(DB, Dir.c_str());
 #endif
 
+#if RPM_VERSION >= 0x040000
+   if (rpmExpandNumeric("%{?_repackage_all_erasures}"))
+      tsFlags |= RPMTRANS_FLAG_REPACKAGE;
+#endif
+		     
+#if RPM_VERSION >= 0x040300
+   /* Initialize security context patterns for SELinux */
+   if (!(tsFlags & RPMTRANS_FLAG_NOCONTEXTS)) {
+      rpmsx sx = rpmtsREContext(TS);
+      if (sx == NULL) {
+         const char *fn = rpmGetPath("%{?_install_file_context_path}", NULL);
+         if (fn != NULL && *fn != '\0') {
+            sx = rpmsxNew(fn);
+            (void) rpmtsSetREContext(TS, sx);
+         }
+         fn = (const char *) _free(fn);
+      }
+      sx = rpmsxFree(sx);
+   }
+#endif
+
    if (_config->FindB("RPM::OldPackage", true) || !upgrade.empty()) {
       probFilter |= RPMPROB_FILTER_OLDPACKAGE;
    }
@@ -921,6 +947,10 @@ bool pkgRPMLibPM::ParseRpmOpts(const char *Cnf, int *tsFlags, int *probFilter)
 	          Opts->Value == "--excludeconfigs")
 	    *tsFlags |= RPMTRANS_FLAG_NOCONFIGS;
 #endif
+#if RPM_VERSION >= 0x040300
+	 else if (Opts->Value == "--nocontexts")
+            *tsFlags |= RPMTRANS_FLAG_NOCONTEXTS;
+#endif
 
 	 // Problem filter flags
 	 else if (Opts->Value == "--replacefiles")
@@ -949,6 +979,16 @@ bool pkgRPMLibPM::ParseRpmOpts(const char *Cnf, int *tsFlags, int *probFilter)
 	    _config->Set("RPM::NoDeps", true);
 	 else if (Opts->Value == "--noorder")
 	    _config->Set("RPM::Order", false);
+	 else if (Opts->Value == "-v") {
+	    rpmIncreaseVerbosity();
+	 } else if (Opts->Value == "-vv") {
+	    rpmIncreaseVerbosity();
+	    rpmIncreaseVerbosity();
+	 } else if (Opts->Value == "-vvv") {
+	    rpmIncreaseVerbosity();
+	    rpmIncreaseVerbosity();
+	    rpmIncreaseVerbosity();
+	 }
 	 // TODO: --root, --relocate, --prefix, --excludepath etc...
 
       }

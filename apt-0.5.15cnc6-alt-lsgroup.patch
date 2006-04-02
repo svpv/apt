@@ -5,7 +5,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
  
     bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
     bool ShowSummary = _config->FindB("APT::Cache::ShowSummary", false);
-+   const char *MatchSection = _config->Find("APT::Cache::MatchGroup","").c_str();
++   std::string MatchSection = _config->Find("APT::Cache::MatchGroup","");
 +   bool ShowGroup = _config->FindB("APT::Cache::ShowGroup", false);
  
     const char *PkgName;
@@ -22,7 +22,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
  	  (Pkg->CurrentVer == 0 || Cache[Pkg].Upgradable() == false))
  	 continue;
 +      PkgSection = Pkg.Section();
-+      if (strlen(MatchSection) > 0 && strcmp(MatchSection,PkgSection) != 0)
++      if (!MatchSection.empty() && MatchSection != std::string(PkgSection))
 +	continue;
 +      
        PkgName = Pkg.Name();
@@ -68,7 +68,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
 +	   else
 +	    {
 +	        c2out << Str;
-+		if (strlen(MatchSection) > 0)
++		if (!MatchSection.empty())
 +		    cout << "\t" << status;
 +		cout << endl;
 +	    }

@@ -594,7 +594,7 @@
 @@ -16,6 +16,9 @@
  apt_cache_SOURCES = apt-cache.cc
  apt_shell_SOURCES = apt-shell.cc acqprogress.cc acqprogress.h
- apt_shell_LDADD = $(LDADD) -lreadline -ltinfo
+ apt_shell_LDADD = $(LDADD) -lreadline
 +apt_pipe_SOURCES = $(apt_shell_SOURCES) apt-pipe.c
 +apt_pipe_CPPFLAGS = -DAPT_PIPE
 +apt_pipe_LDADD = $(LDADD) -lsetproctitle

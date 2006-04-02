@@ -210,6 +210,9 @@ RPMDirHandler::RPMDirHandler(string DirName)
    : sDirName(DirName)
 {
    ID = DirName;
+#if RPM_VERSION >= 0x040100
+   TS = NULL;
+#endif
    Dir = opendir(sDirName.c_str());
    if (Dir == NULL)
       return;
@@ -253,7 +256,8 @@ RPMDirHandler::~RPMDirHandler()
    if (HeaderP != NULL)
       headerFree(HeaderP);
 #if RPM_VERSION >= 0x040100
-   rpmtsFree(TS);
+   if (TS != NULL)
+      rpmtsFree(TS);
 #endif
    if (Dir != NULL)
       closedir(Dir);
@@ -367,7 +371,7 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
    Handler = rpmtsCreate();
    rpmtsSetVSFlags(Handler, (rpmVSFlags_e)-1);
    rpmtsSetRootDir(Handler, Dir.c_str());
-   if (rpmtsOpenDB(Handler, WriteLock?O_RDWR:O_RDONLY) != 0)
+   if (rpmtsOpenDB(Handler, O_RDONLY) != 0)
    {
       _error->Error(_("could not open RPM database"));
       return;
@@ -376,7 +380,7 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
    const char *RootDir = NULL;
    if (!Dir.empty())
       RootDir = Dir.c_str();
-   if (rpmdbOpen(RootDir, &Handler, WriteLock?O_RDWR:O_RDONLY, 0644) != 0)
+   if (rpmdbOpen(RootDir, &Handler, O_RDONLY, 0644) != 0)
    {
       _error->Error(_("could not open RPM database"));
       return;
@@ -401,7 +405,9 @@ RPMDBHandler::RPMDBHandler(bool WriteLock)
    rpmdbFreeIterator(countIt);
 #else
    iSize = St.st_size;
+
 #endif
+
 
    // Restore just after opening the database, and just after closing.
    if (WriteLock) {

@@ -21,6 +21,7 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
 #include <apt-pkg/rpmhandler.h>
+#include <apt-pkg/configuration.h>
 
 #include "cached_md5.h"
 
@@ -118,12 +119,16 @@ bool readRPMTable(char *file, map<string, list<char*>* > &table)
 
 void usage()
 {
+   cerr << "gensrclist " << VERSION << endl;
    cerr << "usage: gensrclist [<options>] <dir> <suffix> <srpm index>" << endl;
    cerr << "options:" << endl;
 //   cerr << " --mapi         ???????????????????" << endl;
-   cerr << " --progress     show a progress bar" << endl;
-   cerr << " --flat         use a flat directory structure, where RPMS and SRPMS"<<endl;
-   cerr << "                are in the same directory level"<<endl;
+   cerr << " --flat          use a flat directory structure, where RPMS and SRPMS"<<endl;
+   cerr << "                 are in the same directory level"<<endl;
+   cerr << " --meta <suffix> create source package file list with given suffix" << endl;
+   cerr << " --append        append to the source package file list, don't overwrite" << endl;
+   cerr << " --progress      show a progress bar" << endl;
+   cerr << " --cachedir=DIR  use a custom directory for package md5sum cache"<<endl;
 }
 
 #if RPM_VERSION >= 0x040000
@@ -170,6 +175,14 @@ int main(int argc, char ** argv)
 	    srcListSuffix = argv[i];
 	 } else {
 	    cout << "gensrclist: argument missing for option --meta"<<endl;
+	    exit(1);
+	 }
+      } else if (strcmp(argv[i], "--cachedir") == 0) {
+	 i++;
+	 if (i < argc) {
+            _config->Set("Dir::Cache", argv[i]);
+	 } else {
+            cout << "genpkglist: argument missing for option --cachedir"<<endl;
 	    exit(1);
 	 }
       } else {
@@ -272,22 +285,22 @@ int main(int argc, char ** argv)
       if (progressBar) {
          if (entry_cur)
             printf("\b\b\b\b\b\b\b\b\b\b");
-         printf("%04i/%04i ", entry_cur + 1, entry_no);
+         printf(" %04i/%04i", entry_cur + 1, entry_no);
          fflush(stdout);
       }
 
       if (stat(dirEntries[entry_cur]->d_name, &sb) < 0) {
-          cerr << dirEntries[entry_cur] << ":";
-          perror("stat");
-          exit(1);
+	 cerr << "\nWarning: " << strerror(errno) << ": " << 
+	         dirEntries[entry_cur]->d_name << endl;
+	 continue;
       }
       
       fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
 	 
       if (!fd) {
-	  cerr << dirEntries[entry_cur]->d_name << ":";
-	  perror("open");
-	  exit(1);
+	 cerr << "\nWarning: " << strerror(errno) << ": " <<
+	         dirEntries[entry_cur]->d_name << endl;
+	 continue;
       }
 
       size[0] = sb.st_size;
@@ -369,6 +382,9 @@ int main(int argc, char ** argv)
 #if RPM_VERSION < 0x040100
 	    rpmFreeSignature(sigs);
 #endif
+      } else {
+	 cerr << "\nWarning: Skipping malformed RPM: " <<
+	         dirEntries[entry_cur]->d_name << endl;
       }
       Fclose(fd);
    } 
