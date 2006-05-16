@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt3
+Release: alt4
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -11,7 +11,7 @@ Group: System/Configuration/Packaging
 Url: https://moin.conectiva.com.br/AptRpm
 Packager: APT Development Team <apt@packages.altlinux.org>
 
-Source0: http://moin.conectiva.com.br/files/AptRpm/attachments/%name-%version.tar.bz2
+Source0: http://moin.conectiva.com.br/files/AptRpm/attachments/%name-%version.tar
 Source1: apt.conf
 Source2: genbasedir
 Source3: README.rsync
@@ -39,8 +39,8 @@ Patch25: apt-0.5.15cnc5-alt-packagemanager-CheckRConflicts.patch
 Patch26: apt-0.5.5cnc4.1-alt-PrioComp.patch
 Patch27: apt-0.5.4cnc9-alt-pkgorderlist-score.patch
 Patch28: apt-0.5.15cnc6-alt-virtual-scores.patch
-Patch29: apt-0.5.15cnc5-alt-system-lua5.patch
-Patch30: apt-0.5.15cnc5-alt-gettext.patch
+Patch29: apt-0.5.15cnc5-alt-gettext.patch
+Patch30: apt-0.5.15lorg2-alt-lua51.patch
 Patch31: apt-0.5.15cnc6-alt-rpm-order.patch
 Patch32: apt-0.5.15cnc6-alt-pkgcachegen.patch
 Patch33: apt-0.5.15cnc6-alt-apt-shell.patch
@@ -259,11 +259,8 @@ This package contains method 'rsync' for APT.
 
 find -type f -name \*.orig -delete -print
 
-# Use system-wide lua5
-pushd lua
-# keep only local/ and lua/
-rm -rfv include lib luac *.[ch]
-popd
+# Ensure system-wide lua5 in use.
+rm -rf lua
 
 # Turn it on only if you want to see the debugging messages:
 #%patch101 -p1 -b .getsrc-debug
@@ -373,6 +370,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue May 16 2006 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt4
+- Patched and rebuilt for lua-5.1.
+
 * Sat Apr 01 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt3
 - Resolved a few issues introduced after cnc6.
 
