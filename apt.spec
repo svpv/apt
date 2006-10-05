@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt4
+Release: alt5
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -374,6 +374,12 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Oct 05 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt5
+- pkgCache::PrvIterator:
+  + Add default constructor, required for aptitude 0.4.1 (Raorn, #9604).
+- rpmRecordParser::BufCat, rpmSrcRecordParser::BufCat:
+  + Fix realloc usage (#9409).
+
 * Tue May 16 2006 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt4
 - Patched and rebuilt for lua-5.1.
 
