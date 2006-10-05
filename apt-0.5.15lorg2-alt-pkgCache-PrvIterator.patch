@@ -1,0 +1,16 @@
+2006-05-23  Sir Raorn <raorn@altlinux.org>
+
+	* apt-pkg/cacheiterators.h(pkgCache::PrvIterator): Add default
+	constructor, required for aptitude 0.4.1
+
+--- apt-0.5.15lorg2.orig/apt-pkg/cacheiterators.h	2006-01-16 23:10:47 +0000
++++ apt-0.5.15lorg2/apt-pkg/cacheiterators.h	2006-05-23 05:44:07 +0000
+@@ -258,6 +258,8 @@
+    inline PkgIterator OwnerPkg() {return PkgIterator(*Owner,Owner->PkgP + Owner->VerP[Prv->Version].ParentPkg);};
+    inline unsigned long Index() const {return Prv - Owner->ProvideP;};
+ 
++   inline PrvIterator() : Prv(0), Type(PrvVer), Owner(0)  {};
++
+    inline PrvIterator(pkgCache &Owner,Provides *Trg,Version *) :
+           Prv(Trg), Type(PrvVer), Owner(&Owner) 
+    {

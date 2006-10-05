@@ -56,6 +56,7 @@ Patch42: apt-0.5.15cnc6-alt-PrintLocalFile.patch
 Patch43: apt-0.5.15cnc6-apt-utils-locale.patch
 Patch44: apt-0.5.15lorg2-alt-apt-shell-resetconfig.patch
 Patch45: apt-0.5.15lorg2-alt-pkgInitConfig-cpu.patch
+Patch46: apt-0.5.15lorg2-alt-pkgCache-PrvIterator.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -256,6 +257,7 @@ This package contains method 'rsync' for APT.
 %patch43 -p1
 %patch44 -p1
 %patch45 -p1
+%patch46 -p1
 
 find -type f -name \*.orig -delete -print
 
