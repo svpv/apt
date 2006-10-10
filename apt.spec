@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt5
+Release: alt6
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -58,6 +58,8 @@ Patch44: apt-0.5.15lorg2-alt-apt-shell-resetconfig.patch
 Patch45: apt-0.5.15lorg2-alt-pkgInitConfig-cpu.patch
 Patch46: apt-0.5.15lorg2-alt-pkgCache-PrvIterator.patch
 Patch47: apt-0.5.15lorg2-alt-realloc.patch
+Patch48: apt-0.5.15lorg2-alt-apt-get-TryToInstall-PrvPkgCandVer.patch
+Patch49: apt-0.5.15lorg2-alt-apt-get-simple-output.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -260,6 +262,8 @@ This package contains method 'rsync' for APT.
 %patch45 -p1
 %patch46 -p1
 %patch47 -p1
+%patch48 -p1
+%patch49 -p1
 
 find -type f -name \*.orig -delete -print
 
@@ -374,6 +378,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Oct 10 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt6
+- apt-get: Fixed virtual packages handling (Alexey Tourbin).
+- apt-get: Implemented simple-output option (Stanislav Ievlev).
+
 * Thu Oct 05 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt5
 - pkgCache::PrvIterator:
   + Add default constructor, required for aptitude 0.4.1 (Raorn, #9604).

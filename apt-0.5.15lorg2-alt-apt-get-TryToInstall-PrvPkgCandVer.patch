@@ -1,0 +1,88 @@
+Date: Tue, 10 Oct 2006 04:40:28 +0400
+From: Alexey Tourbin <at@altlinux.ru>
+To: ALT Devel discussion list <devel@lists.altlinux.org>
+Message-ID: <20061010004028.GH23308@localhost.localdomain>
+Mail-Followup-To: ALT Devel discussion list <devel@lists.altlinux.org>
+References: <20061009223236.GG23308@localhost.localdomain>
+	<20061009224152.GC18762@basalt.office.altlinux.org>
+In-Reply-To: <20061009224152.GC18762@basalt.office.altlinux.org>
+Subject: Re: [devel] apt virtual packages
+List-Id: ALT Devel discussion list <devel.lists.altlinux.org>
+
+On Tue, Oct 10, 2006 at 02:41:52AM +0400, Dmitry V. Levin wrote:
+> > Можно конечно в багзиллу написать или самому
+> > в апте ковыряться, но может быть уже кто-то знает?
+> 
+> Я буду признателен тому, кто решит эту задачу (т.е. зафиксит apt).
+
+Я вроде бы зафиксил, хотя меня гложут сомнения.
+
+--- apt-0.5.15lorg2/cmdline/apt-get.cc.orig	2006-10-10 15:13:17 +0000
++++ apt-0.5.15lorg2/cmdline/apt-get.cc	2006-10-10 15:24:40 +0000
+@@ -1275,14 +1275,18 @@ bool TryToInstall(pkgCache::PkgIterator 
+ 	    continue;
+ 	 }
+ 	 // Is the provides pointing to the candidate version?
+-	 if (PrvPkgCandVer == Prv.OwnerVer())
++	 bool good = false;
++	 for (; PrvPkgCandVer.end() == false; ++PrvPkgCandVer)
+ 	 {
+-	    // Yes, it is. This is a good solution.
+-	    GoodSolutions.push_back(PrvPkg);
+-	    if (instVirtual)
+-		break;
+-	    continue;
++	    if (PrvPkgCandVer == Prv.OwnerVer())
++	    {
++	       // Yes, it is. This is a good solution.
++	       good = true;
++	       GoodSolutions.push_back(PrvPkg);
++	    }
+ 	 }
++	 if (good && instVirtual)
++	    break;
+       }
+       vector<string> GoodSolutionNames;
+       unsigned int GoodSolutionsInstalled = 0, GoodSolutionInstallNumber = 0;
+End of patch
+
+Вот полностью релевантный кусок кода (исправленный).
+
+  1270           pkgCache::VerIterator PrvPkgCandVer =
+  1271                                   Cache[PrvPkg].CandidateVerIter(Cache);
+  1272           if (PrvPkgCandVer.end() == true)
+  1273           {
+  1274              // Packages without a candidate version are not good solutions.
+  1275              continue;
+  1276           }
+  1277           // Is the provides pointing to the candidate version?
+  1278           bool good = false;
+  1279           for (; PrvPkgCandVer.end() == false; ++PrvPkgCandVer)
+  1280           {
+  1281              if (PrvPkgCandVer == Prv.OwnerVer())
+  1282              {
+  1283                 // Yes, it is. This is a good solution.
+  1284                 good = true;
+  1285                 GoodSolutions.push_back(PrvPkg);
+  1286              }
+  1287           }
+  1288           if (good && instVirtual)
+  1289              break;
+  1290        }
+
+Здесь PrvPkg -- это реальный пакет, который провайдит виртуальную
+зависимость.  Мы проверяем, есть ли у реального пакета "версия".
+(Что такое "версия"?  Я плохо понимаю внутренние структуры апта, поэтому
+и гложут сомнения.)  Если реальный пакет без версии, тогда он не тянет
+на установку через виртуальную зависимость.  Далее, в оригинальном коде
+проверяется нечто странное, что я не могу до конца сформулировать.
+
+	if (PrvPkgCandVer == Prv.OwnerVer())
+
+Смысле в том, что версия PrvPkgCandVer, найденная через reverse lookup,
+должна совпадать с непосредственной версией Prv.OwnerVer().  Тогда пакет
+-- хороший кандидат.  Но PrvPkgCandVer -- это итератор.  Кстати, кажется
+Prv.OwnerVer это тоже итератор.  Если в репозитарии оказывается два
+пакета с одинаковым именем и версией, то совпадение сразу же не
+гарантируется.  Один из этих итераторов нужно "прокрутить" и проверять
+условие в цикле, что я и делаю.
