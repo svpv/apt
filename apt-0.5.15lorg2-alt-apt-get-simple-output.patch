@@ -1,3 +1,22 @@
+--- apt-0.5.15lorg2/cmdline/acqprogress.cc.orig	2006-11-30 14:49:57 +0000
++++ apt-0.5.15lorg2/cmdline/acqprogress.cc	2006-11-30 14:49:57 +0000
+@@ -13,6 +13,7 @@
+ #include <apt-pkg/acquire-worker.h>
+ #include <apt-pkg/strutl.h>
+ #include <apt-pkg/error.h>
++#include <apt-pkg/configuration.h>
+ 
+ #include <apti18n.h>
+     
+@@ -274,6 +275,8 @@ bool AcqTextStatus::MediaChange(string M
+ 		   " '%s'\n"
+ 		   "in the drive '%s' and press enter\n"),
+ 	    Media.c_str(),Drive.c_str());
++   if (_config->FindB("simple-output"))
++   	cout << "apt-get:media-change:" << Drive << ":" << Media << std::endl;
+ 
+    char C = 0;
+    while (C != '\n' && C != '\r')
 --- apt-0.5.15lorg2/cmdline/apt-get.cc.orig	2006-10-10 20:43:05 +0000
 +++ apt-0.5.15lorg2/cmdline/apt-get.cc	2006-10-10 20:43:32 +0000
 @@ -71,6 +71,7 @@ using namespace std;

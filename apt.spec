@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt6
+Release: alt7
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -265,7 +265,7 @@ This package contains method 'rsync' for APT.
 %patch48 -p1
 %patch49 -p1
 
-find -type f -name \*.orig -delete -print
+find -type f -name \*.orig -delete
 
 # Ensure system-wide lua5 in use.
 rm -rf lua
@@ -378,6 +378,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Nov 30 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt7
+- apt-get: More simple-output enhancements (Stanislav Ievlev).
+
 * Tue Oct 10 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt6
 - apt-get: Fixed virtual packages handling (Alexey Tourbin).
 - apt-get: Implemented simple-output option (Stanislav Ievlev).
