@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt7
+Release: alt8
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -60,6 +60,7 @@ Patch46: apt-0.5.15lorg2-alt-pkgCache-PrvIterator.patch
 Patch47: apt-0.5.15lorg2-alt-realloc.patch
 Patch48: apt-0.5.15lorg2-alt-apt-get-TryToInstall-PrvPkgCandVer.patch
 Patch49: apt-0.5.15lorg2-alt-apt-get-simple-output.patch
+Patch50: apt-0.5.15lorg2-alt-versionmatch.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -264,6 +265,7 @@ This package contains method 'rsync' for APT.
 %patch47 -p1
 %patch48 -p1
 %patch49 -p1
+%patch50 -p1
 
 find -type f -name \*.orig -delete
 
@@ -378,6 +380,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sun Dec 31 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt8
+- Fixed longstanding problem with versioned virtual packages (Alexey Tourbin),
+  see http://lists.altlinux.org/pipermail/devel/2006-December/039317.html
+
 * Thu Nov 30 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt7
 - apt-get: More simple-output enhancements (Stanislav Ievlev).
 

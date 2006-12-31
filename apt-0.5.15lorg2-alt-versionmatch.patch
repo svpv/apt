@@ -1,0 +1,103 @@
+http://lists.altlinux.org/pipermail/devel/2006-December/039698.html
+
+--- apt-0.5.15lorg2.orig/apt-pkg/versionmatch.cc	2006-12-31 00:19:56 +0000
++++ apt-0.5.15lorg2/apt-pkg/versionmatch.cc	2006-12-31 00:20:42 +0000
+@@ -164,11 +164,17 @@ bool pkgVersionMatch::MatchVer(const cha
+ // VersionMatch::Find - Locate the best match for the select type	/*{{{*/
+ // ---------------------------------------------------------------------
+ /* */
+-pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
++static inline bool
++vercmpOrder(const pkgCache::VerIterator &a, const pkgCache::VerIterator &b)
++{
++   return a.CompareVer(b) < 0;
++}
++std::list<pkgCache::VerIterator> pkgVersionMatch::FindAll(pkgCache::PkgIterator Pkg)
+ {
+    // CNC:2003-11-05
+    pkgVersioningSystem *VS = Pkg.Cache()->VS;
+    pkgCache::VerIterator Ver = Pkg.VersionList();
++   std::list<pkgCache::VerIterator> found;
+ 
+    for (; Ver.end() == false; Ver++)
+    {
+@@ -178,10 +184,10 @@ pkgCache::VerIterator pkgVersionMatch::F
+          if (VerPrefixMatch)
+ 	 {
+ 	    if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
+-	       return Ver;
++	       found.push_back(Ver);
+ 	 } else {
+ 	    if (VS->CheckDep(Ver.VerStr(),VerOp,VerStr.c_str()) == true)
+-	       return Ver;
++	       found.push_back(Ver);
+ 	 }
+ 
+ 	 continue;
+@@ -189,8 +195,11 @@ pkgCache::VerIterator pkgVersionMatch::F
+       
+       for (pkgCache::VerFileIterator VF = Ver.FileList(); VF.end() == false; VF++)
+ 	 if (FileMatch(VF.File()) == true)
+-	    return Ver;
++	    found.push_back(Ver);
+    }
++
++   if (found.size() > 0)
++      goto done;
+       
+    // CNC:2003-11-11 - Virtual package handling.
+    if (Type == Version)
+@@ -205,15 +214,32 @@ pkgCache::VerIterator pkgVersionMatch::F
+          if (VerPrefixMatch || (HasRelease && strchr(PrvVerStr, '-') == NULL))
+          {
+             if (MatchVer(PrvVerStr,VerStr,VerPrefixMatch) == true)
+-               return Prv.OwnerVer();
++               found.push_back(Prv.OwnerVer());
+          } else {
+             if (VS->CheckDep(PrvVerStr,VerOp,VerStr.c_str()) == true)
+-               return Prv.OwnerVer();
++               found.push_back(Prv.OwnerVer());
+          }
+       }
+    }
+ 
+-   // This will be Ended by now.
++done:
++   // best versions go first
++   found.sort(vercmpOrder);
++   found.unique();
++   found.reverse();
++   return found;
++}
++
++pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
++{
++   std::list<pkgCache::VerIterator> found = FindAll(Pkg);
++   if (found.size() > 0)
++      return found.front();
++
++   // return "empty" iterator at its end
++   pkgCache::VerIterator Ver = Pkg.VersionList();
++   while (Ver.end() == false)
++      Ver++;
+    return Ver;
+ }
+ 									/*}}}*/
+--- apt-0.5.15lorg2.orig/apt-pkg/versionmatch.h	2006-12-31 00:19:56 +0000
++++ apt-0.5.15lorg2/apt-pkg/versionmatch.h	2006-12-31 00:20:42 +0000
+@@ -36,6 +36,7 @@
+ #endif
+ 
+ #include <string>
++#include <list>
+ #include <apt-pkg/pkgcache.h>
+ 
+ using std::string;
+@@ -70,6 +71,7 @@ class pkgVersionMatch
+ 			       
+    // CNC:2003-11-05
+    pkgVersionMatch(string Data,MatchType Type,int Op=pkgCache::Dep::Equals);
++   std::list<pkgCache::VerIterator> FindAll(pkgCache::PkgIterator Pkg);
+ };
+ 
+ #endif
