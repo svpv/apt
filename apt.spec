@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt8
+Release: alt9
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -380,6 +380,12 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Mar 22 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt9
+- Updated my previous patch for versioned dependencies, which was half-way
+  wrong and incomplete.  For versioned virtual dependencies like python=2.4,
+  'apt-get install' will always select real package with the best version
+  (which is python-strict#2.4.4-alt8, as for now)
+
 * Sun Dec 31 2006 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt8
 - Fixed longstanding problem with versioned virtual packages (Alexey Tourbin),
   see http://lists.altlinux.org/pipermail/devel/2006-December/039317.html
