@@ -60,7 +60,7 @@ Patch46: apt-0.5.15lorg2-alt-pkgCache-PrvIterator.patch
 Patch47: apt-0.5.15lorg2-alt-realloc.patch
 Patch48: apt-0.5.15lorg2-alt-apt-get-TryToInstall-PrvPkgCandVer.patch
 Patch49: apt-0.5.15lorg2-alt-apt-get-simple-output.patch
-Patch50: apt-0.5.15lorg2-alt-versionmatch.patch
+Patch50: apt-0.5.15lorg2-alt-versionmatch-TryToChangeVer.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch

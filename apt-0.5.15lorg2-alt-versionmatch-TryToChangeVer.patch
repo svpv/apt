@@ -1,0 +1,212 @@
+--- apt-0.5.15lorg2/apt-pkg/versionmatch.cc-	2007-03-22 23:05:34 +0300
++++ apt-0.5.15lorg2/apt-pkg/versionmatch.cc	2007-03-22 23:05:34 +0300
+@@ -164,11 +164,12 @@ bool pkgVersionMatch::MatchVer(const cha
+ // VersionMatch::Find - Locate the best match for the select type	/*{{{*/
+ // ---------------------------------------------------------------------
+ /* */
+-pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
++std::list<pkgCache::VerIterator> pkgVersionMatch::FindAll(pkgCache::PkgIterator Pkg)
+ {
+    // CNC:2003-11-05
+    pkgVersioningSystem *VS = Pkg.Cache()->VS;
+    pkgCache::VerIterator Ver = Pkg.VersionList();
++   std::list<pkgCache::VerIterator> found;
+ 
+    for (; Ver.end() == false; Ver++)
+    {
+@@ -178,10 +179,10 @@ pkgCache::VerIterator pkgVersionMatch::F
+          if (VerPrefixMatch)
+ 	 {
+ 	    if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
+-	       return Ver;
++	       found.push_back(Ver);
+ 	 } else {
+ 	    if (VS->CheckDep(Ver.VerStr(),VerOp,VerStr.c_str()) == true)
+-	       return Ver;
++	       found.push_back(Ver);
+ 	 }
+ 
+ 	 continue;
+@@ -189,8 +190,11 @@ pkgCache::VerIterator pkgVersionMatch::F
+       
+       for (pkgCache::VerFileIterator VF = Ver.FileList(); VF.end() == false; VF++)
+ 	 if (FileMatch(VF.File()) == true)
+-	    return Ver;
++	    found.push_back(Ver);
+    }
++
++   if (found.size() > 0)
++      goto done;
+       
+    // CNC:2003-11-11 - Virtual package handling.
+    if (Type == Version)
+@@ -205,15 +209,28 @@ pkgCache::VerIterator pkgVersionMatch::F
+          if (VerPrefixMatch || (HasRelease && strchr(PrvVerStr, '-') == NULL))
+          {
+             if (MatchVer(PrvVerStr,VerStr,VerPrefixMatch) == true)
+-               return Prv.OwnerVer();
++               found.push_back(Prv.OwnerVer());
+          } else {
+             if (VS->CheckDep(PrvVerStr,VerOp,VerStr.c_str()) == true)
+-               return Prv.OwnerVer();
++               found.push_back(Prv.OwnerVer());
+          }
+       }
+    }
+ 
+-   // This will be Ended by now.
++done:
++   return found;
++}
++
++pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
++{
++   std::list<pkgCache::VerIterator> found = FindAll(Pkg);
++   if (found.size() > 0)
++      return found.front();
++
++   // return "empty" iterator at its end
++   pkgCache::VerIterator Ver = Pkg.VersionList();
++   while (Ver.end() == false)
++      Ver++;
+    return Ver;
+ }
+ 									/*}}}*/
+--- apt-0.5.15lorg2/apt-pkg/versionmatch.h-	2007-03-22 23:05:34 +0300
++++ apt-0.5.15lorg2/apt-pkg/versionmatch.h	2007-03-22 23:05:34 +0300
+@@ -36,6 +36,7 @@
+ #endif
+ 
+ #include <string>
++#include <list>
+ #include <apt-pkg/pkgcache.h>
+ 
+ using std::string;
+@@ -70,6 +71,7 @@ class pkgVersionMatch
+ 			       
+    // CNC:2003-11-05
+    pkgVersionMatch(string Data,MatchType Type,int Op=pkgCache::Dep::Equals);
++   std::list<pkgCache::VerIterator> FindAll(pkgCache::PkgIterator Pkg);
+ };
+ 
+ #endif
+--- apt-0.5.15lorg2/cmdline/apt-get.cc-	2007-03-22 23:05:34 +0300
++++ apt-0.5.15lorg2/cmdline/apt-get.cc	2007-03-22 23:06:19 +0300
+@@ -1528,17 +1528,61 @@ static const char *op2str(int op)
+    }
+ }
+ 
++class bestVersionOrder
++{
++   private:
++      pkgDepCache &Cache_;
++      pkgProblemResolver &Fix_;
++   public:
++      bestVersionOrder(pkgDepCache &Cache, pkgProblemResolver &Fix)
++	 : Cache_(Cache), Fix_(Fix) { }
++      bool operator() (const pkgCache::VerIterator &a, const pkgCache::VerIterator &b)
++      {
++	 int cmp = Cache_.VS().CmpVersion(a.VerStr(), b.VerStr());
++	 if (cmp == 0)
++	 {
++	    const pkgCache::Package *A = &(*a.ParentPkg());
++	    const pkgCache::Package *B = &(*b.ParentPkg());
++	    cmp = Fix_.ScoreSort(&A, &B);
++	 }
++	 //fprintf(stderr, "%s %s <=> %s %s = %d\n",
++	 //      a.ParentPkg().Name(), a.VerStr(),
++	 //      b.ParentPkg().Name(), b.VerStr(),
++	 //      cmp);
++	 return cmp > 0;
++      }
++};
++
++static void __attribute__((unused))
++printVerList(const char *msg, const std::list<pkgCache::VerIterator> &list)
++{
++   std::list<pkgCache::VerIterator>::const_iterator I = list.begin();
++   for ( ; I != list.end(); ++I)
++   {
++      if (I == list.begin())
++	 fprintf(stderr, "%s: ", msg);
++      else if (I != list.end())
++	 fprintf(stderr, ", ");
++      
++      const pkgCache::VerIterator &Ver = *I;
++      fprintf(stderr, "%s#%s", Ver.ParentPkg().Name(), Ver.VerStr());
++   }
++   fprintf(stderr, "\n");
++}
++
+ // CNC:2003-11-11
+ bool TryToChangeVer(pkgCache::PkgIterator &Pkg,pkgDepCache &Cache,
++		    pkgProblemResolver &Fix,
+  		    int VerOp,const char *VerTag,bool IsRel)
+ {
+    // CNC:2003-11-05
+    pkgVersionMatch Match(VerTag,(IsRel == true?pkgVersionMatch::Release : 
+  				 pkgVersionMatch::Version),VerOp);
+    
+-   pkgCache::VerIterator Ver = Match.Find(Pkg);
+-			 
+-   if (Ver.end() == true)
++   std::list<pkgCache::VerIterator> found = Match.FindAll(Pkg);
++   //printVerList("found", found);
++
++   if (found.size() == 0)
+    {
+       // CNC:2003-11-05
+       if (IsRel == true)
+@@ -1547,16 +1591,29 @@ bool TryToChangeVer(pkgCache::PkgIterato
+       return _error->Error(_("Version %s'%s' for '%s' was not found"),
+ 			   op2str(VerOp),VerTag,Pkg.Name());
+    }
++
++   if (found.size() > 1)
++   {
++      Fix.MakeScores();
++      bestVersionOrder order(Cache,Fix);
++      found.sort(order);
++      found.unique();
++      //printVerList("sorted", found);
++   }
++
++   pkgCache::VerIterator Ver = found.front();
+    
+-   if (strcmp(VerTag,Ver.VerStr()) != 0)
++   if (strcmp(VerTag,Ver.VerStr()) != 0 || found.size() > 1)
+    {
+       // CNC:2003-11-11
+       if (IsRel == true)
+-	 ioprintf(c1out,_("Selected version %s (%s) for %s\n"),
+-		  Ver.VerStr(),Ver.RelStr().c_str(),Pkg.Name());
++	 ioprintf(c1out,_("Selected version %s#%s (%s) for %s%s%s\n"),
++		  Ver.ParentPkg().Name(),Ver.VerStr(),Ver.RelStr().c_str(),
++		  Pkg.Name(),op2str(VerOp),VerTag);
+       else
+-	 ioprintf(c1out,_("Selected version %s for %s\n"),
+-		  Ver.VerStr(),Pkg.Name());
++	 ioprintf(c1out,_("Selected version %s#%s for %s%s%s\n"),
++		  Ver.ParentPkg().Name(),Ver.VerStr(),
++		  Pkg.Name(),op2str(VerOp),VerTag);
+    }
+    
+    Cache.SetCandidateVersion(Ver);
+@@ -2086,7 +2143,7 @@ bool DoInstall(CommandLine &CmdL)
+ 	    
+ 	    if (VerTag != 0)
+ 	       // CNC:2003-11-05
+-	       if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
++	       if (TryToChangeVer(Pkg,Cache,Fix,VerOp,VerTag,VerIsRel) == false)
+ 		  return false;
+ 	    
+ 	    Hit |= TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,
+@@ -2101,7 +2158,7 @@ bool DoInstall(CommandLine &CmdL)
+       {
+ 	 if (VerTag != 0)
+ 	    // CNC:2003-11-05
+-	    if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
++	    if (TryToChangeVer(Pkg,Cache,Fix,VerOp,VerTag,VerIsRel) == false)
+ 	       return false;
+ 	 if (TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,ExpectedInst) == false)
+ 	    return false;
