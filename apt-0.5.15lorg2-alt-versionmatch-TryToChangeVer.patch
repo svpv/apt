@@ -129,7 +129,7 @@
 +   {
 +      if (I == list.begin())
 +	 fprintf(stderr, "%s: ", msg);
-+      else if (I != list.end())
++      else
 +	 fprintf(stderr, ", ");
 +      
 +      const pkgCache::VerIterator &Ver = *I;
