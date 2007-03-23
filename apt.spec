@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt9
+Release: alt10
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -67,7 +67,9 @@ Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
 
 PreReq: %__subst
 Requires: libapt = %version-%release
-Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf, gnupg, alt-gpgkeys
+Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf
+# for methods.
+Requires: bzip2, gzip, gnupg, alt-gpgkeys
 Obsoletes: apt-0.5
 
 # new rpmlib.
@@ -380,6 +382,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Mar 23 2007 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt10
+- Added bzip2 and gzip requirements (#10408).
+
 * Thu Mar 22 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt9
 - Updated my previous patch for versioned dependencies, which was half-way
   wrong and incomplete.  For versioned virtual dependencies like python=2.4,
