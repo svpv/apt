@@ -90,12 +90,14 @@
  };
  
  #endif
---- apt-0.5.15lorg2/cmdline/apt-get.cc-	2007-03-22 23:05:34 +0300
-+++ apt-0.5.15lorg2/cmdline/apt-get.cc	2007-03-22 23:06:19 +0300
-@@ -1528,17 +1528,61 @@ static const char *op2str(int op)
+
+--- apt-0.5.15lorg2/cmdline/apt-get.cc-	2007-04-09 15:39:15 +0400
++++ apt-0.5.15lorg2/cmdline/apt-get.cc	2007-04-09 15:44:21 +0400
+@@ -1528,17 +1528,64 @@ static const char *op2str(int op)
     }
  }
  
++// best versions go first
 +class bestVersionOrder
 +{
 +   private:
@@ -106,12 +108,14 @@
 +	 : Cache_(Cache), Fix_(Fix) { }
 +      bool operator() (const pkgCache::VerIterator &a, const pkgCache::VerIterator &b)
 +      {
++	 // CmpVersion sorts ascending
 +	 int cmp = Cache_.VS().CmpVersion(a.VerStr(), b.VerStr());
 +	 if (cmp == 0)
 +	 {
 +	    const pkgCache::Package *A = &(*a.ParentPkg());
 +	    const pkgCache::Package *B = &(*b.ParentPkg());
-+	    cmp = Fix_.ScoreSort(&A, &B);
++	    // ScoreSort sorts descending
++	    cmp = Fix_.ScoreSort(&B, &A);
 +	 }
 +	 //fprintf(stderr, "%s %s <=> %s %s = %d\n",
 +	 //      a.ParentPkg().Name(), a.VerStr(),
@@ -157,7 +161,7 @@
     {
        // CNC:2003-11-05
        if (IsRel == true)
-@@ -1547,16 +1591,29 @@ bool TryToChangeVer(pkgCache::PkgIterato
+@@ -1547,16 +1594,67 @@ bool TryToChangeVer(pkgCache::PkgIterato
        return _error->Error(_("Version %s'%s' for '%s' was not found"),
  			   op2str(VerOp),VerTag,Pkg.Name());
     }
@@ -172,27 +176,65 @@
 +   }
 +
 +   pkgCache::VerIterator Ver = found.front();
++   int already = 0;
++
++   std::list<pkgCache::VerIterator>::const_iterator I = found.begin();
++   for ( ; I != found.end(); ++I)
++   {
++      const pkgCache::VerIterator &V = *I;
++      if (V.ParentPkg().CurrentVer() == V)
++      {
++	 Ver = V;
++	 already = 2;
++	 break;
++      }
++      if (Cache[V.ParentPkg()].InstallVer == V)
++      {
++	 Ver = V;
++	 already = 1;
++	 break;
++      }
++   }
     
 -   if (strcmp(VerTag,Ver.VerStr()) != 0)
 +   if (strcmp(VerTag,Ver.VerStr()) != 0 || found.size() > 1)
     {
        // CNC:2003-11-11
++      const char *fmt;
        if (IsRel == true)
 -	 ioprintf(c1out,_("Selected version %s (%s) for %s\n"),
 -		  Ver.VerStr(),Ver.RelStr().c_str(),Pkg.Name());
-+	 ioprintf(c1out,_("Selected version %s#%s (%s) for %s%s%s\n"),
++      {
++	 if (already > 1)
++	    fmt = _("Version %s#%s (%s) for %s%s%s is already installed\n");
++	 else if (already)
++	    fmt = _("Version %s#%s (%s) for %s%s%s is already selected for install\n");
++	 else
++	    fmt = _("Selected version %s#%s (%s) for %s%s%s\n");
++
++	 ioprintf(c1out,fmt,
 +		  Ver.ParentPkg().Name(),Ver.VerStr(),Ver.RelStr().c_str(),
 +		  Pkg.Name(),op2str(VerOp),VerTag);
++      }
        else
 -	 ioprintf(c1out,_("Selected version %s for %s\n"),
 -		  Ver.VerStr(),Pkg.Name());
-+	 ioprintf(c1out,_("Selected version %s#%s for %s%s%s\n"),
++      {
++	 if (already > 1)
++	    fmt = _("Version %s#%s for %s%s%s is already installed\n");
++	 else if (already)
++	    fmt = _("Version %s#%s for %s%s%s is already selected for install\n");
++	 else
++	    fmt = _("Selected version %s#%s for %s%s%s\n");
++
++	 ioprintf(c1out,fmt,
 +		  Ver.ParentPkg().Name(),Ver.VerStr(),
 +		  Pkg.Name(),op2str(VerOp),VerTag);
++      }
     }
     
     Cache.SetCandidateVersion(Ver);
-@@ -2086,7 +2143,7 @@ bool DoInstall(CommandLine &CmdL)
+@@ -2086,7 +2184,7 @@ bool DoInstall(CommandLine &CmdL)
  	    
  	    if (VerTag != 0)
  	       // CNC:2003-11-05
@@ -201,7 +243,7 @@
  		  return false;
  	    
  	    Hit |= TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,
-@@ -2101,7 +2158,7 @@ bool DoInstall(CommandLine &CmdL)
+@@ -2101,7 +2199,7 @@ bool DoInstall(CommandLine &CmdL)
        {
  	 if (VerTag != 0)
  	    // CNC:2003-11-05
