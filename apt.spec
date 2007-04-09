@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt10
+Release: alt11
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -382,6 +382,13 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Apr 09 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt11
+- Updated 'apt-get install' algorithm for versioned dependencies:
+  + fixed wrong usage of ScoreSort condition introduced in previous release;
+  + added explicit check if any package satisfying versioned dependency is
+    already installed or selected for install; in this case, apt-get will
+    not try to install any other package.
+
 * Fri Mar 23 2007 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt10
 - Added bzip2 and gzip requirements (#10408).
 
