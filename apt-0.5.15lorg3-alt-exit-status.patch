@@ -1,0 +1,17 @@
+--- apt-0.5.15lorg2/apt-pkg/rpm/rpmpm.cc-	2007-04-19 01:09:58 +0400
++++ apt-0.5.15lorg2/apt-pkg/rpm/rpmpm.cc	2007-04-19 01:12:02 +0400
+@@ -922,11 +922,11 @@ bool pkgRPMLibPM::Process(vector<const c
+       _error->Error(_("Error while running transaction"));
+       if (probs->numProblems > 0)
+ 	 rpmpsPrint(stderr, probs);
++   } else if (rc < 0) {
++      _error->Error(_("Some errors occurred while running transaction"));
+    } else {
+       Success = true;
+-      if (rc < 0)
+-	 _error->Warning(_("Some errors occurred while running transaction"));
+-      else if (quiet <= 2)
++      if (quiet <= 2)
+ 	 cout << _("Done.") << endl;
+    }
+    rpmpsFree(probs);
