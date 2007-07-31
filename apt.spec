@@ -8,7 +8,7 @@ Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
 License: GPL
 Group: System/Configuration/Packaging
-Url: https://moin.conectiva.com.br/AptRpm
+URL: http://apt-rpm.org
 Packager: APT Development Team <apt@packages.altlinux.org>
 
 Source0: http://moin.conectiva.com.br/files/AptRpm/attachments/%name-%version.tar
