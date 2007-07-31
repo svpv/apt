@@ -18,7 +18,7 @@ This makes the first branch in DoSource() work which is almost all one may want.
 imz@altlinux.ru
 
 A bad side of this patch may be that in the first branch (matching against
-src.rpm name), it takes the full filenmame (including version-release) into
+src.rpm name), it takes the full filename (including version-release) into
 account while the second branch does only matching against the name (version
 insensitive).
 
