@@ -2,7 +2,7 @@
 
 Name: apt
 Version: 0.5.15lorg2
-Release: alt11
+Release: alt11.1
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -392,6 +392,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Jul 31 2007 Slava Semushin <php-coder@altlinux.ru> 0.5.15lorg2-alt11.1
+- Fixed typo in output of help command in apt-shell (#5400)
+- Fixed wrong message during remove package(s) in apt-shell (#7618)
+
 * Mon Apr 09 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt11
 - Updated 'apt-get install' algorithm for versioned dependencies:
   + fixed wrong usage of ScoreSort condition introduced in previous release;

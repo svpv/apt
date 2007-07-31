@@ -3,7 +3,7 @@ https://bugzilla.altlinux.org/show_bug.cgi?id=5400
 
 --- apt/cmdline/apt-shell.cc.orig	2007-07-31 23:15:06 +0700
 +++ apt/cmdline/apt-shell.cc	2007-07-31 23:15:56 +0700
-@@ -3769,7 +3769,7 @@ bool ShowHelp(CommandLine &CmdL)
+@@ -3817,7 +3817,7 @@ bool ShowHelp(CommandLine &CmdL)
        "   remove - Remove packages\n"
        "   keep - Keep packages\n"
        "   upgrade - Perform a global upgrade\n"
