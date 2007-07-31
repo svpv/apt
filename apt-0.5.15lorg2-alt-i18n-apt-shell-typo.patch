@@ -1,0 +1,80 @@
+
+https://bugzilla.altlinux.org/show_bug.cgi?id=5400
+
+--- apt/cmdline/apt-shell.cc.orig	2007-07-31 23:15:06 +0700
++++ apt/cmdline/apt-shell.cc	2007-07-31 23:15:56 +0700
+@@ -3769,7 +3769,7 @@ bool ShowHelp(CommandLine &CmdL)
+       "   remove - Remove packages\n"
+       "   keep - Keep packages\n"
+       "   upgrade - Perform a global upgrade\n"
+-      "   dist-upgrade - Perform a globla distribution upgrade\n"
++      "   dist-upgrade - Perform a global distribution upgrade\n"
+       "   build-dep - Install build-dependencies for source packages\n"
+ //      "   dselect-upgrade - Follow dselect selections\n"
+       "   update - Retrieve new lists of packages\n"
+--- apt/po/de_DE.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/de_DE.po	2007-07-31 23:15:56 +0700
+@@ -1122,7 +1122,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"
+--- apt/po/es_ES.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/es_ES.po	2007-07-31 23:15:56 +0700
+@@ -1101,7 +1101,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"
+--- apt/po/it_IT.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/it_IT.po	2007-07-31 23:15:56 +0700
+@@ -1106,7 +1106,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"
+--- apt/po/ja.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/ja.po	2007-07-31 23:15:56 +0700
+@@ -1204,7 +1204,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"
+--- apt/po/pt_BR.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/pt_BR.po	2007-07-31 23:15:56 +0700
+@@ -1203,7 +1203,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"
+--- apt/po/ru.po.orig	2007-07-31 23:14:58 +0700
++++ apt/po/ru.po	2007-07-31 23:15:56 +0700
+@@ -1221,7 +1221,7 @@ msgid ""
+ "   remove - Remove packages\n"
+ "   keep - Keep packages\n"
+ "   upgrade - Perform a global upgrade\n"
+-"   dist-upgrade - Perform a globla distribution upgrade\n"
++"   dist-upgrade - Perform a global distribution upgrade\n"
+ "   build-dep - Install build-dependencies for source packages\n"
+ "   update - Retrieve new lists of packages\n"
+ "   commit - Apply the changes in the system\n"

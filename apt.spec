@@ -63,6 +63,9 @@ Patch49: apt-0.5.15lorg2-alt-apt-get-simple-output.patch
 Patch50: apt-0.5.15lorg2-alt-versionmatch-TryToChangeVer.patch
 Patch51: apt-0.5.15lorg3-alt-exit-status.patch
 
+# Fix for bug #5400
+Patch52: apt-0.5.15lorg2-alt-i18n-apt-shell-typo.patch
+
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
 
@@ -270,6 +273,7 @@ This package contains method 'rsync' for APT.
 %patch49 -p1
 %patch50 -p1
 %patch51 -p1
+%patch52 -p1
 
 find -type f -name \*.orig -delete
 
