@@ -61,7 +61,7 @@ Patch47: apt-0.5.15lorg2-alt-realloc.patch
 Patch48: apt-0.5.15lorg2-alt-apt-get-TryToInstall-PrvPkgCandVer.patch
 Patch49: apt-0.5.15lorg2-alt-apt-get-simple-output.patch
 Patch50: apt-0.5.15lorg2-alt-versionmatch-TryToChangeVer.patch
-Patch51: apt-0.5.15lorg3-alt-exit-status.patch
+Patch51: apt-0.5.15lorg2-alt-exit-status.patch
 
 # Fix for bug #5400
 Patch52: apt-0.5.15lorg2-alt-i18n-apt-shell-typo.patch
