@@ -1,0 +1,106 @@
+--- apt-0.5.15lorg2/tools/genpkglist.cc-	2007-08-11 15:10:54 +0400
++++ apt-0.5.15lorg2/tools/genpkglist.cc	2007-08-11 19:36:03 +0400
+@@ -18,6 +18,8 @@
+ #include <map>
+ #include <iostream>
+ 
++#include <tr1/unordered_set>
++
+ #include <apt-pkg/error.h>
+ #include <apt-pkg/tagfile.h>
+ #include <apt-pkg/configuration.h>
+@@ -77,20 +79,30 @@ typedef struct {
+    string url;
+ } UpdateInfo;
+ 
++static std::tr1::unordered_set<std::string> reqfiles;
+ 
+-static inline int usefullFile(char *a)
++static int usefulFile(const char *dir, const char *basename)
+ {
+-   int l = strlen(a);
+-   
+-   if (strstr(a, "bin") || strstr(a, "/etc") || strncmp(a, "/lib", 4) == 0)
+-       return 1;
+-   
+-   if (l < 3)
+-       return 0;
++   if (strstr(dir, "bin/"))
++      return 1;
++   if (strstr(dir, "/etc/"))
++      return 1;
+    
+-   if (strcmp(a + l - 3, ".so") == 0
+-       || strstr(a, ".so."))
+-       return 1;
++   const char *pos = strstr(basename, ".so");
++   if (pos > basename) {
++      int c = pos[3];
++      if (c == '.' || c == '\0')
++         return 1;
++   }
++
++   if (reqfiles.size() > 0) {
++      char fullname[strlen(dir) + strlen(basename) + 1];
++      strcpy(fullname, dir);
++      strcat(fullname, basename);
++      if (reqfiles.find(fullname) != reqfiles.end())
++         return 2;
++   }
++
+    return 0;
+ }
+ 
+@@ -133,9 +145,8 @@ static void copyStrippedFileList(Header 
+    {
+       int ok = 0;
+       
+-      ok = usefullFile(basenames[i]);
+-      if (!ok) 
+-	  ok = usefullFile(dirnames[dirindexes[i]]);
++      ok = usefulFile(dirnames[dirindexes[i]], basenames[i]);
++      // if (ok > 1) cerr << "useful file: " << dirnames[dirindexes[i]] << basenames[i] <<endl;
+       
+       if (!ok) {
+ 	 int k = i;
+@@ -599,6 +610,40 @@ int main(int argc, char ** argv) 
+    int isSource;
+ #endif   
+ 
++   if (!fullFileList) {
++      // first pass: initialize reqfiles
++      for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
++         fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
++         if (!fd)
++            continue;
++         int rc;
++         Header h;
++#if RPM_VERSION >= 0x040100
++         rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
++         if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
++#else
++         rc = rpmReadPackageHeader(fd, &h, &isSource, NULL, NULL);
++         if (rc == 0) {
++#endif
++            int reqtype;
++            const char **requires;
++            int nreq;
++            rc = headerGetEntry(h, RPMTAG_REQUIRENAME, &reqtype, (void**)&requires, &nreq);
++            if (rc == 1 && reqtype == RPM_STRING_ARRAY_TYPE) {
++               int i;
++               for (i = 0; i < nreq; i++) {
++                  const char *req = requires[i];
++                  if (*req == '/') {
++                     // cerr << dirEntries[entry_cur]->d_name << " requires " << req << endl;
++                     reqfiles.insert(req);
++                  }
++               }
++            }
++            headerFree(h);
++         }
++         Fclose(fd);
++      }
++   }
+    for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
+       struct stat sb;
+ 
