@@ -1,5 +1,5 @@
---- apt-0.5.15lorg2/tools/genpkglist.cc-	2007-08-11 15:10:54 +0400
-+++ apt-0.5.15lorg2/tools/genpkglist.cc	2007-08-11 19:36:03 +0400
+--- apt-0.5.15lorg2/tools/genpkglist.cc-	2007-08-11 21:39:13 +0400
++++ apt-0.5.15lorg2/tools/genpkglist.cc	2007-08-11 21:47:17 +0400
 @@ -18,6 +18,8 @@
  #include <map>
  #include <iostream>
@@ -63,13 +63,20 @@
        
        if (!ok) {
  	 int k = i;
-@@ -599,6 +610,40 @@ int main(int argc, char ** argv) 
+@@ -599,6 +610,50 @@ int main(int argc, char ** argv) 
     int isSource;
  #endif   
  
 +   if (!fullFileList) {
 +      // first pass: initialize reqfiles
 +      for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
++         if (progressBar) {
++            if (entry_cur)
++               printf("\b\b\b\b\b\b\b\b\b\b");
++            printf(" %04i/%04i", entry_cur + 1, entry_no);
++            fflush(stdout);
++         }
++
 +         fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
 +         if (!fd)
 +            continue;
@@ -86,15 +93,18 @@
 +            const char **requires;
 +            int nreq;
 +            rc = headerGetEntry(h, RPMTAG_REQUIRENAME, &reqtype, (void**)&requires, &nreq);
-+            if (rc == 1 && reqtype == RPM_STRING_ARRAY_TYPE) {
-+               int i;
-+               for (i = 0; i < nreq; i++) {
-+                  const char *req = requires[i];
-+                  if (*req == '/') {
-+                     // cerr << dirEntries[entry_cur]->d_name << " requires " << req << endl;
-+                     reqfiles.insert(req);
++            if (rc == 1) {
++               if (reqtype == RPM_STRING_ARRAY_TYPE) {
++                  int i;
++                  for (i = 0; i < nreq; i++) {
++                     const char *req = requires[i];
++                     if (*req == '/') {
++                        // cerr << dirEntries[entry_cur]->d_name << " requires " << req << endl;
++                        reqfiles.insert(req);
++                     }
 +                  }
 +               }
++               headerFreeTag(h, requires, (rpmTagType)reqtype);
 +            }
 +            headerFree(h);
 +         }
