@@ -1,8 +1,6 @@
-# $Id: apt,v 1.22 2005/07/15 17:25:46 me Exp $
-
 Name: apt
 Version: 0.5.15lorg2
-Release: alt13
+Release: alt14
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -392,6 +390,11 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed Oct 24 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt14
+- genpkglist: don't strip paths that are owned by 2 or more packages,
+  to deal with cross-arch semi-unmets like /usr/share/wallpapers
+- apt-get: added support of manifest file (Stanislav Ievlev)
+
 * Sat Aug 11 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt13
 - Updated file list stripping algorithm in genpkglist (apt-utils);
   now it keeps files which can resolve file-level dependencies.
