@@ -1,7 +1,12 @@
 diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15lorg2/apt-pkg/contrib/cmndline.cc
---- apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc	2007-10-22 15:58:39 +0400
-+++ apt-0.5.15lorg2/apt-pkg/contrib/cmndline.cc	2007-10-22 15:21:15 +0400
-@@ -22,6 +22,18 @@
+--- apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc	2007-10-30 14:42:33 +0300
++++ apt-0.5.15lorg2/apt-pkg/contrib/cmndline.cc	2007-10-30 14:43:33 +0300
+@@ -19,9 +19,23 @@
+ #include <apt-pkg/strutl.h>
+ 
+ #include <apti18n.h>    
++
++#include <memory>
  									/*}}}*/
  using namespace std;
  
@@ -20,7 +25,7 @@ diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15lorg2/apt-
  // CommandLine::CommandLine - Constructor				/*{{{*/
  // ---------------------------------------------------------------------
  /* */
-@@ -35,7 +47,7 @@
+@@ -35,7 +49,7 @@
  /* */
  CommandLine::~CommandLine()
  {
@@ -29,16 +34,20 @@ diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15lorg2/apt-
  }
  									/*}}}*/
  // CommandLine::Parse - Main action member				/*{{{*/
-@@ -43,7 +55,7 @@
+@@ -43,8 +57,11 @@
  /* */
  bool CommandLine::Parse(int argc,const char **argv)
  {
 -   delete [] FileList;
 +   FreeFileList();
     FileList = new const char *[argc];
++   std::uninitialized_fill(const_cast<char**>(FileList),
++                           const_cast<char**>(FileList+argc),
++			   static_cast<char*>(0));
     const char **Files = FileList;
     int I;
-@@ -54,7 +66,7 @@
+    for (I = 1; I != argc; I++)
+@@ -54,7 +71,7 @@
        // It is not an option
        if (*Opt != '-')
        {
@@ -47,7 +56,7 @@ diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15lorg2/apt-
  	 continue;
        }
        
-@@ -136,7 +148,7 @@
+@@ -136,7 +153,7 @@
     
     // Copy any remaining file names over
     for (; I != argc; I++)
@@ -57,8 +66,8 @@ diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.cc apt-0.5.15lorg2/apt-
     
     return true;
 diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.h apt-0.5.15lorg2/apt-pkg/contrib/cmndline.h
---- apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.h	2007-08-11 23:36:20 +0400
-+++ apt-0.5.15lorg2/apt-pkg/contrib/cmndline.h	2007-10-22 16:05:41 +0400
+--- apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.h	2007-10-24 19:20:13 +0400
++++ apt-0.5.15lorg2/apt-pkg/contrib/cmndline.h	2007-10-30 14:42:59 +0300
 @@ -52,6 +52,10 @@
  
  class CommandLine
@@ -79,8 +88,8 @@ diff -Naur apt-0.5.15lorg2.orig/apt-pkg/contrib/cmndline.h apt-0.5.15lorg2/apt-p
  
  struct CommandLine::Args
 diff -Naur apt-0.5.15lorg2.orig/cmdline/apt-get.cc apt-0.5.15lorg2/cmdline/apt-get.cc
---- apt-0.5.15lorg2.orig/cmdline/apt-get.cc	2007-10-22 15:58:39 +0400
-+++ apt-0.5.15lorg2/cmdline/apt-get.cc	2007-10-22 15:57:37 +0400
+--- apt-0.5.15lorg2.orig/cmdline/apt-get.cc	2007-10-30 14:42:33 +0300
++++ apt-0.5.15lorg2/cmdline/apt-get.cc	2007-10-30 14:42:59 +0300
 @@ -3366,6 +3366,7 @@
        {0,"check-only","APT::Get::Check-Only",0}, // CNC:2003-03-06
        {'c',"config-file",0,CommandLine::ConfigFile},
