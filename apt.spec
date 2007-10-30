@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt14
+Release: alt15
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -390,6 +390,9 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Oct 30 2007 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt15
+- apt-get: Fixed manifest file support (Stanislav Ievlev).
+
 * Wed Oct 24 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt14
 - genpkglist: don't strip paths that are owned by 2 or more packages,
   to deal with cross-arch semi-unmets like /usr/share/wallpapers
