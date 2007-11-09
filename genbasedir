@@ -33,6 +33,7 @@ flat=
 defaultkey=
 topdir=
 create=
+verbose=
 
 # bloat is necessary for non-Conectiva distros, at least RH,
 # because they use file dependencies with a non-predictable
@@ -64,6 +65,13 @@ function Fatal()
 	exit 1
 }
 
+function Verbose()
+{
+	if [ -n "$verbose" ]; then
+		echo "$@"
+	fi
+}
+
 USAGE()
 {
 	cat >&2 <<EOF
@@ -80,7 +88,9 @@ Options:
    --oldhashfile      Enable generation of old style hashfile
    --no-oldhashfile   Disable generation of old style hashfile
    --bz2only          Generate only compressed lists
-   --progress         Show progress bars for genpkglist/gensrclist
+   --progress         Show progress bars for genpkglist/gensrclist;
+                      implies --verbose
+   -v, --verbose      Be more talkative
    --topdir=dir       Top directory of repository
    --updateinfo=FILE  Update information file
    --mapi             List only those pkgs in srclist which generate
@@ -131,7 +141,7 @@ phashstuff()
     echo " $md5 $size $2"
 }
 
-TEMP=`getopt -n $PROG -o hs -l help,mapi,listonly,bz2only,hashonly,updateinfo:,bloat,topdir:,sign,default-key:,progress,oldhashfile,newhashfile,no-oldhashfile,no-newhashfile,partial,flat,create,origin:,label:,suite:,codename:,architectures:,description:,archive:,version:,architecture:,notautomatic: -- "$@"` || USAGE
+TEMP=`getopt -n $PROG -o vhs -l help,mapi,listonly,bz2only,hashonly,updateinfo:,bloat,topdir:,sign,default-key:,progress,verbose,oldhashfile,newhashfile,no-oldhashfile,no-newhashfile,partial,flat,create,origin:,label:,suite:,codename:,architectures:,description:,archive:,version:,architecture:,notautomatic: -- "$@"` || USAGE
 eval set -- "$TEMP"
 
 while :; do
@@ -156,7 +166,9 @@ while :; do
 			;;
 		--flat) shift; flat="--flat"
 			;;
-		--progress) shift; progress="--progress"
+		--progress) shift; progress="--progress"; verbose=1
+			;;
+		-v|--verbose) shift; verbose=1
 			;;
 		--partial) shift; partial=1
 			;;
@@ -201,7 +213,7 @@ done
 
 topdir="`echo -n "$topdir" |tr -s /`"
 
-[ -n "$topdir" ] || Fatal "TOPDIR not specified."
+[ -n "$topdir" ] || Fatal 'TOPDIR not specified.'
 
 cd "$topdir" || Fatal "Invalid TOPDIR specified: $topdir"
 
@@ -249,15 +261,13 @@ WORKDIR="$(mktemp -dt "$PROG.XXXXXXXXXX")" || exit
 
 if [ ! -d "$basedir" ]; then
 	if [ -n "$create" ]; then
-		echo -n "Creating base directory... "
+		Verbose -n 'Creating base directory... '
 		if ! mkdir -p "$basedir" >/dev/null 2>&1; then
-			echo failed
-			exit 1
+			Fatal 'Unable to create base directory'
 		fi
-		echo done
+		Verbose done
 	else
-		echo "Base directory does not exist!"
-		exit 1
+		Fatal 'Base directory does not exist!'
 	fi
 fi
 
@@ -276,10 +286,9 @@ if [ -z "$components" ]; then
 fi
 
 if [ -z "$components" ]; then
-	echo "error: no components found" 2>&1
-    exit 1
+	Fatal 'No components found'
 else
-	echo "Components: $components"
+	Verbose "Components: $components"
 fi
 
 SRCIDX="$WORKDIR/total"
@@ -316,17 +325,17 @@ if [ -z "$hashonly" ]; then
 
 	:>"$SRCIDX"
 
-	echo -n "Processing pkglists... "
+	Verbose -n 'Processing pkglists... '
 	for comp in $components; do
 		if [ ! -d $topdir/$distro/RPMS.$comp ]; then
 			continue
 		fi
 
-		echo -n "$comp "
+		Verbose -n "$comp "
 
 		SRCIDX_COMP="$WORKDIR/$comp" # will be rewritten by genpkglist
 
-		#echo -n "pkglist "
+		#Verbose -n 'pkglist '
 
 		newlist="$basedir/pkglist.$comp"
 
@@ -341,8 +350,7 @@ if [ -z "$hashonly" ]; then
 
 		if [ $? -ne 0 ]; then
 			echo
-			echo "Error executing genpkglist."
-			exit 1
+			Fatal 'Error executing genpkglist.'
 		fi
 
 		# Compare with older pkglist.
@@ -356,19 +364,19 @@ if [ -z "$hashonly" ]; then
 		cat "$SRCIDX_COMP" >> "$SRCIDX"
 
 	done
-	echo "done"
+	Verbose 'done'
 
-	echo -n "Processing srclists... "
+	Verbose -n 'Processing srclists... '
 	for comp in $components; do
 		if [ ! -d $srctopdir/SRPMS.$comp ]; then
 			continue
 		fi
 
-		echo -n " $comp "
+		Verbose -n " $comp "
 
 		SRCIDX_COMP="$WORKDIR/$comp" # created by genpkglist, used by gensrclist
 
-		#echo -n "srclist "
+		#Verbose -n 'srclist '
 
 		newlist="$basedir/srclist.$comp"
 
@@ -386,8 +394,7 @@ if [ -z "$hashonly" ]; then
 
 		if [ $? -ne 0 ]; then
 			echo
-			echo "Error executing gensrclist."
-			exit 1
+			Fatal 'Error executing gensrclist.'
 		fi
 
 		# Compare with older srclist.
@@ -399,7 +406,7 @@ if [ -z "$hashonly" ]; then
 		fi
 
 	done
-	echo "done"
+	Verbose 'done'
 fi
 
 phash()
@@ -411,10 +418,10 @@ phash()
 
 # Creating new style hashfile
 if [ -n "$newhashfile" -a -z "$listonly" ]; then
-	echo -n "Creating component releases..."
+	Verbose -n 'Creating component releases...'
 	for comp in $components; do
 		if [ ! -f "$release.$comp" ]; then
-			echo -n " $comp"
+			Verbose -n " $comp"
 			echo "Archive: $archive"           >> "$release.$comp"
 			echo "Component: $comp"            >> "$release.$comp"
 			echo "Version: $version"           >> "$release.$comp"
@@ -424,19 +431,19 @@ if [ -n "$newhashfile" -a -z "$listonly" ]; then
 			echo "NotAutomatic: $notautomatic" >> "$release.$comp"
 		fi
 	done
-	echo " done"
+	Verbose ' done'
 
 	if [ -f "$release" ]; then
 		save_file "$release"
 		if [ -z "$partial" ]; then
-			echo -n "Updating global release file... "
+			Verbose -n 'Updating global release file... '
 			sed -n -e "/^MD5Sum:/q" \
 				-e "s/^Date:.*\$/Date: $date/" \
 				-e "s/^Components:.*\$/Components: $components/" \
 				-e "p" "$release.old" > "$release"
 			echo "MD5Sum:" >> "$release"
 		else
-			echo -n "Partially updating global release file... "
+			Verbose -n 'Partially updating global release file... '
 			sed -n -e "/^\$/q" \
 				-e "s/^Date:.*\$/Date: $date/" \
 				-e "p" "$release.old" > "$release.pre"
@@ -452,9 +459,9 @@ if [ -n "$newhashfile" -a -z "$listonly" ]; then
 				"$release.pre" > "$release"
 			rm -f "$release.pre"
 		fi
-		echo "done"
+		Verbose 'done'
 	else
-		echo -n "Creating global release file... "
+		Verbose -n 'Creating global release file... '
 		echo "Origin: $origin"               >> "$release"
 		echo "Label: $label"                 >> "$release"
 		echo "Suite: $suite"                 >> "$release"
@@ -467,16 +474,16 @@ if [ -n "$newhashfile" -a -z "$listonly" ]; then
 		echo "done"
 	fi
 
-	echo -n "Appending MD5Sum..."
+	Verbose -n 'Appending MD5Sum...'
 	for comp in $components; do
-		echo -n " $comp"
+		Verbose -n " $comp"
 		phash "$pkglist.$comp" "$pkglist_.$comp" "$release"
 		phash "$srclist.$comp" "$srclist_.$comp" "$release"
 		phash "$pkglist.$comp.bz2" "$pkglist_.$comp.bz2" "$release"
 		phash "$srclist.$comp.bz2" "$srclist_.$comp.bz2" "$release"
 		phash "$release.$comp" "$release_.$comp" "$release"
 	done
-	echo " done"
+	Verbose ' done'
 
 	echo >> "$release"
 
@@ -503,11 +510,11 @@ if [ -n "$oldhashfile" -a -z "$listonly" ]; then
 
 	# TODO: handle 'partial' option
 
-	echo -n "Creating legacy hashfile..."
+	Verbose -n 'Creating legacy hashfile...'
 	echo "MD5SUM:" >> $hf
 
 	for comp in $components; do
-		echo -n " $comp"
+		Verbose -n " $comp"
 
 		phash "$pkglist.$comp" "$oldpkglist_.$comp" "$hf"
 		phash "$srclist.$comp" "$oldsrclist_.$comp" "$hf"
@@ -515,7 +522,7 @@ if [ -n "$oldhashfile" -a -z "$listonly" ]; then
 		phash "$srclist.$comp.bz2" "$oldsrclist_.$comp.bz2" "$hf"
 		phash "$release.$comp" "$oldrelease_.$comp" "$hf"
 	done
-	echo " done"
+	Verbose ' done'
 	echo >> $hf
 
 	compare_file
@@ -542,6 +549,6 @@ if [ -n "$bz2only" ]; then
 	done
 fi
 
-echo "All your base are belong to us!!!"
+Verbose 'All your base are belong to us!!!'
 
 # vim:ts=4:sw=4
