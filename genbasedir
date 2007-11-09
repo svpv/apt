@@ -91,6 +91,7 @@ Options:
    --progress         Show progress bars for genpkglist/gensrclist;
                       implies --verbose
    -v, --verbose      Be more talkative
+   --silent           Be less talkative (default)
    --topdir=dir       Top directory of repository
    --updateinfo=FILE  Update information file
    --mapi             List only those pkgs in srclist which generate
@@ -141,7 +142,7 @@ phashstuff()
     echo " $md5 $size $2"
 }
 
-TEMP=`getopt -n $PROG -o vhs -l help,mapi,listonly,bz2only,hashonly,updateinfo:,bloat,topdir:,sign,default-key:,progress,verbose,oldhashfile,newhashfile,no-oldhashfile,no-newhashfile,partial,flat,create,origin:,label:,suite:,codename:,architectures:,description:,archive:,version:,architecture:,notautomatic: -- "$@"` || USAGE
+TEMP=`getopt -n $PROG -o vhs -l help,mapi,listonly,bz2only,hashonly,updateinfo:,bloat,topdir:,sign,default-key:,progress,verbose,silent,oldhashfile,newhashfile,no-oldhashfile,no-newhashfile,partial,flat,create,origin:,label:,suite:,codename:,architectures:,description:,archive:,version:,architecture:,notautomatic: -- "$@"` || USAGE
 eval set -- "$TEMP"
 
 while :; do
@@ -169,6 +170,8 @@ while :; do
 		--progress) shift; progress="--progress"; verbose=1
 			;;
 		-v|--verbose) shift; verbose=1
+			;;
+		--silent) shift; verbose=
 			;;
 		--partial) shift; partial=1
 			;;
