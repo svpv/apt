@@ -59,13 +59,13 @@ notautomatic="false"
 GENPKGLIST=genpkglist
 GENSRCLIST=gensrclist
 
-function Fatal()
+Fatal()
 {
 	echo "${0##*/}: $*" >&2
 	exit 1
 }
 
-function Verbose()
+Verbose()
 {
 	if [ -n "$verbose" ]; then
 		echo "$@"
