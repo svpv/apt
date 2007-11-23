@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt15
+Release: alt16
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -390,6 +390,12 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Nov 23 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt16
+- genpkglist: removed very bad piece of code which could break
+  my fine-grained file list stripping algorithm
+- genbasedir: made silent by default, added --verbose and --silent
+  options (Alex V. Myltsev)
+
 * Tue Oct 30 2007 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt15
 - apt-get: Fixed manifest file support (Stanislav Ievlev).
 
