@@ -1,5 +1,5 @@
---- apt-0.5.15lorg2/tools/genpkglist.cc-	2007-10-08 03:24:54 +0400
-+++ apt-0.5.15lorg2/tools/genpkglist.cc	2007-10-08 22:29:14 +0400
+--- apt-0.5.15lorg2/tools/genpkglist.cc-	2007-11-23 13:41:34 +0300
++++ apt-0.5.15lorg2/tools/genpkglist.cc	2007-11-23 13:50:11 +0300
 @@ -18,6 +18,8 @@
  #include <map>
  #include <iostream>
@@ -120,7 +120,7 @@
     return 0;
  }
  
-@@ -131,11 +212,8 @@ static void copyStrippedFileList(Header 
+@@ -131,21 +212,9 @@ static void copyStrippedFileList(Header 
     i2 = 0;
     for (i = 0; i < count2 ; i++) 
     {
@@ -129,12 +129,23 @@
 -      ok = usefullFile(basenames[i]);
 -      if (!ok) 
 -	  ok = usefullFile(dirnames[dirindexes[i]]);
+-      
+-      if (!ok) {
+-	 int k = i;
+-	 while (dirindexes[i] == dirindexes[k] && i < count2)
+-	     i++;
+-	 i--;
+-	 continue;
+-      }
+-      
+-      
 +      int ok = usefulFile(dirnames[dirindexes[i]], basenames[i]);
 +      // if (ok > 1) cerr << "useful(" << ok <<"): " << dirnames[dirindexes[i]] << basenames[i] << std::endl;
-       
-       if (!ok) {
- 	 int k = i;
-@@ -599,6 +677,76 @@ int main(int argc, char ** argv) 
++
+       if (ok)
+       {
+ 	 int j;
+@@ -599,6 +668,76 @@ int main(int argc, char ** argv) 
     int isSource;
  #endif   
  
