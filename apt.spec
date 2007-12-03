@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt16
+Release: alt17
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -390,6 +390,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Dec 03 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt17
+- genpkglist.cc: rewrite copyStrippedFileList() to avoid inplace
+  dirnames edit bug
+
 * Fri Nov 23 2007 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt16
 - genpkglist: removed very bad piece of code which could break
   my fine-grained file list stripping algorithm
