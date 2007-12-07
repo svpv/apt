@@ -246,7 +246,7 @@ This package contains method 'rsync' for APT.
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
-%patch26 -p1
+%patch26 -p2
 %patch27 -p1
 %patch28 -p1
 %patch29 -p1

@@ -1,32 +1,43 @@
---- apt-0.5.5cnc4.1/apt-pkg/algorithms.cc.orig	2003-09-28 14:06:16 +0400
-+++ apt-0.5.5cnc4.1/apt-pkg/algorithms.cc	2003-09-28 14:09:16 +0400
-@@ -1411,27 +1411,28 @@
- static int PrioComp(const void *A,const void *B)
- {
-    pkgCache::VerIterator L(*PrioCache,*(pkgCache::Version **)A);
-    pkgCache::VerIterator R(*PrioCache,*(pkgCache::Version **)B);
-    
-    // CNC:2002-11-27
-    if ((R.ParentPkg()->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential &&
-        (L.ParentPkg()->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential)
-    return 1;
-    if ((R.ParentPkg()->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential &&
-        (L.ParentPkg()->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
-    return -1;
+diff --git a/apt/apt-pkg/algorithms.cc b/apt/apt-pkg/algorithms.cc
+index e8abff2..a5bf5ca 100644
+--- a/apt/apt-pkg/algorithms.cc
++++ b/apt/apt-pkg/algorithms.cc
+@@ -1402,6 +1402,27 @@ bool pkgProblemResolver::RemoveDepends()
+    return true;
+ }
+ 									/*}}}*/
++/* Like strcmp, but compares digit sections by number value.
++ * E.g.: tar-1.10 > tar-1.9 > tar-1.1a
++ * (while strcmp gives tar-1.10 < tar-1.9). */
++static int nameCompare(const char* n1, const char* n2)
++{
++   while(*n1 && *n2) {
++      if(isdigit(*n1) && isdigit(*n2)) {
++	 unsigned long long i1, i2;
++	 i1 = strtoull(n1, const_cast<char **>(&n1), 10);
++	 i2 = strtoull(n2, const_cast<char **>(&n2), 10);
++	 if(i1 != i2)
++	    return (i1 > i2) ? 1 : -1;
++      } else if(*n1 != *n2) {
++	 return (*n1 > *n2) ? 1 : -1;
++      } else {
++	 n1++;
++	 n2++;
++      }
++   }
++   return 0;
++}
+ 
+ // PrioSortList - Sort a list of versions by priority			/*{{{*/
+ // ---------------------------------------------------------------------
+@@ -1423,7 +1444,9 @@ static int PrioComp(const void *A,const void *B)
     
     if (L->Priority != R->Priority)
        return L->Priority - R->Priority;
 -   return strcmp(L.ParentPkg().Name(),R.ParentPkg().Name());
 +   // PrioComp("gcc2","gcc3") == 1
-+   return strcmp(R.ParentPkg().Name(),L.ParentPkg().Name());
++   // PrioComp("gcc2", gcc10") == 1
++   return nameCompare(R.ParentPkg().Name(),L.ParentPkg().Name());
  }
  void pkgPrioSortList(pkgCache &Cache,pkgCache::Version **List)
  {
-    unsigned long Count = 0;
-    PrioCache = &Cache;
-    for (pkgCache::Version **I = List; *I != 0; I++)
-       Count++;
-    qsort(List,Count,sizeof(*List),PrioComp);
- }
- 									/*}}}*/
- // vim:sts=3:sw=3
