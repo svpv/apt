@@ -474,7 +474,7 @@ if [ -n "$newhashfile" -a -z "$listonly" ]; then
 		echo "Components: $components"       >> "$release"
 		echo "Description: $description"     >> "$release"
 		echo "MD5Sum:"                       >> "$release"
-		echo "done"
+		Verbose "done"
 	fi
 
 	Verbose -n 'Appending MD5Sum...'
