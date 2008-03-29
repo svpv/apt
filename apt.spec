@@ -64,6 +64,7 @@ Patch52: apt-0.5.15lorg2-alt-i18n-apt-shell-typo.patch
 Patch53: apt-0.5.15lorg2-alt-src-apt-shell-wrong_message_fix.patch
 Patch54: apt-0.5.15lorg2-alt-genpkglist-reqfiles.patch
 Patch55: apt-0.5.15lorg2-alt-manifest.patch
+Patch56: apt-0.5.15lorg2-lorg-pkgcachegen-selfprov.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -276,6 +277,7 @@ This package contains method 'rsync' for APT.
 %patch53 -p1
 %patch54 -p1
 %patch55 -p1
+%patch56 -p1
 
 find -type f -name \*.orig -delete
 
