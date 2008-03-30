@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt18
+Release: alt19
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -383,6 +383,10 @@ fi
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sun Mar 30 2008 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt19
+- lorg-pkgcachegen-selfprov.patch: allow self-referencing provides,
+  so that e.g. ocaml-runtime#3.10.2-alt2 can provide ocaml-runtime = 3.10
+
 * Mon Dec 17 2007 Alex V. Myltsev <avm@altlinux.ru> 0.5.15lorg2-alt18
 - algorithms.cc: number-aware package name comparison
   (now automake_1.10 > automake_1.9)
