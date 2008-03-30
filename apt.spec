@@ -76,15 +76,6 @@ Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf
 Requires: bzip2, gzip, gnupg, alt-gpgkeys
 Obsoletes: apt-0.5
 
-# new rpmlib.
-BuildPreReq: librpm-devel >= 4.0.4-alt28
-
-# for docs.
-BuildPreReq: docbook-utils
-
-# lua5.
-BuildPreReq: liblua5-devel
-
 # for autopoint.
 BuildPreReq: cvs
 
@@ -94,8 +85,8 @@ BuildPreReq: setproctitle-devel
 %def_disable static
 %{?_enable_static:BuildPreReq: glibc-devel-static}
 
-# all the rest.
-BuildPreReq: gcc-c++ libreadline-devel
+# Automatically added by buildreq on Sun Mar 30 2008
+BuildRequires: bzlib-devel cvs docbook-utils gcc-c++ liblua5-devel libreadline-devel librpm-devel setproctitle-devel zlib-devel
 
 %package -n libapt
 Summary: APT's core libraries
