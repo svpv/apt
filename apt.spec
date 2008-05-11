@@ -106,7 +106,7 @@ Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
 
 %package utils
-Summary: Utilities to create APT repositaries (the indices)
+Summary: Utilities to create APT repositories (the indices)
 Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
@@ -161,7 +161,7 @@ package manipulation library, modified for RPM.
 %risk_usage_en
 
 %description utils
-This package contains the utility programs that can prepare a repositary of
+This package contains the utility programs that can prepare a repository of
 RPMS binary and source packages for future access by APT (by generating
 the indices): genbasedir, genpkglist, gensrclist.
 
