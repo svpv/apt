@@ -1,0 +1,28 @@
+commit 1cccd482c8170e3d1a6c913681f9bdd455535569
+Author: Panu Matilainen <pmatilai@turre.koti.laiskiainen.org>
+Date:   Mon Jun 4 23:06:29 2007 +0300
+
+    - push cache-limit defaults up, people are starting to run out of space...
+
+diff --git a/apt-pkg/pkgcachegen.cc b/apt-pkg/pkgcachegen.cc
+index 1dbd7bf..d743ec2 100644
+--- a/apt-pkg/pkgcachegen.cc
++++ b/apt-pkg/pkgcachegen.cc
+@@ -763,7 +763,7 @@ static bool CollectFileProvides(pkgCacheGenerator &Gen,
+ bool pkgMakeStatusCache(pkgSourceList &List,OpProgress &Progress,
+ 			MMap **OutMap,bool AllowMem)
+ {
+-   unsigned long MapSize = _config->FindI("APT::Cache-Limit",12*1024*1024);
++   unsigned long MapSize = _config->FindI("APT::Cache-Limit",24*1024*1024);
+    
+    vector<pkgIndexFile *> Files(List.begin(),List.end());
+    unsigned long EndOfSource = Files.size();
+@@ -976,7 +976,7 @@ bool pkgMakeStatusCache(pkgSourceList &List,OpProgress &Progress,
+ /* */
+ bool pkgMakeOnlyStatusCache(OpProgress &Progress,DynamicMMap **OutMap)
+ {
+-   unsigned long MapSize = _config->FindI("APT::Cache-Limit",8*1024*1024);
++   unsigned long MapSize = _config->FindI("APT::Cache-Limit",24*1024*1024);
+    vector<pkgIndexFile *> Files;
+    unsigned long EndOfSource = Files.size();
+    if (_system->AddStatusFiles(Files) == false)

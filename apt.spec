@@ -66,6 +66,7 @@ Patch54: apt-0.5.15lorg2-alt-genpkglist-reqfiles.patch
 Patch55: apt-0.5.15lorg2-alt-manifest.patch
 Patch56: apt-0.5.15lorg2-lorg-pkgcachegen-selfprov.patch
 Patch57: apt-0.5.15lorg2-alt-genpkglist-no-fileflags.patch
+Patch58: apt-0.5.15lorg2-lorg-cache-limit.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -271,6 +272,7 @@ This package contains method 'rsync' for APT.
 %patch55 -p1
 %patch56 -p1
 %patch57 -p1
+%patch58 -p1
 
 find -type f -name \*.orig -delete
 
