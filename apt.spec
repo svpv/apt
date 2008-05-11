@@ -71,7 +71,6 @@ Patch58: apt-0.5.15lorg2-lorg-cache-limit.patch
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
 
-PreReq: %__subst
 Requires: libapt = %version-%release
 Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf
 # for methods.
@@ -328,18 +327,6 @@ bzip2 -9fk ChangeLog-rpm.old
 %find_lang %name
 
 unset RPM_PYTHON
-
-%triggerun -- apt < 0:0.5.4
-CONF=/etc/apt/apt.conf
-if [ -s "$CONF" ]; then
-	%__subst 's/HoldPkgs/Hold/;s/AllowedDupPkgs/Allow-Duplicated/;s/IgnorePkgs/Ignore/;s/PostInstall/Post-Install/;s|Methods .*|Methods "/usr/lib/apt/methods";|;s|PubringPath *"\([^\"]*\)"|Pubring "\1/pubring.gpg"|g' "$CONF"
-fi
-
-%triggerun -- apt < 0:0.5.15cnc5-alt2
-CONF=/etc/apt/apt.conf
-if [ -s "$CONF" ]; then
-	%__subst -p 's,"/usr/lib/apt","/usr/lib/apt/methods",g' "$CONF"
-fi
 
 %post -n libapt -p %post_ldconfig
 %postun -n libapt -p %postun_ldconfig
