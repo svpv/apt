@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt19
+Release: alt20
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -367,6 +367,11 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sun May 11 2008 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt20
+- genpkglist.cc: RPMTAG_FILEFLAGS should not be copied into header list
+- lorg-cache-limit.patch: increase cache size limit
+- removed old triggers, updated dependencies
+
 * Sun Mar 30 2008 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt19
 - lorg-pkgcachegen-selfprov.patch: allow self-referencing provides,
   so that e.g. ocaml-runtime#3.10.2-alt2 can provide ocaml-runtime = 3.10
