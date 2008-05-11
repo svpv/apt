@@ -9,7 +9,7 @@ Group: System/Configuration/Packaging
 URL: http://apt-rpm.org
 Packager: APT Development Team <apt@packages.altlinux.org>
 
-Source0: http://moin.conectiva.com.br/files/AptRpm/attachments/%name-%version.tar
+Source0: %name-%version.tar
 Source1: apt.conf
 Source2: genbasedir
 Source3: README.rsync
