@@ -106,7 +106,6 @@ Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
 
 %package utils
-# Analoguous to rpm-build subpackage.
 Summary: Utilities to create APT repositaries (the indices)
 Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
