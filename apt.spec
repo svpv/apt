@@ -75,7 +75,6 @@ Requires: libapt = %version-%release
 Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf
 # for methods.
 Requires: bzip2, gzip, gnupg, alt-gpgkeys
-Obsoletes: apt-0.5
 
 # for autopoint.
 BuildPreReq: cvs
@@ -92,7 +91,6 @@ BuildRequires: bzlib-devel cvs docbook-utils gcc-c++ liblua5-devel libreadline-d
 %package -n libapt
 Summary: APT's core libraries
 Group: System/Libraries
-Obsoletes: libapt-0.5
 PreReq: librpm >= 4.0.4-alt28
 
 %package -n libapt-devel
@@ -100,14 +98,12 @@ Summary: Development files and documentation for APT's core libs
 Summary(ru_RU.KOI8-R): Файлы и документация для разработчиков, использующих библиотеки APT
 Group: Development/C
 Requires: libapt = %version-%release, librpm-devel >= 4.0.4-alt28
-Obsoletes: libapt-0.5-devel
 
 %package -n libapt-devel-static
 Summary: Development static library for APT's libs
 Summary(ru_RU.KOI8-R): Статическая библиотека APT для разработчиков, использующих библиотеки APT
 Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
-Obsoletes: libapt-0.5-devel-static
 
 %package utils
 # Analoguous to rpm-build subpackage.
@@ -116,14 +112,12 @@ Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
 Requires: gnupg, sed
-Obsoletes: apt-0.5-utils
 
 %package rsync
 Summary: rsync method support for APT
 Summary(ru_RU.KOI8-R): Поддержка метода rsync для APT
 Group: Development/Other
 Requires: %name = %version-%release, rsync >= 2.5.5-alt3
-Obsoletes: apt-0.5-rsync
 
 # {{{ descriptions 
 %define risk_usage_en This package is still under development.
