@@ -33,11 +33,11 @@ class rpmSrcRecordParser : public pkgSrcRecords::Parser
    unsigned int BufSize;
    unsigned int BufUsed;
    
-   void BufCat(char *text);
-   void BufCat(char *begin, char *end);
-   void BufCatTag(char *tag, char *value);
-   void BufCatDep(char *pkg, char *version, int flags);
-   void BufCatDescr(char *descr);
+   void BufCat(const char *text);
+   void BufCat(const char *begin, const char *end);
+   void BufCatTag(const char *tag, const char *value);
+   void BufCatDep(const char *pkg, const char *version, int flags);
+   void BufCatDescr(const char *descr);
 
 public:
    virtual bool Restart();

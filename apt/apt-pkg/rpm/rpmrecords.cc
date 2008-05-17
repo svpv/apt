@@ -256,20 +256,23 @@ void rpmRecordParser::BufCatDep(const char *pkg,
 void rpmRecordParser::BufCatDescr(const char *descr)
 {
    const char *begin = descr;
+   const char *p = descr;
 
-   while (*descr) 
+   while (*p)
    {
-      if (*descr=='\n') 
+      if (*p=='\n')
       {
 	 BufCat(" ");
-	 BufCat(begin, descr+1);
-	 begin = descr+1;
+	 BufCat(begin, p+1);
+	 begin = p+1;
       }
-      descr++;
+      p++;
    }
-   BufCat(" ");
-   BufCat(begin, descr);
-   BufCat("\n");
+   if (*begin) {
+      BufCat(" ");
+      BufCat(begin, p);
+      BufCat("\n");
+   }
 }
 
 
@@ -419,6 +422,17 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
    BufCat("\n");
    headerGetEntry(HeaderP, RPMTAG_DESCRIPTION, &type, (void **)&str, &count);
    BufCatDescr(str);
+
+   str = headerSprintf(HeaderP,
+         "[* %{CHANGELOGTIME:day} %{CHANGELOGNAME}\n%{CHANGELOGTEXT}\n]",
+         rpmTagTable, rpmHeaderFormats, NULL);
+   if (str && *str) {
+      BufCat("Changelog:\n");
+      BufCatDescr(str);
+   }
+   if (str)
+      str = (char *)_free(str);
+
    BufCat("\n");
    
    Start = Buffer;

@@ -196,13 +196,13 @@ unsigned long rpmSrcRecordParser::Offset()
     return Handler->Offset();
 }
 
-void rpmSrcRecordParser::BufCat(char *text)
+void rpmSrcRecordParser::BufCat(const char *text)
 {
    if (text != NULL)
       BufCat(text, text+strlen(text));
 }
 
-void rpmSrcRecordParser::BufCat(char *begin, char *end)
+void rpmSrcRecordParser::BufCat(const char *begin, const char *end)
 {
    unsigned len = end - begin;
     
@@ -222,13 +222,15 @@ void rpmSrcRecordParser::BufCat(char *begin, char *end)
    BufUsed += len;
 }
 
-void rpmSrcRecordParser::BufCatTag(char *tag, char *value)
+void rpmSrcRecordParser::BufCatTag(const char *tag, const char *value)
 {
    BufCat(tag);
    BufCat(value);
 }
 
-void rpmSrcRecordParser::BufCatDep(char *pkg, char *version, int flags)
+void rpmSrcRecordParser::BufCatDep(const char *pkg,
+				   const char *version,
+				   int flags)
 {
    char buf[16];
    char *ptr = (char*)buf;
@@ -265,23 +267,26 @@ void rpmSrcRecordParser::BufCatDep(char *pkg, char *version, int flags)
    }
 }
 
-void rpmSrcRecordParser::BufCatDescr(char *descr)
+void rpmSrcRecordParser::BufCatDescr(const char *descr)
 {
-   char *begin = descr;
+   const char *begin = descr;
+   const char *p = descr;
 
-   while (*descr) 
+   while (*p)
    {
-      if (*descr=='\n') 
+      if (*p=='\n')
       {
 	 BufCat(" ");
-	 BufCat(begin, descr+1);
-	 begin = descr+1;
+	 BufCat(begin, p+1);
+	 begin = p+1;
       }
-      descr++;
+      p++;
    }
-   BufCat(" ");
-   BufCat(begin, descr);
-   BufCat("\n");
+   if (*begin) {
+      BufCat(" ");
+      BufCat(begin, p);
+      BufCat("\n");
+   }
 }
 
 // SrcRecordParser::AsStr - The record in raw text
@@ -394,6 +399,17 @@ string rpmSrcRecordParser::AsStr()
    BufCat("\n");
    headerGetEntry(HeaderP, RPMTAG_DESCRIPTION, &type, (void **)&str, &count);
    BufCatDescr(str);
+
+   str = headerSprintf(HeaderP,
+         "[* %{CHANGELOGTIME:day} %{CHANGELOGNAME}\n%{CHANGELOGTEXT}\n]",
+         rpmTagTable, rpmHeaderFormats, NULL);
+   if (str && *str) {
+      BufCat("Changelog:\n");
+      BufCatDescr(str);
+   }
+   if (str)
+      str = (char *)_free(str);
+
    BufCat("\n");
    
    return string(Buffer, BufUsed);
