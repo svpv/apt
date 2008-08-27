@@ -3247,7 +3247,9 @@ int main(int argc,const char *argv[])
 	 if (strstr(*I, "://") != NULL)
 	 {
 	    URLLst.push_back(*I);
-	    *I = strrchr(*I, '/')+1;
+	    const char *N = strdup(strrchr(*I, '/')+1);
+	    free((void *)*I);
+	    *I = N;
 	 }
       }
 
