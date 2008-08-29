@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt20
+Release: alt21
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -367,6 +367,13 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Aug 29 2008 Alexander Myltsev <avm@altlinux.ru> 0.5.15lorg2-alt21
+- fix by led@: change type of Package.ID to int (fixes #16900)
+- fixes by raorn@:
+ - apt-get.cc: protect VerTag (fixes #16311)
+ - apt-get.cc: fix memory corruption (fixes #14929)
+ - fileutl.cc: change semantics of flExtension() (fixes #15909)
+
 * Sun May 11 2008 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt20
 - genpkglist.cc: RPMTAG_FILEFLAGS should not be copied into header list
 - lorg-cache-limit.patch: increase cache size limit
