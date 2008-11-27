@@ -1897,7 +1897,10 @@ bool DoInstall(CommandLine &CmdL)
 		  return _error->Error(_("Couldn't parse name '%s'"),S);
 	    }
 	    *sep = '\0';
-	    VerTag = p;
+	    /* S may be overwritten later, for example, if it contains
+	     * a file name that will be resolved to a package.
+	     * So we point VerTag to the same offset in OrigS. */
+	    VerTag = (p - S) + OrigS;
 	 }
 	 
 	 // CNC:2003-11-21 - Try to handle unknown file items.
@@ -3244,7 +3247,9 @@ int main(int argc,const char *argv[])
 	 if (strstr(*I, "://") != NULL)
 	 {
 	    URLLst.push_back(*I);
-	    *I = strrchr(*I, '/')+1;
+	    const char *N = strdup(strrchr(*I, '/')+1);
+	    free((void *)*I);
+	    *I = N;
 	 }
       }
 
