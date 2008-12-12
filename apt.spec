@@ -67,6 +67,7 @@ Patch55: apt-0.5.15lorg2-alt-manifest.patch
 Patch56: apt-0.5.15lorg2-lorg-pkgcachegen-selfprov.patch
 Patch57: apt-0.5.15lorg2-alt-genpkglist-no-fileflags.patch
 Patch58: apt-0.5.15lorg2-lorg-cache-limit.patch
+Patch59: apt-0.5.15lorg2-alt-gcc4.3.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -106,7 +107,7 @@ Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
 
 %package utils
-Summary: Utilities to create APT repositories (the indices)
+Summary: Utilities to create APT repositaries (the indices)
 Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
@@ -161,7 +162,7 @@ package manipulation library, modified for RPM.
 %risk_usage_en
 
 %description utils
-This package contains the utility programs that can prepare a repository of
+This package contains the utility programs that can prepare a repositary of
 RPMS binary and source packages for future access by APT (by generating
 the indices): genbasedir, genpkglist, gensrclist.
 
@@ -265,6 +266,7 @@ This package contains method 'rsync' for APT.
 %patch56 -p1
 %patch57 -p1
 %patch58 -p1
+%patch59 -p1
 
 find -type f -name \*.orig -delete
 
@@ -294,7 +296,8 @@ autoreconf -fisv
 find -type f -print0 |
 	xargs -r0 grep -EZl '/var(/lib)?/state/apt' -- |
 	xargs -r0 %__subst -p 's,/var\(/lib\)\?/state/apt,%_localstatedir/%name,g' --
-%make_build
+#_make_build
+%make
 
 %install
 mkdir -p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list}.d
