@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt21
+Release: alt22
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -107,7 +107,7 @@ Group: Development/C
 Requires: libapt-devel = %version-%release, librpm-devel-static >= 4.0.4-alt28
 
 %package utils
-Summary: Utilities to create APT repositaries (the indices)
+Summary: Utilities to create APT repositories (the indices)
 Summary(ru_RU.KOI8-R): Утилиты для построения APT-репозиториев (индексов)
 Group: Development/Other
 Requires: %name = %version-%release, mktemp >= 1:1.3.1, getopt
@@ -162,7 +162,7 @@ package manipulation library, modified for RPM.
 %risk_usage_en
 
 %description utils
-This package contains the utility programs that can prepare a repositary of
+This package contains the utility programs that can prepare a repository of
 RPMS binary and source packages for future access by APT (by generating
 the indices): genbasedir, genpkglist, gensrclist.
 
@@ -276,19 +276,19 @@ rm -rf lua
 # Turn it on only if you want to see the debugging messages:
 #%patch101 -p1 -b .getsrc-debug
 
-install -p -m644 %SOURCE3 %SOURCE6 .
-install -p -m644 %SOURCE4 po/ru.po
-install -p -m644 %SOURCE5 po/be.po
-%__subst 's|^\(.\+\)$|\1 be|' po/LINGUAS
+install -pm644 %SOURCE3 %SOURCE6 .
+install -pm644 %SOURCE4 po/ru.po
+install -pm644 %SOURCE5 po/be.po
+sed -i 's|^\(.\+\)$|\1 be|' po/LINGUAS
 
 %build
 # Fix url.
-%__subst -p 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
+sed -i 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
 
 # Unhide potential cc/c++ errors.
-%__subst 's, > /dev/null 2>&1,,' buildlib/tools.m4
+sed -i 's, > /dev/null 2>&1,,' buildlib/tools.m4
 
-autoreconf -fisv
+%autoreconf
 
 %configure --includedir=%_includedir/apt-pkg %{subst_enable static}
 
@@ -296,8 +296,7 @@ autoreconf -fisv
 find -type f -print0 |
 	xargs -r0 grep -EZl '/var(/lib)?/state/apt' -- |
 	xargs -r0 %__subst -p 's,/var\(/lib\)\?/state/apt,%_localstatedir/%name,g' --
-#_make_build
-%make
+%make_build
 
 %install
 mkdir -p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list}.d
@@ -307,8 +306,8 @@ mkdir -p %buildroot%_cachedir/%name/{archives/partial,gen{pkg,src}list}
 
 %makeinstall includedir=%buildroot%_includedir/apt-pkg
 
-install -p -m755 %SOURCE2 %buildroot%_bindir/
-install -p -m644 %SOURCE1 %buildroot%_sysconfdir/%name/
+install -pm755 %SOURCE2 %buildroot%_bindir/
+install -pm644 %SOURCE1 %buildroot%_sysconfdir/%name/
 
 # This is still needed.
 ln -sf rsh %buildroot%_libdir/%name/methods/ssh
@@ -316,16 +315,13 @@ ln -sf gzip %buildroot%_libdir/%name/methods/bzip2
 
 # Cleanup
 find %buildroot%_includedir -type f -name rpmshowprogress.h -delete -print
-rm -f %buildroot%_libdir/*.la
+rm %buildroot%_libdir/*.la
 
 bzip2 -9fk ChangeLog-rpm.old
 
 %find_lang %name
 
 unset RPM_PYTHON
-
-%post -n libapt -p %post_ldconfig
-%postun -n libapt -p %postun_ldconfig
 
 %files -f %name.lang
 %_bindir/apt-*
@@ -370,6 +366,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Dec 12 2008 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt22
+- Fixed build with g++-4.3.x (Stanislav Ievlev).
+
 * Fri Aug 29 2008 Alexander Myltsev <avm@altlinux.ru> 0.5.15lorg2-alt21
 - fix by led@: change type of Package.ID to int (fixes #16900)
 - fixes by raorn@:
