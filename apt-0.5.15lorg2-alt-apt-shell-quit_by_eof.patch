@@ -1,10 +1,7 @@
-
 https://bugzilla.altlinux.org/show_bug.cgi?id=18343
 
-diff --git a/apt/cmdline/apt-shell.cc b/apt/cmdline/apt-shell.cc
-index 6d1f767..3aadbd5 100644
---- a/apt/cmdline/apt-shell.cc
-+++ b/apt/cmdline/apt-shell.cc
+--- apt/cmdline/apt-shell.cc
++++ apt/cmdline/apt-shell.cc
 @@ -4477,10 +4477,17 @@ int main(int argc,const char *argv[])
        }
        
@@ -13,7 +10,7 @@ index 6d1f767..3aadbd5 100644
 -	 free(line);
 -	 continue;
 +      if (!line) {
-+        // exit from shell by Ctrl-D
++        // exit from shell by EOF
 +         _config->Set("quit", "true");
 +         continue;
 +      }

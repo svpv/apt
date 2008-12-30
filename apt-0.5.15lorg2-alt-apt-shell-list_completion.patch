@@ -1,10 +1,7 @@
-
 https://bugzilla.altlinux.org/show_bug.cgi?id=5953
 
-diff --git a/apt/cmdline/apt-shell.cc b/apt/cmdline/apt-shell.cc
-index 6d1f767..76bd840 100644
---- a/apt/cmdline/apt-shell.cc
-+++ b/apt/cmdline/apt-shell.cc
+--- apt/cmdline/apt-shell.cc
++++ apt/cmdline/apt-shell.cc
 @@ -4087,7 +4099,7 @@ char *ReadLineCompCommands(const char *Text, int State)
  	 "keep", "dist-upgrade", "dselect-upgrade", "build-dep", "clean",
  	 "autoclean", "check", "help", "commit", "exit", "quit", "status",
