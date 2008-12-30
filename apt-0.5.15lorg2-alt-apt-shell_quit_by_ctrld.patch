@@ -1,0 +1,28 @@
+
+https://bugzilla.altlinux.org/show_bug.cgi?id=18343
+
+diff --git a/apt/cmdline/apt-shell.cc b/apt/cmdline/apt-shell.cc
+index 6d1f767..3aadbd5 100644
+--- a/apt/cmdline/apt-shell.cc
++++ b/apt/cmdline/apt-shell.cc
+@@ -4477,10 +4477,17 @@ int main(int argc,const char *argv[])
+       }
+       
+       line = readline(_config->Find("APT::Shell::Prompt", "apt> ").c_str());
+-      if (!line || !*line) {
+-	 free(line);
+-	 continue;
++      if (!line) {
++        // exit from shell by Ctrl-D
++         _config->Set("quit", "true");
++         continue;
++      }
++
++      if (!*line) {
++         free(line);
++         continue;
+       }
++
+       add_history(line);
+ 
+       largc = 1; // CommandLine.Parse() ignores the first option.

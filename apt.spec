@@ -69,6 +69,7 @@ Patch57: apt-0.5.15lorg2-alt-genpkglist-no-fileflags.patch
 Patch58: apt-0.5.15lorg2-lorg-cache-limit.patch
 Patch59: apt-0.5.15lorg2-alt-gcc4.3.patch
 Patch60: apt-0.5.15lorg2-alt-apt-shell_list_completion.patch
+Patch61: apt-0.5.15lorg2-alt-apt-shell_quit_by_ctrld.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -269,6 +270,7 @@ This package contains method 'rsync' for APT.
 %patch58 -p1
 %patch59 -p1
 %patch60 -p2
+%patch61 -p2
 
 find -type f -name \*.orig -delete
 
