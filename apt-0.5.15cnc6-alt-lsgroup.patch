@@ -1,7 +1,7 @@
 diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-shell.cc
 --- apt-0.5.15cnc6-orig/cmdline/apt-shell.cc	2005-05-15 20:35:30 +0400
 +++ apt-0.5.15cnc6/cmdline/apt-shell.cc	2005-05-15 20:37:58 +0400
-@@ -3500,11 +3500,14 @@
+@@ -3507,11 +3507,14 @@ bool DoList(CommandLine &CmdL)
  
     bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
     bool ShowSummary = _config->FindB("APT::Cache::ShowSummary", false);
@@ -17,7 +17,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
     bool Matched;
     for (unsigned int J = 0; J < Cache->Head().PackageCount; J++)
     {
-@@ -3517,7 +3520,12 @@
+@@ -3524,7 +3527,12 @@ bool DoList(CommandLine &CmdL)
        if (ShowUpgradable &&
  	  (Pkg->CurrentVer == 0 || Cache[Pkg].Upgradable() == false))
  	 continue;
@@ -30,7 +30,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        if (MatchAll == true)
  	 Matched = true;
        else for (int i=0; i != NumPatterns; i++) {
-@@ -3622,6 +3630,7 @@
+@@ -3629,6 +3637,7 @@ bool DoList(CommandLine &CmdL)
        Blank[ColumnLen] = 0;
  
        const char *Str;
@@ -38,7 +38,7 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        int StrLen;
        unsigned int K;
        for (unsigned int Line = 0; Line != NumLines; Line++) {
-@@ -3631,13 +3640,33 @@
+@@ -3638,13 +3647,33 @@ bool DoList(CommandLine &CmdL)
  	       break;
  	    pkgCache::PkgIterator Pkg(Cache,Cache.List[Matches[K]]);
  	    Str = Pkg.Name();
@@ -77,7 +77,16 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        }
     }
     
-@@ -4313,6 +4342,8 @@
+@@ -3985,6 +4014,8 @@ void CommandHelp(const char *Name)
+ 	    "  -u  Show only installed packages that are upgradable.\n"
+ 	    "  -v  Show installed and candidate versions.\n"
+ 	    "  -s  Show summaries.\n"
++	    "  -g  Show packages with group name.\n"
++	    "  -G=? Show packages in specified group.\n"
+ 	    "  -o=? Set an arbitary configuration option, eg -o dir::cache=/tmp\n"
+ 	    "\n"
+ 	 );
+@@ -4320,6 +4351,8 @@ CommandLine::Args *CommandArgs(const char *Name)
        {'i',"installed","APT::Cache::ShowInstalled",0},
        {'v',"version","APT::Cache::ShowVersion",0},
        {'s',"summary","APT::Cache::ShowSummary",0},
@@ -86,4 +95,3 @@ diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc apt-0.5.15cnc6/cmdline/apt-sh
        {'n',"installed","APT::Cache::Installed",0},
        {'c',"config-file",0,CommandLine::ConfigFile},
        {'o',"option",0,CommandLine::ArbItem},
-diff -uNr apt-0.5.15cnc6-orig/cmdline/apt-shell.cc.orig apt-0.5.15cnc6/cmdline/apt-shell.cc.orig
