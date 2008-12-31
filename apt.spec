@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt22
+Release: alt22.1
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -370,6 +370,11 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed Dec 31 2008 Slava Semushin <php-coder@altlinux.ru> 0.5.15lorg2-alt22.1
+- apt-shell: show up "list" command by completion (#5953)
+- apt-shell: quit from shell by Ctrl+D (#6264, #18343)
+- apt-shell: describe -G and -g options in "help list" output (#18256)
+
 * Fri Dec 12 2008 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt22
 - Fixed build with g++-4.3.x (Stanislav Ievlev).
 
