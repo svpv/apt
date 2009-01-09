@@ -2,7 +2,7 @@ https://bugzilla.altlinux.org/show_bug.cgi?id=18343
 
 --- apt/cmdline/apt-shell.cc
 +++ apt/cmdline/apt-shell.cc
-@@ -4477,10 +4477,17 @@ int main(int argc,const char *argv[])
+@@ -4477,10 +4477,18 @@ int main(int argc,const char *argv[])
        }
        
        line = readline(_config->Find("APT::Shell::Prompt", "apt> ").c_str());
@@ -10,6 +10,7 @@ https://bugzilla.altlinux.org/show_bug.cgi?id=18343
 -	 free(line);
 -	 continue;
 +      if (!line) {
++        c1out << endl;
 +        // exit from shell by EOF
 +         _config->Set("quit", "true");
 +         continue;
