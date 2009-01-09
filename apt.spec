@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt22.1
+Release: alt22.2
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -370,6 +370,10 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Fri Jan 09 2009 Slava Semushin <php-coder@altlinux.ru> 0.5.15lorg2-alt22.2
+- apt-shell: print newline symbol during quit by Ctrl+D
+  (Based on feedback for bug #18343 from Ivan A. Melnikov aka iv@)
+
 * Wed Dec 31 2008 Slava Semushin <php-coder@altlinux.ru> 0.5.15lorg2-alt22.1
 - apt-shell: show up "list" command by completion (#5953)
 - apt-shell: quit from shell by Ctrl+D (#6264, #18343)
