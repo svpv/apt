@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt22.2
+Release: alt23
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -70,6 +70,7 @@ Patch58: apt-0.5.15lorg2-lorg-cache-limit.patch
 Patch59: apt-0.5.15lorg2-alt-gcc4.3.patch
 Patch60: apt-0.5.15lorg2-alt-apt-shell-list_completion.patch
 Patch61: apt-0.5.15lorg2-alt-apt-shell-quit_by_eof.patch
+Patch62: apt-0.5.15lorg2-alt-rpmdbopen.patch
 
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
@@ -271,6 +272,7 @@ This package contains method 'rsync' for APT.
 %patch59 -p1
 %patch60 -p1
 %patch61 -p1
+%patch62 -p1
 
 find -type f -name \*.orig -delete
 
@@ -370,6 +372,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Jan 19 2009 Stanislav Ievlev <inger@altlinux.org> 0.5.15lorg2-alt23
+- open rpm database with O_CREAT flag
+
 * Fri Jan 09 2009 Slava Semushin <php-coder@altlinux.ru> 0.5.15lorg2-alt22.2
 - apt-shell: print newline symbol during quit by Ctrl+D
   (Based on feedback for bug #18343 from Ivan A. Melnikov aka iv@)
