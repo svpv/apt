@@ -1,0 +1,12 @@
+diff -Naur apt-0.5.15lorg2.orig/apt-pkg/rpm/rpmpm.cc apt-0.5.15lorg2/apt-pkg/rpm/rpmpm.cc
+--- apt-0.5.15lorg2.orig/apt-pkg/rpm/rpmpm.cc	2009-01-19 17:12:32 +0300
++++ apt-0.5.15lorg2/apt-pkg/rpm/rpmpm.cc	2009-01-19 17:13:31 +0300
+@@ -795,7 +795,7 @@
+    const char *RootDir = NULL;
+    if (!Dir.empty())
+       RootDir = Dir.c_str();
+-   if (rpmdbOpen(RootDir, &DB, O_RDWR, 0644) != 0)
++   if (rpmdbOpen(RootDir, &DB, O_RDWR|O_CREAT, 0644) != 0)
+    {
+       _error->Error(_("Could not open RPM database"));
+       goto exit;
