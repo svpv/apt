@@ -394,7 +394,7 @@ bool pkgCache::DepIterator::SmartTargetPkg(PkgIterator &Result)
 pkgCache::Version **pkgCache::DepIterator::AllTargets()
 {
    Version **Res = 0;
-   unsigned long Size =0;
+   unsigned int Size = 0;
    while (1)
    {
       Version **End = Res;
@@ -410,10 +410,24 @@ pkgCache::Version **pkgCache::DepIterator::AllTargets()
 	      Dep->Type == pkgCache::Dep::Obsoletes) &&
 	     ParentPkg() == I.ParentPkg())
 	    continue;
-	 
+
+	 Version *v = I;
+	 if (Res != 0 && Size > 0) {
+	    bool seen = false;
+	    for (unsigned int j = 0; j < Size; ++j) {
+	       Version *vj = Res[j];
+	       if (v == vj) {
+		  seen = true;
+		  break;
+	       }
+	    }
+	    if (seen)
+	       continue;
+	 }
+
 	 Size++;
 	 if (Res != 0)
-	    *End++ = I;
+	    *End++ = v;
       }
       
       // Follow all provides
@@ -426,10 +440,24 @@ pkgCache::Version **pkgCache::DepIterator::AllTargets()
 	      Dep->Type == pkgCache::Dep::Obsoletes) &&
 	     ParentPkg() == I.OwnerPkg())
 	    continue;
-	 
+
+	 Version *v = I.OwnerVer();
+	 if (Res != 0 && Size > 0) {
+	    bool seen = false;
+	    for (unsigned int j = 0; j < Size; ++j) {
+	       Version *vj = Res[j];
+	       if (v == vj) {
+		  seen = true;
+		  break;
+	       }
+	    }
+	    if (seen)
+	       continue;
+	 }
+
 	 Size++;
 	 if (Res != 0)
-	    *End++ = I.OwnerVer();
+	    *End++ = v;
       }
       
       // Do it again and write it into the array
