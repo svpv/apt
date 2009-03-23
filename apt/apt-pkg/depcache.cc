@@ -17,6 +17,9 @@
 #include <apt-pkg/sptr.h>
 #include <apt-pkg/algorithms.h>
 
+// for Debug::pkgMarkInstall
+#include <apt-pkg/configuration.h>
+
 // CNC:2002-07-05
 #include <apt-pkg/pkgsystem.h>
 
@@ -737,15 +740,10 @@ void pkgDepCache::MarkDelete(PkgIterator const &Pkg, bool rPurge)
 // DepCache::MarkInstall - Put the package in the install state		/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
-			      unsigned long Depth)
+int pkgDepCache::MarkInstall0(PkgIterator const &Pkg)
 {
-   if (Depth > 100)
-      return;
-   
-   // Simplifies other routines.
    if (Pkg.end() == true)
-      return;
+      return -1;
    
    /* Check that it is not already marked for install and that it can be 
       installed */
@@ -756,16 +754,16 @@ void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
    {
       if (P.CandidateVer == (Version *)Pkg.CurrentVer() && P.InstallVer == 0)
 	 MarkKeep(Pkg);
-      return;
+      return 0;
    }
 
    // See if there is even any possible instalation candidate
    if (P.CandidateVer == 0)
-      return;
+      return -1;
    
    // We dont even try to install virtual packages..
    if (Pkg->VersionList == 0)
-      return;
+      return -1;
    
    /* Target the candidate version and remove the autoflag. We reset the
       autoflag below if this was called recursively. Otherwise the user
@@ -782,11 +780,29 @@ void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
    AddStates(Pkg);
    Update(Pkg);
    AddSizes(Pkg);
-   
-   if (AutoInst == false)
+
+   return 1;
+}
+
+void pkgDepCache::MarkInstallRec(PkgIterator const &Pkg,
+      bool Restricted, std::set<PkgIterator> &MarkAgain,
+      unsigned long Depth, const char *DebugStr)
+{
+   if (Depth > 100)
+      return;
+   if (MarkInstall0(Pkg) <= 0)
       return;
 
+#define DEBUG_MI(n, fmt, ...) if (DebugStr) \
+   fprintf(stderr, "%s:%*s " fmt "\n", DebugStr, (int)Depth*2+n, "", __VA_ARGS__)
+#define DEBUG_THIS(fmt, ...) DEBUG_MI(0, fmt, __VA_ARGS__)
+#define DEBUG_NEXT(fmt, ...) DEBUG_MI(1, fmt, __VA_ARGS__)
+
+   DEBUG_THIS("mark %s", Pkg.Name());
+
+   StateCache &P = PkgState[Pkg->ID];
    DepIterator Dep = P.InstVerIter(*this).DependsList();
+   bool AddMarkAgain = false;
    for (; Dep.end() != true;)
    {
       // Grok or groups
@@ -849,20 +865,32 @@ void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
 	 // Select the highest priority providing package
 	 if (InstPkg.end() == true)
 	 {
+	    int CanSelect = 0;
 	    pkgPrioSortList(*Cache,Cur);
 	    for (; *Cur != 0; Cur++)
 	    {
 	       PkgIterator Pkg(*Cache,Cache->PkgP + (*Cur)->ParentPkg);
 	       if (PkgState[Pkg->ID].CandidateVer != *Cur)
 		  continue;
-	       InstPkg = Pkg;
-	       break;
+	       if (CanSelect++ == 0)
+		  InstPkg = Pkg;
+	       else
+		  break;
+	    }
+	    // In restricted mode, skip ambiguous dependencies.
+	    if (Restricted && CanSelect > 1) {
+	       DEBUG_NEXT("target %s AMB", P.Name());
+	       AddMarkAgain = true;
+	       continue;
 	    }
 	 }
-	 
+
+	 DEBUG_NEXT("target %s", P.Name());
+
 	 if (InstPkg.end() == false)
 	 {
-	    MarkInstall(InstPkg,true,Depth + 1);
+	    // Recursion is always restricted
+	    MarkInstallRec(InstPkg,/*Restricted*/true,MarkAgain,Depth+1,DebugStr);
 
 	    // Set the autoflag, after MarkInstall because MarkInstall unsets it
 	    if (P->CurrentVer == 0)
@@ -880,13 +908,67 @@ void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
 	 {
 	    VerIterator Ver(*this,*I);
 	    PkgIterator Pkg = Ver.ParentPkg();
-      
+	    DEBUG_NEXT("delete %s", Pkg.Name());
 	    MarkDelete(Pkg);
 	    PkgState[Pkg->ID].Flags |= Flag::Auto;
 	 }
 	 continue;
       }      
    }
+
+   if (AddMarkAgain)
+      MarkAgain.insert(Pkg);
+}
+
+void pkgDepCache::MarkInstall1(PkgIterator const &Pkg,
+      std::set<PkgIterator> &MarkAgain)
+{
+   bool Debug = _config->FindB("Debug::pkgMarkInstall", false);
+   const char *DebugA = Debug ? "MI1a" : NULL;
+   const char *DebugB = Debug ? "MI1b" : NULL;
+   std::set<PkgIterator> MA;
+   std::set<PkgIterator>::iterator I;
+   MarkInstallRec(Pkg, true, MA, 0, DebugA);
+   while (1) {
+      std::set<PkgIterator> MAA;
+      for (I = MA.begin(); I != MA.end(); ++I)
+	 MarkInstallRec(*I, true, MAA, 0, DebugB);
+      if (MA == MAA)
+	 break;
+      MA = MAA;
+   }
+   for (I = MA.begin(); I != MA.end(); ++I)
+      MarkAgain.insert(*I);
+}
+
+void pkgDepCache::MarkInstall2(PkgIterator const &Pkg)
+{
+   bool Debug = _config->FindB("Debug::pkgMarkInstall", false);
+   const char *DebugA = Debug ? "MI2a" : NULL;
+   const char *DebugB = Debug ? "MI2b" : NULL;
+   const char *DebugC = Debug ? "MI2c" : NULL;
+   std::set<PkgIterator> MA;
+   std::set<PkgIterator>::iterator I;
+   MarkInstallRec(Pkg, true, MA, 0, DebugA);
+   while (1) {
+      std::set<PkgIterator> MAA;
+      for (I = MA.begin(); I != MA.end(); ++I)
+	 MarkInstallRec(*I, true, MAA, 0, DebugB);
+      for (I = MA.begin(); I != MA.end(); ++I)
+	 MarkInstallRec(*I, false, MAA, 0, DebugC);
+      if (MA == MAA)
+	 break;
+      MA = MAA;
+   }
+}
+
+void pkgDepCache::MarkInstall(PkgIterator const &Pkg,bool AutoInst,
+			      unsigned long Depth)
+{
+   if (AutoInst == false)
+      MarkInstall0(Pkg);
+   else
+      MarkInstall2(Pkg);
 }
 									/*}}}*/
 // DepCache::SetReInstall - Set the reinstallation flag			/*{{{*/

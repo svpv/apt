@@ -42,6 +42,8 @@
 #pragma interface "apt-pkg/depcache.h"
 #endif
 
+#include <set>
+
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/progress.h>
 
@@ -195,8 +197,21 @@ class pkgDepCache : protected pkgCache::Namespace
    // Manipulators
    void MarkKeep(PkgIterator const &Pkg,bool Soft = false);
    void MarkDelete(PkgIterator const &Pkg,bool Purge = false);
+
+   // shallow mark; ret: -1 err, 0 already marked, 1 just marked
+   int MarkInstall0(PkgIterator const &Pkg);
+   // non-ambiguous recursive mark; MarkAgain should be marked again
+   void MarkInstall1(PkgIterator const &Pkg, std::set<PkgIterator> &MarkAgain);
+   // full wavefront recursive mark
+   void MarkInstall2(PkgIterator const &Pkg);
+   // compat
    void MarkInstall(PkgIterator const &Pkg,bool AutoInst = true,
 		    unsigned long Depth = 0);
+   // implementation
+   void MarkInstallRec(PkgIterator const &Pkg,
+      bool Restricted, std::set<PkgIterator> &MarkAgain,
+      unsigned long Depth, const char *DebugStr);
+
    void SetReInstall(PkgIterator const &Pkg,bool To);
    void SetCandidateVersion(VerIterator TargetVer);
    
