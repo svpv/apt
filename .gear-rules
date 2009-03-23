@@ -3,5 +3,6 @@ copy: *.old
 copy: *.patch
 copy: *.po
 copy: *.rsync
-tar: apt
 copy: genbasedir
+tar: @version@:apt
+diff: @version@:apt apt

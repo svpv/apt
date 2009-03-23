@@ -72,6 +72,8 @@ Patch60: apt-0.5.15lorg2-alt-apt-shell-list_completion.patch
 Patch61: apt-0.5.15lorg2-alt-apt-shell-quit_by_eof.patch
 Patch62: apt-0.5.15lorg2-alt-rpmdbopen.patch
 
+Patch99: apt-%version-%release.patch
+
 # Normally not applied, but useful.
 Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
 
@@ -273,6 +275,7 @@ This package contains method 'rsync' for APT.
 %patch60 -p1
 %patch61 -p1
 %patch62 -p1
+%patch99 -p1
 
 find -type f -name \*.orig -delete
 

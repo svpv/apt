@@ -1,0 +1,6 @@
+object e97a90dec9beeebd327a70b378a47c98d8947d76
+type commit
+tag 0.5.15lorg2-alt3
+tagger Dmitry V. Levin <ldv@altlinux.org> 1143980103 +0000
+
+apt 0.5.15lorg2-alt3
