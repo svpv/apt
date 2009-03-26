@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt24
+Release: alt25
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -375,6 +375,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Mar 26 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt25
+- rpmpm.cc: fixed removal of i586-*.32bit packages (Panu Matilainen)
+
 * Tue Mar 24 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt24
 - depcache.cc (MarkInstall): mark unambiguous dependencies first
 
