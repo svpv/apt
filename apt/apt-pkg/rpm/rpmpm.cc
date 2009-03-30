@@ -260,26 +260,37 @@ bool pkgRPMPM::Go()
    for (vector<Item>::iterator I = List.begin(); I != List.end(); I++)
    {
       string Name = I->Pkg.Name();
-      string RealName = Name;
       string::size_type loc;
+      bool NeedLabel;
 
       switch (I->Op)
       {
       case Item::Purge:
       case Item::Remove:
 	 // Unmunge our package names so rpm can find them...
-	 if ((loc = Name.rfind(".32bit", Name.length())) != string::npos) {
-	    RealName = Name.substr(0,loc);
-	 } else if ((loc = Name.rfind("#", Name.length())) != string::npos) {
-	    RealName = Name.substr(0,loc) + "-" + I->Pkg.CurrentVer().VerStr();
+	 NeedLabel = false;
+	 if ((loc = Name.find('#')) != string::npos) {
+	    Name = Name.substr(0,loc);
+	    NeedLabel = true;
+	 }
+	 if ((loc = Name.rfind(".32bit")) != string::npos &&
+	       loc == Name.length() - strlen(".32bit"))
+	    Name = Name.substr(0,loc);
+	 if (NeedLabel) {
+	    const char *VerStr = I->Pkg.CurrentVer().VerStr();
+	    const char *Epoch = strchr(VerStr, ':');
+	    if (Epoch)
+	       VerStr = Epoch + 1;
+	    Name += "-";
+	    Name += VerStr;
 	 }
 #if RPM_VERSION >= 0x040202
 	 // This is needed for removal to work on multilib packages, but old
 	 // rpm versions don't support name.arch in RPMDBI_LABEL, oh well...
-	 RealName = RealName + "." + I->Pkg.CurrentVer().Arch();
+	 Name = Name + "." + I->Pkg.CurrentVer().Arch();
 #endif
-	 uninstall.push_back(strdup(RealName.c_str()));
-	 unalloc.push_back(strdup(RealName.c_str()));
+	 uninstall.push_back(strdup(Name.c_str()));
+	 unalloc.push_back(strdup(Name.c_str()));
 	 pkgs_uninstall.push_back(I->Pkg);
 	 break;
 
@@ -287,11 +298,9 @@ bool pkgRPMPM::Go()
 	 break;
 
        case Item::Install:
-	 if ((loc = Name.rfind("#", Name.length())) != string::npos) {
-	    RealName = Name.substr(0,loc);
-	 } 
-	 if (Name != RealName) {
-	    PkgIterator Pkg = Cache.FindPkg(RealName);
+	 if ((loc = Name.find('#')) != string::npos) {
+	    Name = Name.substr(0,loc);
+	    PkgIterator Pkg = Cache.FindPkg(Name);
 	    PrvIterator Prv = Pkg.ProvidesList();
 	    bool Installed = false;
 	    for (; Prv.end() == false; Prv++) {
