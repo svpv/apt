@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt26
+Release: alt27
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -375,6 +375,11 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Jul 13 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt27
+- depcache.cc: fixed for gcc-4.4
+- buildlib/tools.m4: hackaround glibc soname change
+- apt-cache.cc: added APT::Cache::DumpPackages option
+
 * Tue Mar 31 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt26
 - rpmpm.cc: try hard to fix package removal
 
