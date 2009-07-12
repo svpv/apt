@@ -96,11 +96,15 @@ AC_DEFUN([rc_GLIBC_VER],
 #include <features.h>
 #include <stdio.h>
 #include <stdlib.h>
-int main(int argc, char **argv) { printf("libc6.%d",__GLIBC_MINOR__); exit(0); }
+int main(int argc, char **argv) { printf("%d",__GLIBC_MINOR__); exit(0); }
 _GLIBC_
 	${CC-cc} $dummy.c -o $dummy > /dev/null 2>&1
 	if test "$?" = 0; then
-		GLIBC_VER=`./$dummy`
+		GLIBC_MINOR=`./$dummy`
+		if test "$GLIBC_MINOR" -gt 9; then
+			GLIBC_MINOR=9
+		fi
+		GLIBC_VER="libc6.$GLIBC_MINOR"
 		AC_MSG_RESULT([$GLIBC_VER])
 		dnl CNC:2003-03-25
 		GLIBC_VER="$GLIBC_VER"
