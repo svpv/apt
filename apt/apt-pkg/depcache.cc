@@ -28,6 +28,8 @@
 #include <apt-pkg/luaiface.h>
     
 #include <apti18n.h>    
+
+#include <cstdio>
 									/*}}}*/
 
 // DepCache::pkgDepCache - Constructors					/*{{{*/
