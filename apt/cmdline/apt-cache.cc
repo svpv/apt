@@ -356,6 +356,7 @@ bool Dump(CommandLine &Cmd)
    pkgCache &Cache = *GCache;
    cout << "Using Versioning System: " << Cache.VS->Label << endl;
    
+   if (_config->FindB("APT::Cache::DumpPackages",true) == true)
    for (pkgCache::PkgIterator P = Cache.PkgBegin(); P.end() == false; P++)
    {
       cout << "Package: " << P.Name() << endl;
