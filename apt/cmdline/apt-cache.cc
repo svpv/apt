@@ -879,8 +879,7 @@ bool WhatDepends(CommandLine &CmdL)
 		  continue;
 	       LocalColours[Parent->ID] = 1;
 		  
-	       if (Ver.end() == false &&
-		   Cache.VS->CheckDep(Ver.VerStr(),RD) == false)
+	       if (Cache.VS->CheckDep(RDPrv.ProvideVersion(),RD) == false)
 		  continue;
 
 	       if (Recurse == true && Colours[Parent->ID] == 0)
