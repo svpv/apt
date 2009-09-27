@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt28
+Release: alt29
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -368,6 +368,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sun Sep 27 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt29
+- apt-utils no longer packaged, replaced with apt-repo-tools
+
 * Mon Aug 03 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt28
 - apt-cache.cc: fixed "whatdepends" for versioned virtual dependencies
 
