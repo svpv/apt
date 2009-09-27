@@ -345,13 +345,6 @@ unset RPM_PYTHON
 %defattr(2770,root,rpm,2770)
 %_cachedir/%name/archives
 
-%files utils
-%_bindir/*
-%exclude %_bindir/apt-*
-
-%defattr(2770,root,rpm,2770)
-%_cachedir/%name/gen*list
-
 %files -n libapt
 %_libdir/*.so.*
 %_localstatedir/%name
