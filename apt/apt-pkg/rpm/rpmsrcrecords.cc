@@ -191,6 +191,26 @@ string rpmSrcRecordParser::Section() const
    return string(rc?str:"");
 }
 
+// SrcRecordParser::Changelog - Package changelog
+// ----------------------------------------------
+string rpmSrcRecordParser::Changelog() const
+{
+   char *str;
+   string rval("");
+
+   str = headerSprintf(HeaderP,
+         "[* %{CHANGELOGTIME:day} %{CHANGELOGNAME}\n%{CHANGELOGTEXT}\n\n]",
+         rpmTagTable, rpmHeaderFormats, NULL);
+
+   if (str && *str) {
+	  rval = (const char *)str;
+   }
+   if (str)
+      str = (char *)_free(str);
+
+   return rval;
+}
+
 unsigned long rpmSrcRecordParser::Offset() 
 {
     return Handler->Offset();

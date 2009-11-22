@@ -70,6 +70,7 @@ class pkgSrcRecords
       virtual string Version() const = 0;
       virtual string Maintainer() const = 0;
       virtual string Section() const = 0;
+      virtual string Changelog() const = 0;
       virtual const char **Binaries() = 0;   // Ownership does not transfer
 
       virtual bool BuildDepends(vector<BuildDepRec> &BuildDeps, bool ArchOnly) = 0;

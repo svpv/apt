@@ -92,6 +92,14 @@ string debRecordParser::LongDesc()
    return Section.FindS("Description");
 }
 									/*}}}*/
+// RecordParser::Changelog - Return package changelog if any		/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+string debRecordParser::Changelog()
+{
+   return string("");
+}
+									/*}}}*/
 // RecordParser::SourcePkg - Return the source package name if any	/*{{{*/
 // ---------------------------------------------------------------------
 /* */

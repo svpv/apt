@@ -48,6 +48,7 @@ public:
    virtual string Version() const;
    virtual string Maintainer() const;
    virtual string Section() const;
+   virtual string Changelog() const;
    virtual const char **Binaries();
    virtual unsigned long Offset();
    virtual string AsStr();

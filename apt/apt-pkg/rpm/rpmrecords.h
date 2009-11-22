@@ -59,6 +59,7 @@ class rpmRecordParser : public pkgRecords::Parser
    virtual string ShortDesc();
    virtual string LongDesc();
    virtual string Name();
+   virtual string Changelog();
    
    inline Header GetRecord() { return HeaderP; };
 

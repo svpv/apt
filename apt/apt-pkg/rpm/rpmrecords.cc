@@ -171,6 +171,27 @@ string rpmRecordParser::LongDesc()
    return Ret;
 }
 									/*}}}*/
+// RecordParser::Changelog - Return package changelog if any		/*{{{*/
+// -----------------------------------------------
+string rpmRecordParser::Changelog()
+{
+   char *str;
+   string rval("");
+
+   str = headerSprintf(HeaderP,
+         "[* %{CHANGELOGTIME:day} %{CHANGELOGNAME}\n%{CHANGELOGTEXT}\n\n]",
+         rpmTagTable, rpmHeaderFormats, NULL);
+
+   if (str && *str) {
+	  rval = (const char *)str;
+   }
+   if (str)
+      str = (char *)_free(str);
+
+   return rval;
+}
+
+									/*}}}*/
 // RecordParser::SourcePkg - Return the source package name if any	/*{{{*/
 // ---------------------------------------------------------------------
 /* */

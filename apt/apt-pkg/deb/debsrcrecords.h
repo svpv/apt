@@ -38,6 +38,7 @@ class debSrcRecordParser : public pkgSrcRecords::Parser
    virtual string Version() const {return Sect.FindS("Version");};
    virtual string Maintainer() const {return Sect.FindS("Maintainer");};
    virtual string Section() const {return Sect.FindS("Section");};
+   virtual string Changelog() const {return string("");};
    virtual const char **Binaries();
    virtual bool BuildDepends(vector<BuildDepRec> &BuildDeps, bool ArchOnly);
    virtual unsigned long Offset() {return iOffset;};
