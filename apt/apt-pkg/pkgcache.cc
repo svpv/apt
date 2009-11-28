@@ -37,6 +37,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <assert.h>
+
 #include <ctype.h>
 #include <system.h>
 									/*}}}*/
@@ -393,11 +395,9 @@ bool pkgCache::DepIterator::SmartTargetPkg(PkgIterator &Result)
    must be delete [] 'd */
 pkgCache::Version **pkgCache::DepIterator::AllTargets()
 {
-   Version **Res = 0;
+   Version *Res[1024];
    unsigned int Size = 0;
-   while (1)
    {
-      Version **End = Res;
       PkgIterator DPkg = TargetPkg();
 
       // Walk along the actual package providing versions
@@ -425,9 +425,8 @@ pkgCache::Version **pkgCache::DepIterator::AllTargets()
 	       continue;
 	 }
 
-	 Size++;
-	 if (Res != 0)
-	    *End++ = v;
+	 assert(Size < sizeof(Res)/sizeof(*Res));
+	 Res[Size++] = v;
       }
       
       // Follow all provides
@@ -455,25 +454,16 @@ pkgCache::Version **pkgCache::DepIterator::AllTargets()
 	       continue;
 	 }
 
-	 Size++;
-	 if (Res != 0)
-	    *End++ = v;
+	 assert(Size < sizeof(Res)/sizeof(*Res));
+	 Res[Size++] = v;
       }
-      
-      // Do it again and write it into the array
-      if (Res == 0)
-      {
-	 Res = new Version *[Size+1];
-	 Size = 0;
-      }
-      else
-      {
-	 *End = 0;
-	 break;
-      }      
    }
    
-   return Res;
+   Version **Ret = new Version *[Size+1];
+   if (Size)
+      memcpy(Ret, Res, Size*sizeof(*Res));
+   Ret[Size] = 0;
+   return Ret;
 }
 									/*}}}*/
 // DepIterator::GlobOr - Compute an OR group				/*{{{*/
