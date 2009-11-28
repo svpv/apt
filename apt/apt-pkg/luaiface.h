@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <apt-pkg/pkgcache.h>
+#include <apt-pkg/depcache.h>
 
 using namespace std;
 
@@ -38,8 +39,9 @@ class Lua {
 
    vector<string> Globals;
 
-   pkgDepCache *DepCache;
    pkgCache *Cache;
+   pkgDepCache *DepCache;
+   pkgDepCache::State DepCacheState;
 
    LuaCacheControl *CacheControl;
 
@@ -99,6 +101,14 @@ class Lua {
    void SetDontFix() { DontFix = true; };
    void ResetCaches()
       { DepCache = NULL; Cache = NULL; Fix = NULL; DontFix = false; };
+
+   void SaveState() {
+      DepCacheState.Save(DepCache);
+   };
+
+   void RestoreState() {
+      DepCacheState.Restore();
+   };
 
    // For API functions
    pkgDepCache *GetDepCache(lua_State *L=NULL);

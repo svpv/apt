@@ -1398,6 +1398,18 @@ static int AptLua_gettext(lua_State *L)
    return 0;
 }
 
+static int AptLua_savestate(lua_State *L)
+{
+   _lua->SaveState();
+   return 0;
+}
+
+static int AptLua_restorestate(lua_State *L)
+{
+   _lua->RestoreState();
+   return 0;
+}
+
 static const luaL_reg aptlib[] = {
    {"confget",		AptLua_confget},
    {"confgetlist",	AptLua_confgetlist},
@@ -1446,6 +1458,8 @@ static const luaL_reg aptlib[] = {
    {"apterror",		AptLua_apterror},
    {"aptwarning",	AptLua_aptwarning},
    {"_",		AptLua_gettext},
+   {"savestate",	AptLua_savestate},
+   {"restorestate",	AptLua_restorestate},
    {NULL, NULL}
 };
 
