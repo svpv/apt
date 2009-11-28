@@ -194,9 +194,18 @@ bool rpmVersioningSystem::CheckDep(const char *PkgVer,
       break;
       
     default:
+      // optimize: no need to check version
+      return true;
+      // old code:
       DepFlags = RPMSENSE_ANY;
       break;
    }
+
+   // optimize: equal version strings => equal versions
+   if (DepFlags & RPMSENSE_EQUAL)
+      if (PkgVer && DepVer)
+	 if (strcmp(PkgVer, DepVer) == 0)
+	    return invert ? false : true;
 
 #if RPM_VERSION >= 0x040100
    rpmds pds = rpmdsSingle(RPMTAG_PROVIDENAME, "", PkgVer, PkgFlags);
