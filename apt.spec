@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt31
+Release: alt31.1
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -368,6 +368,11 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Mon Dec 21 2009 Alexey I. Froloff <raorn@altlinux.org> 0.5.15lorg2-alt31.1
+- NMU:
+  + RecordParser::Changelog(), SrcRecordParser::Changelog(): access to
+    raw changelog data
+
 * Thu Dec 17 2009 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt31
 - rpmversion.cc (CheckDep): optimize out rpmRangesOverlap() call
 - pkgcache.cc (AllTargets): optimize out CheckDep() calls
