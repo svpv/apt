@@ -126,7 +126,9 @@
      <ListItem><Para>
      Configuration File; Specify a configuration file to use. 
      The program will read the default configuration file and then this 
-     configuration file. See &apt-conf; for syntax information.     
+     configuration file. If configuration settings need to be set before the
+     default configuration files are parsed specify a file with the <envar>APT_CONFIG</envar>
+     environment variable. See &apt-conf; for syntax information.
      </Para></ListItem>
      </VarListEntry>
      
