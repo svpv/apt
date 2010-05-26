@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt31.1
+Release: alt32
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -370,6 +370,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu May 27 2010 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt32
+- acquire-item.cc: added support for xz-compressed pkglists
+
 * Mon Dec 21 2009 Alexey I. Froloff <raorn@altlinux.org> 0.5.15lorg2-alt31.1
 - NMU:
   + RecordParser::Changelog(), SrcRecordParser::Changelog(): access to
