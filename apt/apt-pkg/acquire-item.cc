@@ -191,7 +191,7 @@ pkgAcqIndex::pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,
 
    // Create the item
    // CNC:2002-07-03
-   Desc.URI = URI + _config->Find("Acquire::ComprExtension", ".bz2");
+   Desc.URI = URI + ".bz2";
    Desc.Description = URIDesc;
    Desc.Owner = this;
    Desc.ShortDesc = ShortDesc;
@@ -227,6 +227,9 @@ pkgAcqIndex::pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,
 	    unlink(FinalFile.c_str());
 	    unlink(DestFile.c_str());
 	 }
+
+	 if (Repository->FindChecksums(RealURI + ".xz", Size, MD5Hash) == true)
+	    Desc.URI = URI + ".xz";
       }
       else if (Repository->IsAuthenticated() == true)
       {
@@ -360,11 +363,15 @@ void pkgAcqIndex::Done(string Message,unsigned long Size,string MD5,
    
    Decompression = true;
    DestFile += ".decomp";
+
    // CNC:2002-07-03
-   Desc.URI = "bzip2:" + FileName;
+   const char *prog = "bzip2";
+   if (flExtension(Desc.URI) == "xz")
+      prog = "xz";
+   Desc.URI = string(prog) + ":" + FileName;
    QueueURI(Desc);
    // CNC:2002-07-03
-   Mode = "bzip2";
+   Mode = prog;
 }
 									/*}}}*/
 

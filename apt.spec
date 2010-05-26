@@ -80,7 +80,8 @@ Patch101: apt-0.5.4cnc9-alt-getsrc-debug.patch
 Requires: libapt = %version-%release
 Requires: rpm >= 4.0.4-alt28, /etc/apt/pkgpriorities, apt-conf
 # for methods.
-Requires: bzip2, gzip, gnupg, alt-gpgkeys
+Requires: gzip, bzip2, xz
+Requires: gnupg, alt-gpgkeys
 
 # for autopoint.
 BuildPreReq: cvs
@@ -321,6 +322,7 @@ install -pm644 %SOURCE1 %buildroot%_sysconfdir/%name/
 # This is still needed.
 ln -sf rsh %buildroot%_libdir/%name/methods/ssh
 ln -sf gzip %buildroot%_libdir/%name/methods/bzip2
+ln -sf gzip %buildroot%_libdir/%name/methods/xz
 
 # Cleanup
 find %buildroot%_includedir -type f -name rpmshowprogress.h -delete -print
