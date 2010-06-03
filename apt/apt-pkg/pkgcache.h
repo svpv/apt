@@ -277,8 +277,12 @@ struct pkgCache::Version
    map_ptrloc ParentPkg;         // Package
    map_ptrloc ProvidesList;      // Provides
    
-   map_ptrloc Size;              // These are the .deb size
-   map_ptrloc InstalledSize;
+   /** \brief archive size for this version
+       For Debian this is the size of the .deb file. */
+   unsigned long long Size;      // These are the .deb size
+   /** \brief uncompressed size for this version */
+   unsigned long long InstalledSize;
+
    unsigned int Hash;
    unsigned int ID;
    unsigned char Priority;

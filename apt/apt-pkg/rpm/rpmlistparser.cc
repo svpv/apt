@@ -274,11 +274,11 @@ bool rpmListParser::NewVersion(pkgCache::VerIterator Ver)
        Ver->BTime = *num;
 
    // Archive Size
-   Ver->Size = Handler->FileSize();
+   Ver->Size = (unsigned long long)Handler->FileSize();
    
    // Unpacked Size (in kbytes)
    headerGetEntry(header, RPMTAG_SIZE, &type, (void**)&num, &count);
-   Ver->InstalledSize = (unsigned)num[0];
+   Ver->InstalledSize = (unsigned long long)num[0];
      
    if (ParseDepends(Ver,pkgCache::Dep::Depends) == false)
        return false;

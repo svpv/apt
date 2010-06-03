@@ -49,7 +49,10 @@ class pkgAcquire::Item
     * Do not use anonyomus enums, as this breaks SWIG in some cases */
    enum StatusFlags {StatIdle, StatFetching, StatDone, StatError} Status;
    string ErrorText;
-   unsigned long FileSize;
+
+   /** \brief The size of the object to fetch. */
+   unsigned long long FileSize;
+
    unsigned long PartialSize;   
    const char *Mode;
    unsigned long ID;
