@@ -852,14 +852,14 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       }
    }
 #else
-#if RPM_VERSION < 0x040000
-   rpmDependencyConflict *conflicts;
-#else
-   rpmDependencyConflict conflicts;
-#endif
    if (_config->FindB("RPM::NoDeps", false) == false) {
+#if RPM_VERSION < 0x040000
+      rpmDependencyConflict *conflicts = NULL;
+#else
+      rpmDependencyConflict conflicts = NULL;
+#endif
       int numConflicts;
-      if (rpmdepCheck(TS, &conflicts, &numConflicts)) {
+      if (rpmdepCheck(TS, &conflicts, &numConflicts) || conflicts) {
 	 _error->Error(_("Transaction set check failed"));
 	 if (conflicts) {
 	    printDepProblems(stderr, conflicts, numConflicts);
