@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt33
+Release: alt34
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.KOI8-R): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -370,6 +370,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu Nov 04 2010 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt34
+- Increased default APT::Cache-Limit up to 48M.
+
 * Wed Aug 18 2010 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt33
 - rpmpm.c: fixed rpmdepCheck() call
 
