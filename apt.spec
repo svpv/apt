@@ -337,6 +337,8 @@ bzip2 -9fk ChangeLog-rpm.old
 
 unset RPM_PYTHON
 
+%set_verify_elf_method strict
+
 %files -f %name.lang
 %_bindir/apt-*
 %_libdir/%name
