@@ -291,6 +291,9 @@ install -pm644 %SOURCE4 po/ru.po
 install -pm644 %SOURCE5 po/be.po
 sed -i 's|^\(.\+\)$|\1 be|' po/LINGUAS
 
+# Drop obsolete m4/*.m4 files.
+rm m4/*.m4
+
 %build
 # Fix url.
 sed -i 's,/usr/share/common-licenses/GPL,/usr/share/license/GPL,' COPYING
