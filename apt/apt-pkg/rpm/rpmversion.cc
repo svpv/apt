@@ -202,7 +202,7 @@ bool rpmVersioningSystem::CheckDep(const char *PkgVer,
    }
 
    // optimize: equal version strings => equal versions
-   if (DepFlags & RPMSENSE_EQUAL)
+   if ((DepFlags & RPMSENSE_SENSEMASK) == RPMSENSE_EQUAL)
       if (PkgVer && DepVer)
 	 if (strcmp(PkgVer, DepVer) == 0)
 	    return invert ? false : true;
