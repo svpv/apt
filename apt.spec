@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt35
+Release: alt36
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.UTF-8): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -375,6 +375,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Jan 25 2011 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt36
+- depcache.cc: optimize CheckDep() calls for Now/Install/Candidate versions
+
 * Tue Nov 23 2010 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt35
 - Fixed RPATH in apt utilities.
 - Applied strict ELF verification rules in this package.
