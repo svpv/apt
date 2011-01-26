@@ -110,7 +110,7 @@ class pkgCache
 
    // CNC:2003-02-16 - Inlined here.
    inline unsigned long sHash(const char *S) const;
-   inline unsigned long sHash(string S) const {return sHash(S.c_str());};
+   inline unsigned long sHash(const string &S) const {return sHash(S.c_str());};
    
    public:
    
@@ -131,8 +131,8 @@ class pkgCache
    inline void *DataEnd() {return ((unsigned char *)Map.Data()) + Map.Size();};
       
    // String hashing function (512 range)
-   inline unsigned long Hash(string S) const {return sHash(S);};
-   inline unsigned long Hash(const char *S) const {return sHash(S);};
+   inline unsigned long Hash(const char *S) const;
+   inline unsigned long Hash(const string &S) const {return Hash(S.c_str());};
 
    // Usefull transformation things
    const char *Priority(unsigned char Priority);
@@ -312,15 +312,18 @@ struct pkgCache::StringItem
 #include <apt-pkg/cacheiterators.h>
 
 // CNC:2003-02-16 - Inlined here.
-#include <ctype.h>
-#define hash_count(a) (sizeof(a)/sizeof(a[0]))
-inline unsigned long pkgCache::sHash(const char *Str) const
+inline unsigned long pkgCache::sHash(const char *S) const
 {
-   unsigned long Hash = 0;
-   for (const char *I = Str; *I != 0; I++)
-      //Hash = 5*Hash + tolower(*I);
-      Hash = 5*Hash + *I;
-   return Hash % hash_count(HeaderP->HashTable);
+   unsigned long h = 5381;
+   unsigned char c;
+   for (c = *S; c != '\0'; c = *++S)
+      h = h * 33 + c;
+   return h;
+}
+#define hash_count(a) (sizeof(a)/sizeof(a[0]))
+inline unsigned long pkgCache::Hash(const char *S) const
+{
+   return sHash(S) % hash_count(HeaderP->HashTable);
 }
 #undef hash_count
 
