@@ -203,7 +203,7 @@ struct pkgCache::Header
    DynamicMMap::Pool Pools[7];
    
    // Rapid package name lookup
-   map_ptrloc HashTable[8*1048];
+   map_ptrloc HashTable[64*1024];
 
    bool CheckSizes(Header &Against) const;
    Header();
