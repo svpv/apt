@@ -25,6 +25,7 @@
 #pragma implementation "apt-pkg/cacheiterators.h"
 #endif 
 
+#define PKGCACHE_FINDPKG_ABI
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/version.h>
 #include <apt-pkg/error.h>
@@ -185,22 +186,16 @@ unsigned long pkgCache::sHash(const char *Str) const
 // Cache::FindPkg - Locate a package by name				/*{{{*/
 // ---------------------------------------------------------------------
 /* Returns 0 on error, pointer to the package otherwise */
+pkgCache::PkgIterator pkgCache::FindPkg(const string &Name)
+{
+   return PkgIterator(*this,FindPackage(Name.c_str()));
+}
+#ifdef PKGCACHE_FINDPKG_ABI
 pkgCache::PkgIterator pkgCache::FindPkg(string Name)
 {
-   // Look at the hash bucket
-   Package *Pkg = PkgP + HeaderP->HashTable[Hash(Name)];
-   const char *name = Name.c_str(); // CNC:2003-02-17
-   for (; Pkg != PkgP; Pkg = PkgP + Pkg->NextPackage)
-   {
-      // CNC:2003-02-17 - We use case sensitive package names. Also,
-      //                  store Pkg->Name in a temporary variable.
-      map_ptrloc PkgName = Pkg->Name;
-      if (PkgName != 0 && StrP[PkgName] == name[0] &&
-	  strcmp(name,StrP + PkgName) == 0)
-	 return PkgIterator(*this,Pkg);
-   }
-   return PkgIterator(*this,0);
+   return PkgIterator(*this,FindPackage(Name.c_str()));
 }
+#endif
 									/*}}}*/
 
 // CNC:2003-02-17 - A slightly changed FindPkg(), hacked for performance.
@@ -213,12 +208,13 @@ pkgCache::Package *pkgCache::FindPackage(const char *Name)
    Package *Pkg = PkgP + HeaderP->HashTable[Hash(Name)];
    for (; Pkg != PkgP; Pkg = PkgP + Pkg->NextPackage)
    {
-      // CNC:2003-02-17 - We use case sensitive package names. Also,
-      //                  store Pkg->Name in a temporary variable.
+      // CNC:2003-02-17 - We use case sensitive package names.
       map_ptrloc PkgName = Pkg->Name;
-      if (PkgName != 0 && StrP[PkgName] == Name[0] &&
-	  strcmp(Name,StrP + PkgName) == 0)
-	 return Pkg;
+      if (PkgName != 0) {
+	 const char *S = StrP + PkgName;
+	 if (*S == *Name && strcmp(S, Name) == 0)
+	    return Pkg;
+      }
    }
    return NULL;
 }
