@@ -506,19 +506,9 @@ unsigned char pkgDepCache::DependencyState(DepIterator &D)
    
    if (CheckDep(D,NowVersion) == true)
       State |= DepNow;
-
-   PkgIterator Pkg = D.TargetPkg();
-   Version *CurrentVer = Pkg.CurrentVer();
-   Version *InstallVer = PkgState[Pkg->ID].InstallVer;
-   Version *CandidateVer = PkgState[Pkg->ID].CandidateVer;
-
-   if ((InstallVer == CurrentVer && (State & DepNow)) ||
-       CheckDep(D,InstallVersion) == true)
+   if (CheckDep(D,InstallVersion) == true)
       State |= DepInstall;
-
-   if ((CandidateVer == CurrentVer && (State & DepNow)) ||
-       (CandidateVer == InstallVer && (State & DepInstall)) ||
-       CheckDep(D,CandidateVersion) == true)
+   if (CheckDep(D,CandidateVersion) == true)
       State |= DepCVer;
    
    return State;
