@@ -217,6 +217,18 @@ bool pkgDepCache::CheckDep(DepIterator Dep,int Type,PkgIterator &Res)
    PkgIterator Dep_ParentPkg = Dep.ParentPkg();
    pkgVersioningSystem &VS = this->VS();
 
+   static const char *lastV;
+   static const pkgCache::Dependency *lastD;
+   static bool lastRet;
+#define VS_CheckDep(V, D) \
+   ({ \
+      if (!(lastV == V && lastD == D)) { \
+	 lastV = V; lastD = D; \
+	 lastRet = VS.CheckDep(V, D); \
+      } \
+      lastRet; \
+   })
+
    /* Check simple depends. A depends -should- never self match but 
       we allow it anyhow because dpkg does. Technically it is a packaging
       bug. Conflicts may never self match */
@@ -233,20 +245,20 @@ bool pkgDepCache::CheckDep(DepIterator Dep,int Type,PkgIterator &Res)
 	       // CNC:2002-07-10 - RPM must check the dependency type to
 	       //		   properly define if it would be satisfied
 	       //		   or not.
-	       if (VS.CheckDep(Pkg.CurrentVer().VerStr(),Dep) == true)
+	       if (VS_CheckDep(Pkg.CurrentVer().VerStr(),Dep) == true)
 		  return true;
 	    break;
 
 	 case InstallVersion:
 	    if (PkgState[Pkg->ID].InstallVer != 0)
-	       if (VS.CheckDep(PkgState[Pkg->ID].InstVerIter(*this).VerStr(),
+	       if (VS_CheckDep(PkgState[Pkg->ID].InstVerIter(*this).VerStr(),
 				       Dep) == true)
 		  return true;
 	    break;
       
 	 case CandidateVersion:
 	    if (PkgState[Pkg->ID].CandidateVer != 0)
-	       if (VS.CheckDep(PkgState[Pkg->ID].CandidateVerIter(*this).VerStr(),
+	       if (VS_CheckDep(PkgState[Pkg->ID].CandidateVerIter(*this).VerStr(),
 				       Dep) == true)
 		  return true;
 	    break;
@@ -296,7 +308,7 @@ bool pkgDepCache::CheckDep(DepIterator Dep,int Type,PkgIterator &Res)
       }
       
       // Compare the versions.
-      if (VS.CheckDep(P.ProvideVersion(),Dep) == true) // CNC:2002-07-10
+      if (VS_CheckDep(P.ProvideVersion(),Dep) == true) // CNC:2002-07-10
       {
 	 Res = P_OwnerPkg;
 	 return true;
