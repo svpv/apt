@@ -1428,12 +1428,15 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
    {
       if (_config->FindB("APT::Get::ReInstall",false) == true)
       {
-	 if (Pkg->CurrentVer == 0 || Pkg.CurrentVer().Downloadable() == false)
-	    ioprintf(c1out,_("Reinstallation of %s is not possible, it cannot be downloaded.\n"),
+	 if (Pkg->CurrentVer == 0)
+	    ioprintf(c1out,_("Reinstallation of %s is not possible.\n"),
 		     Pkg.Name());
+	 else if (Pkg.CurrentVer().Downloadable() == false)
+	    ioprintf(c1out,_("Reinstallation of %s %s is not possible, it cannot be downloaded.\n"),
+		     Pkg.Name(), Pkg.CurrentVer().VerStr());
 	 else
 	    Cache.SetReInstall(Pkg,true);
-      }      
+      }
       else
       {
 	 if (AllowFail == true)

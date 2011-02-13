@@ -789,8 +789,13 @@ msgstr "Для пакета %s не найдено подходящего кандидата для установки"
 
 #: cmdline/apt-get.cc:1432 cmdline/apt-shell.cc:1507
 #, c-format
-msgid "Reinstallation of %s is not possible, it cannot be downloaded.\n"
-msgstr "Переустановить %s невозможно, потому что этот пакет нельзя скачать.\n"
+msgid "Reinstallation of %s is not possible.\n"
+msgstr "Переустановить %s невозможно.\n"
+
+#: cmdline/apt-get.cc:1432 cmdline/apt-shell.cc:1507
+#, c-format
+msgid "Reinstallation of %s-%s is not possible, it cannot be downloaded.\n"
+msgstr "Переустановить %s-%s невозможно, потому что этот пакет нельзя скачать.\n"
 
 #: cmdline/apt-get.cc:1440 cmdline/apt-shell.cc:1515
 #, c-format
