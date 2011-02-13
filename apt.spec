@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt37
+Release: alt38
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.UTF-8): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -375,6 +375,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Sun Feb 13 2011 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt38
+- Enhanced ReInstall error diagnostics (closes: #24044).
+
 * Thu Jan 27 2011 Alexey Tourbin <at@altlinux.ru> 0.5.15lorg2-alt37
 - pkgcache.h: optimized FindPackage() stuff
 - depcache.cc: fixed -alt36 optimization
