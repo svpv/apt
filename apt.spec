@@ -1,13 +1,12 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt39
+Release: alt40
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.UTF-8): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
 License: GPL
 Group: System/Configuration/Packaging
 URL: http://apt-rpm.org
-Packager: APT Development Team <apt@packages.altlinux.org>
 
 Source0: %name-%version.tar
 Source1: apt.conf
@@ -375,6 +374,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Wed May 16 2012 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt40
+- Increased default APT::Cache-Limit on x86_64 up to 64M.
+
 * Fri Oct 07 2011 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt39
 - Fixed build with rpm >= rpm-4.0.4-alt100.36.
 
