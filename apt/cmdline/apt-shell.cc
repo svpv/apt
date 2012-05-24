@@ -1100,10 +1100,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
 		 " ?] "),Prompt);
       c2out << flush;
       if (AnalPrompt(Prompt) == false)
-      {
-	 c2out << _("Abort.") << endl;
-	 exit(1);
-      }     
+	 return _error->Error(_("Operation cancelled."));
    }
    else
    {      
@@ -1119,10 +1116,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
 	    c2out << _("Do you want to continue? [Y/n] ") << flush;
 	 
 	    if (YnPrompt() == false)
-	    {
-	       c2out << _("Abort.") << endl;
-	       exit(1);
-	    }     
+	       return _error->Error(_("Operation cancelled."));
 	 }	 
       }      
    }
