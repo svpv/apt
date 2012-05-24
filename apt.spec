@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt40
+Release: alt41
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.UTF-8): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -374,6 +374,14 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Thu May 24 2012 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt41
+- apt-get, apt-shell: when a package could not be found, print the
+  unmangled package request string (by Igor Vlasenko; closes: #27364).
+- apt-shell: do not abort when commit is cancelled (closes: #13877);
+  Unlike one may suppose, this change will not cause the cache of
+  accumulated changes to be cleared by cancelled "commit" operation, but
+  this is exactly what Vitaly Lipatov has proposed in his comments to #13877.
+
 * Wed May 16 2012 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt40
 - Increased default APT::Cache-Limit on x86_64 up to 64M.
 
