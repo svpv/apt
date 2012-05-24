@@ -2065,7 +2065,7 @@ bool DoInstall(CommandLine &CmdL)
 	    if (Hit == true)
 	       continue;
 #endif
-	    return _error->Error(_("Couldn't find package %s"),S);
+	    return _error->Error(_("Couldn't find package %s"), OrigS);
 	 }
 
 	 // Regexs must always be confirmed
@@ -2091,7 +2091,7 @@ bool DoInstall(CommandLine &CmdL)
 	    
 	    // CNC:2003-11-23
 	    ioprintf(c1out,_("Selecting %s for '%s'\n"),
-		     Pkg.Name(),S);
+		     Pkg.Name(), OrigS);
 	    StateGuard->Ignore(Pkg);
 	    
 	    if (VerTag != 0)
@@ -2105,7 +2105,7 @@ bool DoInstall(CommandLine &CmdL)
 	 regfree(&Pattern);
 	 
 	 if (Hit == false)
-	    return _error->Error(_("Couldn't find package %s"),S);
+	    return _error->Error(_("Couldn't find package %s"), OrigS);
       }
       else
       {
