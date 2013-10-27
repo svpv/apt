@@ -278,8 +278,8 @@ struct pkgCache::Version
    
    map_ptrloc Size;              // These are the .deb size
    map_ptrloc InstalledSize;
-   unsigned short Hash;
-   unsigned short ID;
+   unsigned int Hash;
+   unsigned int ID;
    unsigned char Priority;
 };
 
