@@ -25,7 +25,7 @@ diff -upk.orig apt-0.5.15cnc6.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc6/apt-p
     Cnf.CndSet("Dir::Locale","/usr/share/locale");
     Cnf.CndSet("Acquire::DistroID","ALT Linux"); // hee hee
 -   Cnf.CndSet("Acquire::CDROM::Mount", "/mnt/cdrom");
-+   Cnf.CndSet("Acquire::CDROM::Mount", "/media/cdrom");
++   Cnf.CndSet("Acquire::CDROM::Mount", "/media/ALTLinux");
     Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
  
     // Compatibility with obsoleted options
