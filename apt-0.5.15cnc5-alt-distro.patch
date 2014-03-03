@@ -10,18 +10,6 @@ diff -uprk.orig apt-0.5.15cnc5.orig/apt-pkg/rpm/rpmsystem.cc apt-0.5.15cnc5/apt-
     Cnf.CndSet("Acquire::CDROM::Mount", "/mnt/cdrom");
     Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
  
-diff -uprk.orig apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc apt-0.5.15cnc5/cmdline/apt-cdrom.cc
---- apt-0.5.15cnc5.orig/cmdline/apt-cdrom.cc	2003-12-23 23:31:19 +0300
-+++ apt-0.5.15cnc5/cmdline/apt-cdrom.cc	2004-01-16 15:11:40 +0300
-@@ -700,7 +700,7 @@ bool DoAdd(CommandLine &)
- 	  Name.empty() == true)
-       {
- 	 // CNC:2003-11-25
--	 cout << _("Please provide a name for this Disc, such as 'Distribution Disk 1'");
-+	 cout << _("Please provide a name for this Disc, such as 'ALT Linux Disk 1'");
- 	 while (1)
- 	 {
- 	    Name = PromptLine("");
 diff -uprk.orig apt-0.5.15cnc5.orig/methods/ftp.cc apt-0.5.15cnc5/methods/ftp.cc
 --- apt-0.5.15cnc5.orig/methods/ftp.cc	2003-12-23 23:24:24 +0300
 +++ apt-0.5.15cnc5/methods/ftp.cc	2004-01-16 15:11:40 +0300

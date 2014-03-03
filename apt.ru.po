@@ -48,12 +48,12 @@ msgstr " [Подождите]"
 #: cmdline/acqprogress.cc:271
 #, c-format
 msgid ""
-"Media Change: Please insert the disc labeled\n"
+"Media Change: Please insert the media labeled\n"
 " '%s'\n"
-"in the drive '%s' and press enter\n"
+"and press enter\n"
 msgstr ""
-"Смена диска: Вставьте, пожалуйста, диск с меткой '%s'\n"
-"в устройство '%s' и нажмите <Enter>.\n"
+"Смена носителя: Вставьте, пожалуйста, носитель с меткой '%s'\n"
+"и нажмите <Enter>.\n"
 
 #: cmdline/apt-cache.cc:157 cmdline/apt-shell.cc:3188
 #, c-format
@@ -290,8 +290,8 @@ msgid "Failed to open %s.new"
 msgstr "Не удалось открыть %s.new"
 
 #: cmdline/apt-cdrom.cc:571 cmdline/apt-cdrom.cc:812
-msgid "Using CD-ROM mount point "
-msgstr "Используется точка монтирования CD-ROM "
+msgid "Using Media mount point "
+msgstr "Используется точка монтирования носителя "
 
 #: cmdline/apt-cdrom.cc:579 cmdline/apt-cdrom.cc:834 methods/cdrom.cc:160
 #, c-format
@@ -299,28 +299,28 @@ msgid "Unable to read the cdrom database %s"
 msgstr "Невозможно прочитать базу данных компакт-дисков в %s."
 
 #: cmdline/apt-cdrom.cc:596
-msgid "Unmounting CD-ROM"
-msgstr "Размонтируется CD-ROM"
+msgid "Unmounting Media"
+msgstr "Размонтируется носитель"
 
 #: cmdline/apt-cdrom.cc:600
-msgid "Please insert a Disc in the drive and press enter"
-msgstr "Вставьте, пожалуйста, диск в привод и нажмите <Enter>"
+msgid "Please insert a Media and press enter"
+msgstr "Вставьте, пожалуйста, носитель в привод и нажмите <Enter>"
 
 #: cmdline/apt-cdrom.cc:601 cmdline/apt-cdrom.cc:813
-msgid "Mounting CD-ROM"
-msgstr "Монтируется CD-ROM"
+msgid "Mounting Media"
+msgstr "Монтируется носитель"
 
 #: cmdline/apt-cdrom.cc:603 cmdline/apt-cdrom.cc:815
-msgid "Failed to mount the cdrom."
-msgstr "Не удалось смонтировать CD-ROM."
+msgid "Failed to mount the Media."
+msgstr "Не удалось смонтировать носитель."
 
 #: cmdline/apt-cdrom.cc:607 cmdline/apt-cdrom.cc:818
 msgid "Identifying.. "
 msgstr "Распознаётся.. "
 
 #: cmdline/apt-cdrom.cc:627
-msgid "Scanning Disc for index files..  "
-msgstr "Диск сканируется в поисках индексных файлов..  "
+msgid "Scanning Media for index files..  "
+msgstr "Носитель сканируется в поисках индексных файлов..  "
 
 #: cmdline/apt-cdrom.cc:644
 msgid "I found (binary):"
@@ -353,24 +353,24 @@ msgid "Found label '"
 msgstr "Найдена метка '"
 
 #: cmdline/apt-cdrom.cc:703
-msgid "Please provide a name for this Disc, such as 'ALT Linux Disk 1'"
-msgstr "Пожалуйста, задайте имя для этого диска, например, 'ALT Linux Disk 1'"
+msgid "Please provide a name for this Media, such as 'ALT Linux Disk 1'"
+msgstr "Пожалуйста, задайте имя для этого носителя, например, 'ALT Linux Disk 1'"
 
 #: cmdline/apt-cdrom.cc:712
 msgid "That is not a valid name, try again "
 msgstr "Это имя ошибочно, попробуйте снова "
 
 #: cmdline/apt-cdrom.cc:726
-msgid "This Disc is called:"
-msgstr "Этот диск назван:"
+msgid "This Media is called:"
+msgstr "Этот носитель назван:"
 
 #: cmdline/apt-cdrom.cc:759
-msgid "Source List entries for this Disc are:"
-msgstr "Список исходных пакетов для этого диска:"
+msgid "Source List entries for this Media are:"
+msgstr "Список исходных пакетов для этого носителя:"
 
 #: cmdline/apt-cdrom.cc:792
-msgid "Repeat this process for the rest of the CDs in your set."
-msgstr "Повторите эту процедуру для оставшихся дисков из Вашего набора."
+msgid "Repeat this process for the rest of the Media in your set."
+msgstr "Повторите эту процедуру для оставшихся носителей из Вашего набора."
 
 #: cmdline/apt-cdrom.cc:837
 msgid "Stored Label: '"
@@ -380,18 +380,18 @@ msgstr "Сохранённая метка: '"
 msgid ""
 "Usage: apt-cdrom [options] command\n"
 "\n"
-"apt-cdrom is a tool to add CDROM's to APT's source list. The\n"
-"CDROM mount point and device information is taken from apt.conf\n"
+"apt-cdrom is a tool to add Media to APT's source list. The\n"
+"mount point and device information is taken from apt.conf\n"
 "and /etc/fstab.\n"
 "\n"
 "Commands:\n"
-"   add - Add a CDROM\n"
-"   ident - Report the identity of a CDROM\n"
+"   add - Add a Media\n"
+"   ident - Report the identity of a Media\n"
 "\n"
 "Options:\n"
 "  -h   This help text\n"
-"  -d   CD-ROM mount point\n"
-"  -r   Rename a recognized CD-ROM\n"
+"  -d   mount point\n"
+"  -r   Rename a recognized Media\n"
 "  -m   No mounting\n"
 "  -f   Fast mode, don't check package files\n"
 "  -a   Thorough scan mode\n"
@@ -401,19 +401,19 @@ msgid ""
 msgstr ""
 "Использование: apt-cdrom [параметры] команда\n"
 "\n"
-"apt-cdrom это утилита для добавления CDROM дисков в список источников APT. "
+"apt-cdrom это утилита для добавления носителей в список источников APT. "
 "Точка\n"
-"монтирования CDROM и информация об устройстве извлекаются из apt.conf\n"
+"монтирования и информация об устройстве извлекаются из apt.conf\n"
 "и /etc/fstab.\n"
 "\n"
 "Команды:\n"
-"   add - Добавить CDROM\n"
-"   ident - Вывести идентификационную запись CDROM\n"
+"   add - Добавить носитель\n"
+"   ident - Вывести идентификационную запись носителя\n"
 "\n"
 "Параметры:\n"
 "  -h   Краткая справка \n"
-"  -d   Точка монтирования CD-ROM\n"
-"  -r   Переименовать уже распознанный CD-ROM\n"
+"  -d   Точка монтирования\n"
+"  -r   Переименовать уже распознанный носитель\n"
 "  -m   Не монтировать диск\n"
 "  -f   `Быстрый режим', не проверять файлы пакетов\n"
 "  -a   Тщательный режим сканирования\n"
@@ -2508,20 +2508,20 @@ msgstr "Невозможно прочитать пакетный файл %s (2)"
 
 #: methods/cdrom.cc:169
 msgid ""
-"Please use apt-cdrom to make this CD recognized by APT. apt-get update "
-"cannot be used to add new CDs"
+"Please use apt-cdrom to make this media recognized by APT. apt-get update "
+"cannot be used to add new media"
 msgstr ""
-"Пожалуйста, используйте apt-cdrom, чтобы сделать этот CD доступным APT. apt-"
-"get update не может быть использован для добавления новых CD дисков"
+"Пожалуйста, используйте apt-cdrom, чтобы сделать этот носитель доступным APT. apt-"
+"get update не может быть использован для добавления новых носителей"
 
 #: methods/cdrom.cc:177 methods/cdrom.cc:215
-msgid "Wrong CD"
-msgstr "Неправильный CD"
+msgid "Wrong media"
+msgstr "Неправильный носитель"
 
 #: methods/cdrom.cc:210
 #, c-format
-msgid "Unable to unmount the CD-ROM in %s, it may still be in use."
-msgstr "Невозможно размонтировать CD-ROM в %s, наверное он все еще используется"
+msgid "Unable to unmount media in %s, it may still be in use."
+msgstr "Невозможно размонтировать носитель в %s, наверное он все еще используется"
 
 #: methods/cdrom.cc:233 methods/file.cc:82
 msgid "File not found"
