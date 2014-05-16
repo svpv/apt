@@ -1025,6 +1025,14 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
    // Just print out the uris an exit if the --print-uris flag was used
    if (_config->FindB("APT::Get::Print-URIs") == true)
    {
+      if (_config->FindB("APT::Get::PrintLocalFile"))
+      {
+         struct stat stb;
+         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
+            if (((*I)->Local) && !stat((*I)->DestFile.c_str(), &stb))
+               cout << (*I)->DestFile << endl;
+         return true;
+      }
       pkgAcquire::UriIterator I = Fetcher.UriBegin();
       for (; I != Fetcher.UriEnd(); I++)
 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 
@@ -1734,6 +1742,14 @@ bool DoUpdate(CommandLine &CmdL)
    // Just print out the uris an exit if the --print-uris flag was used
    if (_config->FindB("APT::Get::Print-URIs") == true)
    {
+      if (_config->FindB("APT::Get::PrintLocalFile"))
+      {
+         struct stat stb;
+         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
+            if (((*I)->Local) && !stat((*I)->DestFile.c_str(), &stb))
+               cout << (*I)->DestFile << endl;
+         return true;
+      }
       pkgAcquire::UriIterator I = Fetcher.UriBegin();
       for (; I != Fetcher.UriEnd(); I++)
 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 
@@ -2591,6 +2607,14 @@ bool DoSource(CommandLine &CmdL)
    // Just print out the uris an exit if the --print-uris flag was used
    if (_config->FindB("APT::Get::Print-URIs") == true)
    {
+      if (_config->FindB("APT::Get::PrintLocalFile"))
+      {
+         struct stat stb;
+         for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd(); ++I)
+            if (((*I)->Local) && !stat((*I)->DestFile.c_str(), &stb))
+               cout << (*I)->DestFile << endl;
+         return true;
+      }
       pkgAcquire::UriIterator I = Fetcher.UriBegin();
       for (; I != Fetcher.UriEnd(); I++)
 	 cout << '\'' << I->URI << "' " << flNotDir(I->Owner->DestFile) << ' ' << 
