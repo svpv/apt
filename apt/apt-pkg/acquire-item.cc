@@ -48,7 +48,7 @@ using std::string;
 // ---------------------------------------------------------------------
 /* Returns false only if the checksums fail (the file not existing is not
    a checksum mismatch) */
-bool VerifyChecksums(string File,unsigned long Size,string MD5)
+static bool VerifyChecksums(string File, unsigned long Size, string MD5)
 {
    struct stat Buf;
    
@@ -286,7 +286,7 @@ void pkgAcqIndex::Done(string Message,unsigned long Size,string MD5,
 	    ErrorText = _("Size mismatch");
 	    Rename(DestFile,DestFile + ".FAILED");
 	    if (_config->FindB("Acquire::Verbose",false) == true) 
-	       _error->Warning("Size mismatch of index file %s: %ul was supposed to be %ul",
+	       _error->Warning("Size mismatch of index file %s: %lu was supposed to be %lu",
 			       RealURI.c_str(), Size, FSize);
 	    return;
 	 }
@@ -566,7 +566,7 @@ void pkgAcqIndexRel::Done(string Message,unsigned long Size,string MD5,
 	 ErrorText = _("Size mismatch");
 	 Rename(DestFile,DestFile + ".FAILED");
 	 if (_config->FindB("Acquire::Verbose",false) == true) 
-	    _error->Warning("Size mismatch of index file %s: %ul was supposed to be %ul",
+	    _error->Warning("Size mismatch of index file %s: %lu was supposed to be %lu",
 			    RealURI.c_str(), Size, FSize);
 	 return;
       }

@@ -431,7 +431,7 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
    headerGetEntry(HeaderP, RPMTAG_ARCH, &type, (void **)&str, &count);
    BufCatTag("\nArchitecture: ", str);
    
-   snprintf(buf, sizeof(buf), "%d", Handler->FileSize());
+   snprintf(buf, sizeof(buf), "%lu", Handler->FileSize());
    BufCatTag("\nSize: ", buf);
 
    BufCatTag("\nMD5Sum: ", Handler->MD5Sum().c_str());

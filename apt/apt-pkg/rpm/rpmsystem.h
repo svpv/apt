@@ -61,7 +61,7 @@ class rpmSystem : public pkgSystem
    virtual signed Score(Configuration const &Cnf);
    virtual string DistroVer(Configuration const &Cnf);
    virtual bool AddStatusFiles(vector<pkgIndexFile *> &List);
-   virtual bool AddSourceFiles(vector<pkgIndexFile *> &List);
+   virtual void AddSourceFiles(vector<pkgIndexFile *> &List);
    virtual bool FindIndex(pkgCache::PkgFileIterator File,
 			  pkgIndexFile *&Found) const;
    virtual bool ProcessCache(pkgDepCache &Cache,pkgProblemResolver &Fix);

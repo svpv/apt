@@ -310,7 +310,7 @@ bool rpmSystem::AddStatusFiles(vector<pkgIndexFile *> &List)
 // System::AddSourceFiles - Register aditional source files		/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
+void rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
 {
    const Configuration::Item *Top;
    Top = _config->Tree("APT::Arguments");
@@ -327,7 +327,6 @@ bool rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
 	 }
       }
    }
-   return true;
 }
 									/*}}}*/
 #ifdef OLD_FILEDEPS

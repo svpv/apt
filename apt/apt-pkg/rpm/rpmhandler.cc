@@ -87,7 +87,7 @@ bool RPMFileHandler::Jump(unsigned Offset)
 {
    if (FD == NULL)
       return false;
-   if (lseek(Fileno(FD),Offset,SEEK_SET) != Offset)
+   if (lseek(Fileno(FD),Offset,SEEK_SET) != (off_t)Offset)
       return false;
    return Skip();
 }
@@ -347,7 +347,7 @@ string RPMDirHandler::MD5Sum()
 
 
 RPMDBHandler::RPMDBHandler(bool WriteLock)
-   : WriteLock(WriteLock), Handler(0)
+   : Handler(0), WriteLock(WriteLock)
 {
 #if RPM_VERSION >= 0x040000
    RpmIter = NULL;

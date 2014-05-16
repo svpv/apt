@@ -56,7 +56,8 @@ pkgRecords::~pkgRecords()
 {
    // CNC:2002-11-28
    // See comments above.
-   for (unsigned I = 0; I != PackageFileCount; I++)
+   // PackageFileCount is int according to apt-pkg/pkgrecords.h
+   for (int I = 0; I != PackageFileCount; I++)
       delete Files[I];
    delete [] Files;
 }

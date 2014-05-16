@@ -56,8 +56,9 @@ class Lua {
    void RunInteractive(const string &PlaceHint)
 	 { RunInteractive(PlaceHint.c_str()); };
 
+   //or all of this RunScript should be void?
    bool RunScript(const string &Script, const string &ChunkCacheKey="")
-	 { RunScript(Script.c_str(), (ChunkCacheKey.length() == 0) ?
+	 { return RunScript(Script.c_str(), ChunkCacheKey.empty() ?
 				      NULL : ChunkCacheKey.c_str()); };
    bool RunScript(const char *Script, const char *ChunkCacheKey=NULL);
    bool RunScripts(const char *ConfListKey, bool CacheChunks=false);

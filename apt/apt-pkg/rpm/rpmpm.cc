@@ -410,7 +410,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
    
    Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
 
-   bool nodeps;
+   bool nodeps = false;
 
    switch (op)
    {
@@ -433,6 +433,8 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
 	 operation = "-e";
 	 nodeps = true;
 	 break;
+	default:
+	 return false;
    }
    Args[n++] = operation;
 
@@ -674,8 +676,7 @@ pkgRPMLibPM::~pkgRPMLibPM()
 
 bool pkgRPMLibPM::AddToTransaction(Item::RPMOps op, vector<const char*> &files)
 {
-   int debug = _config->FindB("Debug::pkgRPMPM", false);
-   int n = 0, rc, xx;
+   int rc;
    FD_t fd;
    rpmHeader hdr;
 
@@ -756,7 +757,6 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    int rc = 0;
    bool Success = false;
    bool Interactive = _config->FindB("RPM::Interactive",true);
-   int debug = _config->FindB("Debug::pkgRPMPM", false);
    string Dir = _config->Find("RPM::RootDir");
    rpmReadConfigFiles(NULL, NULL);
 
