@@ -13,6 +13,7 @@
 #include <apt-pkg/acquire-worker.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/error.h>
+#include <apt-pkg/configuration.h>
 
 #include <apti18n.h>
     
@@ -274,6 +275,8 @@ bool AcqTextStatus::MediaChange(string Media,string Drive)
 		   " '%s'\n"
 		   "in the drive '%s' and press enter\n"),
 	    Media.c_str(),Drive.c_str());
+   if (_config->FindB("simple-output"))
+   	cout << "apt-get:media-change:" << Drive << ":" << Media << std::endl;
 
    char C = 0;
    while (C != '\n' && C != '\r')

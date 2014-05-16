@@ -71,6 +71,7 @@ using namespace std;
 ostream c0out(0);
 ostream c1out(0);
 ostream c2out(0);
+ostream c3out(0); // script output stream
 ofstream devnull("/dev/null");
 unsigned int ScreenWidth = 80;
 
@@ -418,6 +419,7 @@ void ShowNew(ostream &out,CacheFile &Cache)
       }
    }
    
+   if (!List.empty()) c3out<<"apt-get:install-list:"<<List<<endl;
    ShowList(out,_("The following NEW packages will be installed:"),List,VersionsList);
 }
 									/*}}}*/
@@ -469,8 +471,11 @@ void ShowDel(ostream &out,CacheFile &Cache)
       }
    }
    
+   
    // CNC:2002-07-25
+   if (!RepList.empty()) c3out<<"apt-get:replace-list:"<<RepList<<endl;;
    ShowList(out,_("The following packages will be REPLACED:"),RepList,VersionsList);
+   if (!List.empty()) c3out<<"apt-get:remove-list:"<<List<<endl;
    ShowList(out,_("The following packages will be REMOVED:"),List,VersionsList);
 }
 									/*}}}*/
@@ -493,6 +498,7 @@ void ShowKept(ostream &out,CacheFile &Cache)
       List += string(I.Name()) + " ";
       VersionsList += string(Cache[I].CurVersion) + " => " + Cache[I].CandVersion + "\n";
    }
+   if (!List.empty()) c3out<<"apt-get:keep-list:"<<List<<endl;
    ShowList(out,_("The following packages have been kept back"),List,VersionsList);
 }
 									/*}}}*/
@@ -514,6 +520,7 @@ void ShowUpgraded(ostream &out,CacheFile &Cache)
       List += string(I.Name()) + " ";
       VersionsList += string(Cache[I].CurVersion) + " => " + Cache[I].CandVersion + "\n";
    }
+   if (!List.empty()) c3out<<"apt-get:upgrade-list:"<<List<<endl;
    ShowList(out,_("The following packages will be upgraded"),List,VersionsList);
 }
 									/*}}}*/
@@ -535,6 +542,7 @@ bool ShowDowngraded(ostream &out,CacheFile &Cache)
       List += string(I.Name()) + " ";
       VersionsList += string(Cache[I].CurVersion) + " => " + Cache[I].CandVersion + "\n";
    }
+   if (!List.empty()) c3out<<"apt-get:downgrade-list:"<<List<<endl;
    return ShowList(out,_("The following packages will be DOWNGRADED"),List,VersionsList);
 }
 									/*}}}*/
@@ -555,6 +563,7 @@ bool ShowHold(ostream &out,CacheFile &Cache)
       }
    }
 
+   if (!List.empty()) c3out<<"apt-get:hold-list:"<<List<<endl;
    return ShowList(out,_("The following held packages will be changed:"),List,VersionsList);
 }
 									/*}}}*/
@@ -652,6 +661,7 @@ bool ShowEssential(ostream &out,CacheFile &Cache)
    }
    
    delete [] Added;
+   if (!List.empty()) c3out<<"apt-get:essential-list:"<<List<<endl;
    return ShowList(out,_("WARNING: The following essential packages will be removed\n"
 			 "This should NOT be done unless you know exactly what you are doing!"),List,VersionsList);
 }
@@ -705,6 +715,12 @@ void Stats(ostream &out,pkgDepCache &Dep)
       else if ((Dep[I].iFlags & pkgDepCache::ReInstall) == pkgDepCache::ReInstall)
 	 ReInstall++;
    }   
+   c3out<<"apt-get:status:upgrade:"<<Upgrade<<endl;
+   c3out<<"apt-get:status:downgrade:"<<Downgrade<<endl;
+   c3out<<"apt-get:status:install:"<<Install<<endl;
+   c3out<<"apt-get:status:re-install:"<<ReInstall<<endl;
+   c3out<<"apt-get:status:replace:"<<Replace<<endl;
+   c3out<<"apt-get:status:remove:"<<Remove<<endl;
 
    ioprintf(out,_("%lu upgraded, %lu newly installed, "),
 	    Upgrade,Install);
@@ -814,7 +830,7 @@ bool CacheFile::CheckDeps(bool AllowBroken)
       if (pkgFixBroken(*DCache) == false || DCache->BrokenCount() != 0)
       {
 	 c1out << _(" failed.") << endl;
-	 ShowBroken(c1out,*this,true);
+	 ShowBroken(cerr,*this,true);
 
 	 return _error->Error(_("Unable to correct dependencies"));
       }
@@ -826,7 +842,7 @@ bool CacheFile::CheckDeps(bool AllowBroken)
    else
    {
       c1out << _("You might want to run `apt-get --fix-broken install' to correct these.") << endl;
-      ShowBroken(c1out,*this,true);
+      ShowBroken(cerr,*this,true);
 
       return _error->Error(_("Unmet dependencies. Try using --fix-broken."));
    }
@@ -876,7 +892,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
    // Sanity check
    if (Cache->BrokenCount() != 0)
    {
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
       return _error->Error("Internal Error, InstallPackages was called with broken packages!");
    }
 
@@ -955,6 +971,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
    else
       ioprintf(c1out,_("After unpacking %sB disk space will be freed.\n"),
 	       SizeToStr(-1*Cache->UsrSize()).c_str());
+   c3out<<"apt-get:status:disk-size:"<<SizeToStr(Cache->UsrSize())<<endl;
 
    if (_error->PendingError() == true)
       return false;
@@ -1011,6 +1028,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask = true,
 	 if (_config->FindI("quiet",0) < 2 &&
 	     _config->FindB("APT::Get::Assume-Yes",false) == false)
 	 {
+	    c3out << "apt-get:wait-yes-no:" << endl;
 	    c2out << _("Do you want to continue? [Y/n] ") << flush;
 	 
 	    if (YnPrompt() == false)
@@ -1342,23 +1360,23 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
       }
       else
       {
-	 ioprintf(c1out,_("Package %s is a virtual package provided by:\n"),
+	 ioprintf(cerr,_("Package %s is a virtual package provided by:\n"),
 		  Pkg.Name());
 	 for (unsigned int i = 0; i != GoodSolutions.size(); i++)
 	 {
 	    pkgCache::PkgIterator GoodPkg(Cache, GoodSolutions[i]);
 	    if (GoodPkg.CurrentVer().end() == false)
-	       c1out << "  " << GoodSolutionNames[i]
+	       cerr  << "  " << GoodSolutionNames[i]
 		     << " "  << Cache[GoodPkg].CandVersion
 		     << _(" [Installed]") << endl;
 	    else
-	       c1out << "  " << GoodSolutionNames[i]
+	       cerr  << "  " << GoodSolutionNames[i]
 		     << " "  << Cache[GoodPkg].CandVersion << endl;
 	 }
 	 if (Remove)
-	   c1out << _("You should explicitly select one to remove.") << endl;
+	   cerr << _("You should explicitly select one to remove.") << endl;
 	 else
-	   c1out << _("You should explicitly select one to install.") << endl;
+	   cerr << _("You should explicitly select one to install.") << endl;
 	 _error->Error(_("Package %s is a virtual package with multiple "
 			 "good providers.\n"), Pkg.Name());
 	 return false;
@@ -1446,6 +1464,7 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	    List += string(Dep.ParentPkg().Name()) + " ";
         //VersionsList += string(Dep.ParentPkg().CurVersion) + "\n"; ???
 	 }	    
+	 if (!List.empty()) c3out<<"apt-get:however-replace-list:"<<List<<endl;
 	 ShowList(c1out,_("However the following packages replace it:"),List,VersionsList);
       }
       
@@ -1830,7 +1849,7 @@ bool DoUpgrade(CommandLine &CmdL)
    // Do the upgrade
    if (pkgAllUpgrade(Cache) == false)
    {
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
       return _error->Error(_("Internal Error, AllUpgrade broke stuff"));
    }
 
@@ -2113,7 +2132,7 @@ bool DoInstall(CommandLine &CmdL)
    if (BrokenFix == true && Cache->BrokenCount() != 0)
    {
       c1out << _("You might want to run `apt-get --fix-broken install' to correct these:") << endl;
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
 
       return _error->Error(_("Unmet dependencies. Try 'apt-get --fix-broken install' with no packages (or specify a solution)."));
    }
@@ -2152,7 +2171,7 @@ bool DoInstall(CommandLine &CmdL)
 
       c1out << _("The following information may help to resolve the situation:") << endl;
       c1out << endl;
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
       return _error->Error(_("Broken packages"));
    }   
    
@@ -2180,6 +2199,7 @@ bool DoInstall(CommandLine &CmdL)
      }
       }
       
+      if (!List.empty()) c3out<<"apt-get:extra-list:"<<List<<endl;
       ShowList(c1out,_("The following extra packages will be installed:"),List,VersionsList);
    }
 
@@ -2260,7 +2280,9 @@ bool DoInstall(CommandLine &CmdL)
 	       }
 	   }
       }
+      if (!SuggestsList.empty()) c3out<<"apt-get:suggest-list:"<<SuggestsList<<endl;
       ShowList(c1out,_("Suggested packages:"),SuggestsList,SuggestsVersions);
+      if (!RecommendsList.empty()) c3out<<"apt-get:recommended-list:"<<RecommendsList<<endl;
       ShowList(c1out,_("Recommended packages:"),RecommendsList,RecommendsVersions);
 
    }
@@ -2289,7 +2311,7 @@ bool DoDistUpgrade(CommandLine &CmdL)
    if (pkgDistUpgrade(*Cache) == false)
    {
       c0out << _("Failed") << endl;
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
       return false;
    }
 
@@ -2368,7 +2390,7 @@ bool DoDSelectUpgrade(CommandLine &CmdL)
    
       if (Fix.Resolve() == false)
       {
-	 ShowBroken(c1out,Cache,false);
+	 ShowBroken(cerr,Cache,false);
 	 return _error->Error("Internal Error, problem resolver broke stuff");
       }
    }
@@ -2376,7 +2398,7 @@ bool DoDSelectUpgrade(CommandLine &CmdL)
    // Now upgrade everything
    if (pkgAllUpgrade(Cache) == false)
    {
-      ShowBroken(c1out,Cache,false);
+      ShowBroken(cerr,Cache,false);
       return _error->Error("Internal Error, problem resolver broke stuff");
    }
 
@@ -3013,7 +3035,7 @@ bool DoBuildDep(CommandLine &CmdL)
       if (Cache->BrokenCount() != 0)
       {
          // CNC:2004-07-05
-         ShowBroken(c1out, Cache, false);
+         ShowBroken(cerr, Cache, false);
 	 return _error->Error(_("Some broken packages were found while trying to process build-dependencies for %s.\n"
 				"You might want to run `apt-get --fix-broken install' to correct these."),*I);
       }
@@ -3216,6 +3238,7 @@ int main(int argc,const char *argv[])
       {'v',"version","version",0},
       {'V',"verbose-versions","APT::Get::Show-Versions",0},
       {'q',"quiet","quiet",CommandLine::IntLevel},
+      { 0, "simple-output","simple-output",0},
       {'q',"silent","quiet",CommandLine::IntLevel},
       {'d',"download-only","APT::Get::Download-Only",0},
       {'b',"compile","APT::Get::Compile",0},
@@ -3330,9 +3353,21 @@ int main(int argc,const char *argv[])
       _config->Set("quiet","1");
 
    // Setup the output streams
-   c0out.rdbuf(cout.rdbuf());
-   c1out.rdbuf(cout.rdbuf());
-   c2out.rdbuf(cout.rdbuf());
+   if (_config->FindB("simple-output"))
+   {
+   	c0out.rdbuf(devnull.rdbuf());
+ 	c1out.rdbuf(devnull.rdbuf());
+ 	c2out.rdbuf(devnull.rdbuf());
+	c3out.rdbuf(cout.rdbuf());
+   }
+   else
+   {
+        c0out.rdbuf(cout.rdbuf());
+        c1out.rdbuf(cout.rdbuf());
+        c2out.rdbuf(cout.rdbuf());
+        c3out.rdbuf(devnull.rdbuf());
+   }
+   
    if (_config->FindI("quiet",0) > 0)
       c0out.rdbuf(devnull.rdbuf());
    if (_config->FindI("quiet",0) > 1)
