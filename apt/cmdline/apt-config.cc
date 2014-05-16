@@ -16,12 +16,13 @@
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
+#include <config.h>
+
 #include <apt-pkg/cmndline.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/init.h>
 #include <apt-pkg/strutl.h>
 
-#include <config.h>
 #include <apti18n.h>
 
 // CNC:2003-02-14 - apti18n.h includes libintl.h which includes locale.h,

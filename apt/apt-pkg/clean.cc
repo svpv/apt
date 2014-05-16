@@ -12,6 +12,8 @@
 #pragma implementation "apt-pkg/clean.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/clean.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/error.h>

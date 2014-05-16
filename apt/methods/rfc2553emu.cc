@@ -14,6 +14,8 @@
 
    ##################################################################### */
 									/*}}}*/
+#include <config.h>
+
 #include "rfc2553emu.h"
 #include <stdlib.h>
 #include <arpa/inet.h>

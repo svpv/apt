@@ -1,6 +1,8 @@
 /*
  * $Id: gensrclist.cc,v 1.8 2003/01/30 17:18:21 niemeyer Exp $
  */
+#include <config.h>
+
 #include <alloca.h>
 #include <ctype.h>
 #include <dirent.h>

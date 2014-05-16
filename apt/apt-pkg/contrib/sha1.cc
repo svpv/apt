@@ -33,13 +33,14 @@
 #pragma implementation "apt-pkg/sha1.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/sha1.h>
 #include <apt-pkg/strutl.h>
 
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
-#include <config.h>
 #include <system.h>
 									/*}}}*/
 

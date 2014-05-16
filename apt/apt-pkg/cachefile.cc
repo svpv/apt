@@ -16,6 +16,8 @@
 #pragma implementation "apt-pkg/cachefile.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/cachefile.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/sourcelist.h>

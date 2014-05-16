@@ -25,6 +25,8 @@
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
+#include <config.h>
+
 #include <apt-pkg/error.h>
 #include <apt-pkg/cmndline.h>
 #include <apt-pkg/init.h>
@@ -40,7 +42,6 @@
 #include <apt-pkg/sptr.h>
 #include <apt-pkg/versionmatch.h>
 
-#include <config.h>
 #include <apti18n.h>
 
 // CNC:2003-03-17

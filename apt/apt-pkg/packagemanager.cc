@@ -17,6 +17,8 @@
 #pragma implementation "apt-pkg/packagemanager.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/packagemanager.h>
 #include <apt-pkg/orderlist.h>
 #include <apt-pkg/depcache.h>

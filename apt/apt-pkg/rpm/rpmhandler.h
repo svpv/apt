@@ -10,12 +10,14 @@
 #ifndef PKGLIB_RPMHANDLER_H
 #define PKGLIB_RPMHANDLER_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <apt-pkg/fileutl.h>
 
 #include <rpm/rpmlib.h>
 #include <rpm/rpmmacro.h>
-
-#include <config.h>
 
 class RPMHandler
 {

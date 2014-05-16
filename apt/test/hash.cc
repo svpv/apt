@@ -1,3 +1,6 @@
+
+#include <config.h>
+
 #include <apt-pkg/md5.h>
 #include <apt-pkg/sha1.h>
 #include <apt-pkg/strutl.h>

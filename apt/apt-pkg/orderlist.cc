@@ -66,6 +66,8 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/orderlist.h"
 #endif 
+#include <config.h>
+
 #include <apt-pkg/orderlist.h>
 #include <apt-pkg/depcache.h>
 #include <apt-pkg/error.h>

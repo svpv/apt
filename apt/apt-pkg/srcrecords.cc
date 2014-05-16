@@ -15,6 +15,8 @@
 #pragma implementation "apt-pkg/srcrecords.h"
 #endif 
 
+#include <config.h>
+
 #include <apt-pkg/srcrecords.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/sourcelist.h>

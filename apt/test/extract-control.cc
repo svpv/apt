@@ -1,3 +1,6 @@
+
+#include <config.h>
+
 #include <apt-pkg/debfile.h>
 #include <apt-pkg/error.h>
 

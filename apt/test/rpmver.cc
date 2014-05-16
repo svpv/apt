@@ -1,3 +1,6 @@
+
+#include <config.h>
+
 #include <apt-pkg/debversion.h>
 #include <rpm/rpmio.h>
 #include <rpm/misc.h>

@@ -8,6 +8,8 @@
    ##################################################################### */
 									/*}}}*/
 // Include files							/*{{{*/
+#include <config.h>
+
 #include "acqprogress.h"
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/acquire-worker.h>

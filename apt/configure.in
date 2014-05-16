@@ -19,6 +19,13 @@ AC_ISC_POSIX
 dnl Check for other programs
 AC_PROG_CXX
 AC_PROG_CPP
+AC_SYS_LARGEFILE
+
+case "$ac_cv_sys_file_offset_bits" in
+	no | unknown) FILE_OFFSET_BITS_SUFFIX=;;
+	*) FILE_OFFSET_BITS_SUFFIX="-$ac_cv_sys_file_offset_bits";;
+esac
+AC_SUBST(FILE_OFFSET_BITS_SUFFIX)
 
 AC_PROG_LIBTOOL
 

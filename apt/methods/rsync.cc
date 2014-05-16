@@ -8,6 +8,8 @@ RSYNC Aquire Method - This is the RSYNC aquire method for APT.
 ##################################################################### */
 /*}}}*/
 // Include Files							/*{{{*/
+#include <config.h>
+
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/acquire-method.h>
 #include <apt-pkg/error.h>

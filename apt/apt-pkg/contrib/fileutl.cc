@@ -17,6 +17,8 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/fileutl.h"
 #endif 
+#include <config.h>
+
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/sptr.h>

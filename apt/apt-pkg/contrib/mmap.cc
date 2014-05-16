@@ -25,6 +25,8 @@
 #pragma implementation "apt-pkg/mmap.h"
 #endif 
 
+#include <config.h>
+
 #define _BSD_SOURCE
 #include <apt-pkg/mmap.h>
 #include <apt-pkg/error.h>

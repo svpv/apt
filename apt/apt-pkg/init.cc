@@ -8,12 +8,12 @@
    ##################################################################### */
 									/*}}}*/
 // Include files							/*{{{*/
+#include <config.h>
 #include <apt-pkg/init.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/error.h>
 
 #include <apti18n.h>
-#include <config.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 

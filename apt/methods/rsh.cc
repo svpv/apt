@@ -11,6 +11,8 @@
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
+#include <config.h>
+
 #include "rsh.h"
 #include <apt-pkg/error.h>
 

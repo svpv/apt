@@ -19,6 +19,8 @@
 #pragma implementation "apt-pkg/crc-16.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/crc-16.h>
 									/*}}}*/
 

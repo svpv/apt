@@ -6,6 +6,8 @@
 #define APT_PIPE_PATH "/var/lib/apt/pipe"
 #endif
 
+#include <config.h>
+
 #include <argz.h>
 #include <errno.h>
 #include <fcntl.h>

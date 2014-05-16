@@ -1,4 +1,6 @@
 
+#include <config.h>
+
 #include <apt-pkg/error.h>
 #include <apt-pkg/acquire-method.h>
 #include <apt-pkg/strutl.h>

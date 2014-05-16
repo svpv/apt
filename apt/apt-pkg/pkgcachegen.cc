@@ -16,6 +16,8 @@
 
 #define APT_COMPATIBILITY 986
 
+#include <config.h>
+
 #include <apt-pkg/pkgcachegen.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/version.h>

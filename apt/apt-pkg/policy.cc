@@ -26,6 +26,8 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/policy.h"
 #endif
+#include <config.h>
+
 #include <apt-pkg/policy.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/tagfile.h>

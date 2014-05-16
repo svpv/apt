@@ -14,6 +14,8 @@
 #pragma implementation "apt-pkg/repository.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/sourcelist.h>
 #include <apt-pkg/repository.h>
 #include <apt-pkg/error.h>

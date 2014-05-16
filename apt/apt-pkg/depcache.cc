@@ -11,6 +11,9 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/depcache.h"
 #endif
+
+#include <config.h>
+
 #include <apt-pkg/depcache.h>
 #include <apt-pkg/version.h>
 #include <apt-pkg/error.h>
@@ -24,7 +27,6 @@
 #include <apt-pkg/pkgsystem.h>
 
 // CNC:2003-03-17
-#include <config.h>
 #include <apt-pkg/luaiface.h>
     
 #include <apti18n.h>    

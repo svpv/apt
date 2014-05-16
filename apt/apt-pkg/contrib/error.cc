@@ -18,6 +18,8 @@
 #pragma implementation "apt-pkg/error.h"
 #endif 
 
+#include "config.h"
+   									/*}}}*/
 #include <apt-pkg/error.h>
 
 #include <iostream>
@@ -28,8 +30,6 @@
 #include <unistd.h>
 #include <cstring>
 
-#include "config.h"
-   									/*}}}*/
 
 using namespace std;
 

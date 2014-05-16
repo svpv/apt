@@ -14,6 +14,8 @@
 #pragma implementation "apt-pkg/pkgsystem.h"
 #endif
 
+#include <config.h>
+
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/policy.h>
 #include <cstring>

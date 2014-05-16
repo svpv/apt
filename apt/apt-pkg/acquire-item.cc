@@ -16,6 +16,9 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/acquire-item.h"
 #endif
+
+#include <config.h>
+
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/sourcelist.h>
@@ -26,7 +29,6 @@
 // CNC:2002-07-03
 #include <apt-pkg/repository.h>
 #include <apt-pkg/md5.h>
-#include <config.h>
 #include <apt-pkg/luaiface.h>
 #include <iostream>
 #include <assert.h>

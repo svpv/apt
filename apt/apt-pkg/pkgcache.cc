@@ -25,6 +25,8 @@
 #pragma implementation "apt-pkg/cacheiterators.h"
 #endif 
 
+#include <config.h>
+
 #define PKGCACHE_FINDPKG_ABI
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/version.h>

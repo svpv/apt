@@ -11,6 +11,8 @@
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
+#include <config.h>
+
 #include "connect.h"
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>

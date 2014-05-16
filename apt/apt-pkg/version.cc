@@ -12,6 +12,8 @@
 #pragma implementation "apt-pkg/version.h"
 #endif 
 
+#include <config.h>
+
 #include <apt-pkg/version.h>
 #include <apt-pkg/pkgcache.h>
 

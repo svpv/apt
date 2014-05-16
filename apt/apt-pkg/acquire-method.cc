@@ -18,6 +18,8 @@
 #ifdef __GNUG__
 #pragma implementation "apt-pkg/acquire-method.h"
 #endif
+#include <config.h>
+
 #include <apt-pkg/acquire-method.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
