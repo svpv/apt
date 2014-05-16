@@ -4643,6 +4643,7 @@ int main(int argc,const char *argv[])
    // Make a copy of the configuration. Each command will modify its
    // own copy of the whole configuration.
    Configuration GlobalConfig(*_config);
+   Configuration _Config(*_config);
 
    ReadLineInit();
    c1out << _("Welcome to the APT shell. Type \"help\" for more information.") << endl;
@@ -4757,6 +4758,12 @@ int main(int argc,const char *argv[])
 	 CmdL.DispatchArg(Cmds);
       
       free(line);
+      if (!_config->FindB("quit"))
+      {
+        // restore saved config
+        delete _config;
+        _config = new Configuration(_Config);
+      }
    }
 
    ReadLineFinish();
