@@ -902,8 +902,8 @@ int main(int argc,const char *argv[])
    // Parse the command line and initialize the package library
    CommandLine CmdL(Args,_config);
    if (pkgInitConfig(*_config) == false ||
-       CmdL.Parse(argc,argv) == false ||
-       pkgInitSystem(*_config,_system) == false)
+       pkgInitSystem(*_config,_system) == false ||
+       CmdL.Parse(argc,argv) == false)
    {
       _error->DumpErrors();
       return 100;

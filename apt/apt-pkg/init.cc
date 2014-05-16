@@ -40,44 +40,44 @@ bool pkgInitConfig(Configuration &Cnf)
    // General APT things
    if (strcmp(COMMON_OS,"linux") == 0 ||
        strcmp(COMMON_OS,"unknown") == 0)
-      Cnf.Set("APT::Architecture",COMMON_CPU);
+      Cnf.CndSet("APT::Architecture",COMMON_CPU);
    else
-      Cnf.Set("APT::Architecture",COMMON_OS "-" COMMON_CPU);
+      Cnf.CndSet("APT::Architecture",COMMON_OS "-" COMMON_CPU);
    // CNC:2002-09-10
-   //Cnf.Set("APT::Build-Essential::", "build-essential");
-   Cnf.Set("Dir","/");
+   //Cnf.CndSet("APT::Build-Essential::", "build-essential");
+   Cnf.CndSet("Dir","/");
    
    // State   
-   Cnf.Set("Dir::State","var/lib/apt/");
+   Cnf.CndSet("Dir::State","var/lib/apt/");
    
    /* Just in case something goes horribly wrong, we can fall back to the
       old /var/state paths.. */
    struct stat St;   
    if (stat("/var/lib/apt/.",&St) != 0 &&
        stat("/var/state/apt/.",&St) == 0)
-      Cnf.Set("Dir::State","var/state/apt/");
+      Cnf.CndSet("Dir::State","var/state/apt/");
        
-   Cnf.Set("Dir::State::lists","lists/");
-   Cnf.Set("Dir::State::cdroms","cdroms.list");
+   Cnf.CndSet("Dir::State::lists","lists/");
+   Cnf.CndSet("Dir::State::cdroms","cdroms.list");
    
    // Cache
-   Cnf.Set("Dir::Cache","var/cache/apt/");
-   Cnf.Set("Dir::Cache::archives","archives/");
-   Cnf.Set("Dir::Cache::srcpkgcache","srcpkgcache.bin");
-   Cnf.Set("Dir::Cache::pkgcache","pkgcache.bin");
+   Cnf.CndSet("Dir::Cache","var/cache/apt/");
+   Cnf.CndSet("Dir::Cache::archives","archives/");
+   Cnf.CndSet("Dir::Cache::srcpkgcache","srcpkgcache.bin");
+   Cnf.CndSet("Dir::Cache::pkgcache","pkgcache.bin");
    
    // Configuration
-   Cnf.Set("Dir::Etc","etc/apt/");
-   Cnf.Set("Dir::Etc::sourcelist","sources.list");
+   Cnf.CndSet("Dir::Etc","etc/apt/");
+   Cnf.CndSet("Dir::Etc::sourcelist","sources.list");
    // CNC:2003-03-03
-   Cnf.Set("Dir::Etc::sourceparts","sources.list.d");
-   Cnf.Set("Dir::Etc::vendorlist","vendors.list");
-   Cnf.Set("Dir::Etc::vendorparts","vendors.list.d");
-   Cnf.Set("Dir::Etc::main","apt.conf");
-   Cnf.Set("Dir::Etc::parts","apt.conf.d");
-   Cnf.Set("Dir::Etc::preferences","preferences");
-   Cnf.Set("Dir::Bin::methods",LIBDIR "/apt/methods");
-   Cnf.Set("Acquire::ComprExtension", ".bz2");
+   Cnf.CndSet("Dir::Etc::sourceparts","sources.list.d");
+   Cnf.CndSet("Dir::Etc::vendorlist","vendors.list");
+   Cnf.CndSet("Dir::Etc::vendorparts","vendors.list.d");
+   Cnf.CndSet("Dir::Etc::main","apt.conf");
+   Cnf.CndSet("Dir::Etc::parts","apt.conf.d");
+   Cnf.CndSet("Dir::Etc::preferences","preferences");
+   Cnf.CndSet("Dir::Bin::methods",LIBDIR "/apt/methods");
+   Cnf.CndSet("Acquire::ComprExtension", ".bz2");
 	      
    bool Res = true;
    
