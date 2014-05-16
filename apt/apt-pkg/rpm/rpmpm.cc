@@ -407,6 +407,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
    const char *operation;
    unsigned int n = 0;
    bool Interactive = _config->FindB("RPM::Interactive",true);
+   int quiet = _config->FindI("quiet",0);
    
    Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
 
@@ -415,18 +416,12 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
    switch (op)
    {
       case Item::RPMInstall:
-	 if (Interactive)
-	    operation = "-ivh";
-	 else
-	    operation = "-iv";
+	 operation = "-i";
 	 nodeps = true;
 	 break;
 
       case Item::RPMUpgrade:
-	 if (Interactive)
-	    operation = "-Uvh";
-	 else
-	    operation = "-Uv";
+	 operation = "-U";
 	 break;
 
       case Item::RPMErase:
@@ -438,8 +433,22 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
    }
    Args[n++] = operation;
 
-   if (Interactive == false && op != Item::RPMErase)
-      Args[n++] = "--percent";
+	if (quiet <= 2 && op != Item::RPMErase)
+	{
+		Args[n++] = "-v";
+		if (quiet <= 1)
+		{
+			if (Interactive)
+			{
+				Args[n++] = "-h";
+				if (quiet <= 0)
+					Args[n++] = "--fancypercent";
+			} else
+			{
+				Args[n++] = "--percent";
+			}
+		}
+	}
     
    string rootdir = _config->Find("RPM::RootDir", "");
    if (!rootdir.empty()) 
@@ -568,6 +577,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
       return true;
    }
 
+   if (quiet <= 2)
    cout << _("Executing RPM (")<<cmd<<")..." << endl;
 
    cout << flush;
@@ -648,7 +658,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
       return _error->Error(_("Sub-process %s exited unexpectedly"),Args[0]);
    }
 
-   if (Interactive == true)
+   if (quiet <= 2)
       cout << _("Done.") << endl;
 
    return true;
@@ -766,6 +776,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    bool Success = false;
    bool Interactive = _config->FindB("RPM::Interactive",true);
    string Dir = _config->Find("RPM::RootDir");
+   int quiet = _config->FindI("quiet",0);
    rpmReadConfigFiles(NULL, NULL);
 
    int probFilter = 0;
@@ -828,10 +839,21 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       probFilter |= RPMPROB_FILTER_REPLACENEWFILES;
    }
 
-   if (Interactive == true)
-       notifyFlags |= INSTALL_LABEL | INSTALL_HASH;
-   else
-       notifyFlags |= INSTALL_LABEL | INSTALL_PERCENT;
+    if (quiet <= 2)
+	notifyFlags |= INSTALL_LABEL;
+
+    if (quiet <= 1)
+    {
+	if (Interactive == true)
+	{
+	    notifyFlags |= INSTALL_HASH;
+	    extern int fancyPercents;
+	    fancyPercents = (quiet <= 0) ? 1 : 0;
+	} else
+	{
+		notifyFlags |= INSTALL_PERCENT;
+	}
+    }
 
    if (uninstall.empty() == false)
        AddToTransaction(Item::RPMErase, uninstall);
@@ -887,6 +909,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       goto exit;
    }
 
+   if (quiet <= 2)
    cout << _("Committing changes...") << endl << flush;
 
 #if RPM_VERSION >= 0x040100
@@ -910,7 +933,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       Success = true;
       if (rc < 0)
 	 _error->Warning(_("Some errors occurred while running transaction"));
-      else if (Interactive == true)
+      else if (quiet <= 2)
 	 cout << _("Done.") << endl;
    }
    rpmpsFree(probs);
