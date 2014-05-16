@@ -134,10 +134,9 @@ else
 fi
 
 dnl Check for apt-shell dependencies
-AC_CHECK_LIB(ncurses,tputs,
-  [AC_CHECK_HEADER(readline/readline.h,
-     [AC_CHECK_LIB(readline,rl_completion_matches,
-        [compile_aptshell=yes],,[-lncurses])])])
+AC_CHECK_HEADER(readline/readline.h,
+   [AC_CHECK_LIB(readline,rl_completion_matches,
+      [compile_aptshell=yes])])
 AM_CONDITIONAL(COMPILE_APTSHELL, test "$compile_aptshell" = "yes")
 
 dnl Converts the ARCH to be something singular for this general CPU family
