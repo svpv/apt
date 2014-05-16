@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#include <locale.h>
 
 #include <map>
 #include <list>
@@ -159,7 +160,7 @@ int main(int argc, char ** argv)
    const char *srcListSuffix = NULL;
    bool srcListAppend = false;
 
-   putenv("LC_ALL="); // Is this necessary yet (after i18n was supported)?
+   setlocale(LC_ALL, "C");
    for (i = 1; i < argc; i++) {
       if (strcmp(argv[i], "--mapi") == 0) {
 	 mapi = true;

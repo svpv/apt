@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#include <locale.h>
 
 #include <map>
 #include <iostream>
@@ -468,7 +469,7 @@ int main(int argc, char ** argv)
    const char *pkgListSuffix = NULL;
    bool pkgListAppend = false;
    
-   putenv("LC_ALL="); // Is this necessary yet (after i18n was supported)?
+   setlocale(LC_ALL, "C");
    for (i = 1; i < argc; i++) {
       if (strcmp(argv[i], "--index") == 0) {
 	 i++;
