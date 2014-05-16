@@ -196,7 +196,7 @@ char *getFileSigner(const char *file, const char *sigfile,
    else if (pid == 0) 
    {
       string path = _config->Find("Dir::Bin::gpg", "/usr/bin/gpg");
-      string pubring = "";
+      string homedir = "";
       const char *argv[16];
       int argc = 0;
       
@@ -207,17 +207,16 @@ char *getFileSigner(const char *file, const char *sigfile,
       dup2(fd[1], STDERR_FILENO);
       
       unsetenv("LANG");
+      unsetenv("LANGUAGE");
       unsetenv("LC_ALL");
       unsetenv("LC_MESSAGES");
+      unsetenv("LC_CTYPE");
 
       argv[argc++] = "gpg";
       argv[argc++] = "--batch";
       argv[argc++] = "--no-secmem-warning";
-      pubring = _config->Find("APT::GPG::Pubring");
-      if (pubring.empty() == false)
-      {
-	 argv[argc++] = "--keyring"; argv[argc++] = pubring.c_str();
-      }
+      homedir = _config->Find("APT::GPG::Homedir", "/usr/lib/alt-gpgkeys");
+      argv[argc++] = "--homedir"; argv[argc++] = homedir.c_str();
       argv[argc++] = "--status-fd"; argv[argc++] = "2";
       
       if (outfile != NULL)
