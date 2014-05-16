@@ -145,8 +145,11 @@ class AutoReOpenCache
    {
       if (Guarded) {
 	 delete *Cache;
+	 if (_error->PendingError())
+		 _error->PushState();
 	 *Cache = new CacheFile;
 	 (*Cache)->Open();
+	 _error->PopState();
 	 if ((*Cache)->CheckDeps(true) == false) {
 	    c1out << _("There are broken packages. ")
 		  << _("Run `check' to see them.") << endl;
@@ -4080,7 +4083,9 @@ bool DoCommit(CommandLine &CmdL)
       _error->Error(_("You have no permissions for that"));
       return false;
    }
-   return InstallPackages(*GCache,false);
+   int err = InstallPackages(*GCache,false);
+   _config->Set("APT::Get::Fix-Broken",false);
+   return err;
 }
 
 bool DoStatus(CommandLine &CmdL)
