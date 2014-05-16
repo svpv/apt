@@ -269,6 +269,7 @@ bool pkgAcquire::Worker::RunMessages()
 	    CurrentSize = 0;
 	    TotalSize = atoi(LookupTag(Message,"Size","0").c_str());
 	    ResumePoint = atoi(LookupTag(Message,"Resume-Point","0").c_str());
+	    Itm->Owner->TmpFile = LookupTag(Message,"Tmp-Filename");
 	    Itm->Owner->Start(Message,atoi(LookupTag(Message,"Size","0").c_str()));
 
 	    // Display update before completion
@@ -597,7 +598,11 @@ void pkgAcquire::Worker::Pulse()
       return;
  
    struct stat Buf;
-   if (stat(CurrentItem->Owner->DestFile.c_str(),&Buf) != 0)
+   int res = 1;
+   if (CurrentItem->Owner->TmpFile.empty()==false)
+      res = stat(CurrentItem->Owner->TmpFile.c_str(),&Buf);
+
+   if (res!=0 && stat(CurrentItem->Owner->DestFile.c_str(),&Buf) != 0)
       return;
    CurrentSize = Buf.st_size;
    

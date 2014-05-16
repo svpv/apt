@@ -47,6 +47,7 @@ class pkgAcqMethod
       time_t LastModified;
       bool IMSHit;
       string Filename;
+      string TmpFilename;
       unsigned long Size;
       unsigned long ResumePoint;
       

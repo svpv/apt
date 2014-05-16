@@ -152,6 +152,9 @@ void pkgAcqMethod::URIStart(FetchResult &Res)
    if (Res.ResumePoint != 0)
       s << "Resume-Point: " << Res.ResumePoint << "\n";
 
+   if (Res.TmpFilename.size() != 0)
+      s << "Tmp-Filename: " << Res.TmpFilename << "\n";
+
    s << "\n";
    string S = s.str();
    if (write(STDOUT_FILENO,S.c_str(),S.size()) != (ssize_t)S.size())

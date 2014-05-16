@@ -1,6 +1,6 @@
 
 methodsdir=${libdir}/apt/methods
-methods_PROGRAMS = cdrom copy file ftp gpg gzip bzip2 http rsh ssh
+methods_PROGRAMS = cdrom copy file ftp gpg gzip bzip2 http rsh ssh rsync
 
 LDADD = ../apt-pkg/libapt-pkg.la
 
@@ -12,6 +12,7 @@ gzip_SOURCES = gzip.cc
 bzip2_SOURCES = $(gzip_SOURCES)
 rsh_SOURCES = rsh.cc rsh.h
 ssh_SOURCES = $(rsh_SOURCES)
+rsync_SOURCES = rsync.cc rsync-method.h
 
 http_SOURCES = \
 	       http.cc \

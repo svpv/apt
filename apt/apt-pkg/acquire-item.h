@@ -61,6 +61,9 @@ class pkgAcquire::Item
    
    // File to write the fetch into
    string DestFile;
+   // Alternative temporary destination
+   // Used if method (e.g. rsync) can't use directly DestFile
+   string TmpFile;
 
    // Action members invoked by the worker
    virtual void Failed(string Message,pkgAcquire::MethodConfig *Cnf);
