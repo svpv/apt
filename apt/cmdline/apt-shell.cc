@@ -829,7 +829,7 @@ bool ShowChanges(CacheFile &Cache,pkgDepCache::State *State=NULL)
 	 ioprintf(c1out,_("After unpacking will need more %sB of disk space.\n"),
 		  SizeToStr(UsrSize).c_str());
       else
-	 ioprintf(c1out,_("After unpacking will need less %sB of disk space.\n"),
+	 ioprintf(c1out,_("After unpacking %sB disk space will be freed.\n"),
 		  SizeToStr(-1*UsrSize).c_str());
    } else {
       double DebBytes = Cache->DebSize();
