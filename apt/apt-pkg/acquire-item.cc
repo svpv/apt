@@ -831,7 +831,10 @@ void pkgAcqArchive::Done(string Message,unsigned long Size,string Md5Hash,
    {
       if (Md5Hash != MD5)
       {
-	 Status = StatError;
+	if (_config->FindB("Debug::pkgAcquire::Auth", false)) {
+	    cerr << "md5 mismatch: " << Md5Hash << "!=" << MD5 << endl;
+	}
+ 	 Status = StatError;
 	 ErrorText = _("MD5Sum mismatch");
 	 Rename(DestFile,DestFile + ".FAILED");
 	 return;
@@ -975,6 +978,9 @@ void pkgAcqFile::Done(string Message,unsigned long Size,string MD5,
    {
       if (Md5Hash != MD5)
       {
+	if (_config->FindB("Debug::pkgAcquire::Auth", false)) {
+	    cerr << "md5 mismatch: " << Md5Hash << "!=" << MD5 << endl;
+	}
 	 Status = StatError;
 	 ErrorText = "MD5Sum mismatch";
 	 Rename(DestFile,DestFile + ".FAILED");

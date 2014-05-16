@@ -2520,6 +2520,9 @@ bool DoSource(CommandLine &CmdL)
 	     I->Type != "tar")
 	    continue;
 	 
+	if (_config->FindB("Debug::pkgAcquire::Auth",false) == true)
+	    cerr << "I->Path = " << I->Path << ", I->MD5Hash = " << I->MD5Hash << endl;
+
 	 new pkgAcqFile(&Fetcher,Last->Index().ArchiveURI(I->Path),
 			I->MD5Hash,I->Size,
 			Last->Index().SourceInfo(*Last,*I),Src);
