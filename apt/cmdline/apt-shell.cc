@@ -3520,11 +3520,14 @@ bool DoList(CommandLine &CmdL)
 
    bool ShowVersion = _config->FindB("APT::Cache::ShowVersion", false);
    bool ShowSummary = _config->FindB("APT::Cache::ShowSummary", false);
+   std::string MatchSection = _config->Find("APT::Cache::MatchGroup","");
+   bool ShowGroup = _config->FindB("APT::Cache::ShowGroup", false);
 
    const char *PkgName;
+   const char *PkgSection;
    int Matches[Cache->Head().PackageCount];
    int NumMatches = 0;
-   int Len, NameMaxLen = 0, VerMaxLen = 0;
+   int Len = 0, NameMaxLen = 0, VerMaxLen = 0;
    bool Matched;
    for (unsigned int J = 0; J < Cache->Head().PackageCount; J++)
    {
@@ -3537,7 +3540,12 @@ bool DoList(CommandLine &CmdL)
       if (ShowUpgradable &&
 	  (Pkg->CurrentVer == 0 || Cache[Pkg].Upgradable() == false))
 	 continue;
+      PkgSection = Pkg.Section();
+      if (!MatchSection.empty() && MatchSection != std::string(PkgSection))
+	continue;
+      
       PkgName = Pkg.Name();
+
       if (MatchAll == true)
 	 Matched = true;
       else for (int i=0; i != NumPatterns; i++) {
@@ -3642,6 +3650,7 @@ bool DoList(CommandLine &CmdL)
       Blank[ColumnLen] = 0;
 
       const char *Str;
+      const char *PkgSection;
       int StrLen;
       unsigned int K;
       for (unsigned int Line = 0; Line != NumLines; Line++) {
@@ -3651,13 +3660,33 @@ bool DoList(CommandLine &CmdL)
 	       break;
 	    pkgCache::PkgIterator Pkg(Cache,Cache.List[Matches[K]]);
 	    Str = Pkg.Name();
+	    PkgSection = Pkg.Section();
 	    StrLen = strlen(Str);
-	    if (Len < ColumnLen-1)
-	       c2out << Str << Blank+StrLen;
-	    else
-	       c2out << Str << " ";
+    	    string status = "available";
+	    if (Pkg->CurrentVer != 0) status = "installed";
+            if (Pkg->CurrentVer != 0)
+              for (pkgCache::DepIterator D = Pkg.RevDependsList(); D.end() == false; D++)
+               {
+	          pkgCache::PkgIterator P = D.ParentPkg();
+                  if ((P->Flags & pkgCache::Flag::Essential) != pkgCache::Flag::Essential &&
+	          (P->Flags & pkgCache::Flag::Important) != pkgCache::Flag::Important)
+	             continue;
+	          status = "locked";
+               }
+	    if (Pkg->CurrentVer != 0 && Cache[Pkg].Upgradable() == true) status = "upgradable";
+	    if (Cache[Pkg].NewInstall()) status = "be-installed";
+	    if (Cache[Pkg].Delete()) status = "be-removed";
+	    if (Cache[Pkg].Upgrade() == true && Cache[Pkg].NewInstall() != true) status = "be-upgraded";
+           if (ShowGroup)
+		c2out << PkgSection << "\t" << Str << endl;
+	   else
+	    {
+	        c2out << Str;
+		if (!MatchSection.empty())
+		    cout << "\t" << status;
+		cout << endl;
+	    }
 	 }
-	 c2out << endl;
       }
    }
    
@@ -3998,6 +4027,8 @@ void CommandHelp(const char *Name)
 	    "  -u  Show only installed packages that are upgradable.\n"
 	    "  -v  Show installed and candidate versions.\n"
 	    "  -s  Show summaries.\n"
+	    "  -g  Show packages with group name.\n"
+	    "  -G=? Show packages in specified group.\n"
 	    "  -o=? Set an arbitary configuration option, eg -o dir::cache=/tmp\n"
 	    "\n"
 	 );
@@ -4333,6 +4364,8 @@ CommandLine::Args *CommandArgs(const char *Name)
       {'i',"installed","APT::Cache::ShowInstalled",0},
       {'v',"version","APT::Cache::ShowVersion",0},
       {'s',"summary","APT::Cache::ShowSummary",0},
+      {'g',"showgroup","APT::Cache::ShowGroup",0},
+      {'G',"groupmember","APT::Cache::MatchGroup",CommandLine::HasArg},
       {'n',"installed","APT::Cache::Installed",0},
       {'c',"config-file",0,CommandLine::ConfigFile},
       {'o',"option",0,CommandLine::ArbItem},
