@@ -515,6 +515,14 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
 
    if (_config->FindB("RPM::Order", false) == false)
       Args[n++] = "--noorder";
+      
+    string cmd;
+    for (unsigned i = 0; i < n; ++i)
+    {
+	if (!cmd.empty())
+	    cmd += ' ';
+	    cmd += Args[i];
+    }
     
    bool FilesInArgs = true;
    char *ArgsFileName = NULL;
@@ -560,7 +568,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
       return true;
    }
 
-   cout << _("Executing RPM (")<<operation<<")..." << endl;
+   cout << _("Executing RPM (")<<cmd<<")..." << endl;
 
    cout << flush;
    clog << flush;
