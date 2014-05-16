@@ -141,6 +141,7 @@ class pkgCacheGenerator::ListParser
 
    ListParser() : FoundFileDeps(false) {};
    virtual ~ListParser() {};
+   virtual int BuildTime() = 0;
 };
 
 bool pkgMakeStatusCache(pkgSourceList &List,OpProgress &Progress,

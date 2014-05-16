@@ -226,6 +226,26 @@ string rpmListParser::Version()
    }
    return str;
 }
+
+                                                                        /*}}}*/
+// ListParser::BuildTime - Return the buildtime				/*{{{*/
+// ---------------------------------------------------------------------
+/* This is to return the int describing the buildtime. */
+int rpmListParser::BuildTime()
+{
+#ifdef WITH_VERSION_CACHING
+   if (VI != NULL)
+      return VI->BTime();
+#endif
+
+   int *buildtime;
+   int type, count;
+
+   if (headerGetEntry(header, RPMTAG_BUILDTIME, &type, (void **)&buildtime, &count) == 1
+       && count > 0)
+	   return buildtime[0];
+   return 0;
+}
                                                                         /*}}}*/
 // ListParser::NewVersion - Fill in the version structure		/*{{{*/
 // ---------------------------------------------------------------------
@@ -243,7 +263,11 @@ bool rpmListParser::NewVersion(pkgCache::VerIterator Ver)
    // Parse the section
    Ver->Section = UniqFindTagWrite(RPMTAG_GROUP);
    Ver->Arch = UniqFindTagWrite(RPMTAG_ARCH);
-   
+
+   headerGetEntry(header, RPMTAG_BUILDTIME, &type, (void**)&num, &count);
+   if (type == RPM_INT32_TYPE && num)
+       Ver->BTime = *num;
+
    // Archive Size
    Ver->Size = Handler->FileSize();
    
