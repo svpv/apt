@@ -52,6 +52,10 @@
 
 class CommandLine
 {
+   CommandLine(const CommandLine& other);
+   CommandLine& operator=(const CommandLine& other);
+
+
    public:
    struct Args;
    struct Dispatch;
@@ -84,6 +88,7 @@ class CommandLine
       
    CommandLine(Args *AList,Configuration *Conf);
    ~CommandLine();
+   void FreeFileList();
 };
 
 struct CommandLine::Args

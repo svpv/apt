@@ -3372,6 +3372,7 @@ int main(int argc,const char *argv[])
       {0,"check-only","APT::Get::Check-Only",0}, // CNC:2003-03-06
       {'c',"config-file",0,CommandLine::ConfigFile},
       {'o',"option",0,CommandLine::ArbItem},
+      {0,"manifest","manifest",CommandLine::HasArg},
       {0,0,0,0}};
    CommandLine::Dispatch Cmds[] = {{"update",&DoUpdate},
                                    {"upgrade",&DoUpgrade},
@@ -3409,6 +3410,27 @@ int main(int argc,const char *argv[])
 	 
       _error->DumpErrors();
       return 100;
+   }
+
+   //append manifest content to FileList
+   if (!_config->Find("manifest").empty())
+   {
+     std::ifstream is(_config->Find("manifest").c_str());
+     vector<char*> new_filelist;
+     std::string line;
+
+     for (const char **I = CmdL.FileList; *I != 0; I++)
+       new_filelist.push_back(strdup(*I));
+     while (std::getline(is,line))
+        new_filelist.push_back(strdup(line.c_str()));
+
+     CmdL.FreeFileList();
+     
+     size_t len = new_filelist.size();
+     CmdL.FileList = new const char *[len + 1];
+     for(int i=0;i<len;++i)
+        CmdL.FileList[i]=new_filelist[i];
+     CmdL.FileList[len] = 0;
    }
 
    // See if the help should be shown

@@ -19,8 +19,22 @@
 #include <apt-pkg/strutl.h>
 
 #include <apti18n.h>    
+
+#include <memory>
 									/*}}}*/
 using namespace std;
+
+void CommandLine::FreeFileList()
+{
+  if (FileList)
+  {
+    for (const char **I=FileList; *I; ++I)
+      free(const_cast<char *>(*I));
+
+    delete [] FileList;
+    FileList = 0;
+  }
+}
 
 // CommandLine::CommandLine - Constructor				/*{{{*/
 // ---------------------------------------------------------------------
@@ -35,7 +49,7 @@ CommandLine::CommandLine(Args *AList,Configuration *Conf) : ArgList(AList),
 /* */
 CommandLine::~CommandLine()
 {
-   delete [] FileList;
+   FreeFileList();
 }
 									/*}}}*/
 // CommandLine::Parse - Main action member				/*{{{*/
@@ -43,8 +57,11 @@ CommandLine::~CommandLine()
 /* */
 bool CommandLine::Parse(int argc,const char **argv)
 {
-   delete [] FileList;
+   FreeFileList();
    FileList = new const char *[argc];
+   std::uninitialized_fill(const_cast<char**>(FileList),
+                           const_cast<char**>(FileList+argc),
+			   static_cast<char*>(0));
    const char **Files = FileList;
    int I;
    for (I = 1; I != argc; I++)
@@ -54,7 +71,7 @@ bool CommandLine::Parse(int argc,const char **argv)
       // It is not an option
       if (*Opt != '-')
       {
-	 *Files++ = Opt;
+	 *Files++ = strdup(Opt);
 	 continue;
       }
       
@@ -136,7 +153,7 @@ bool CommandLine::Parse(int argc,const char **argv)
    
    // Copy any remaining file names over
    for (; I != argc; I++)
-      *Files++ = argv[I];
+      *Files++ = strdup(argv[I]);
    *Files = 0;
    
    return true;
