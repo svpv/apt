@@ -1275,14 +1275,18 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	    continue;
 	 }
 	 // Is the provides pointing to the candidate version?
-	 if (PrvPkgCandVer == Prv.OwnerVer())
+	 bool good = false;
+	 for (; PrvPkgCandVer.end() == false; ++PrvPkgCandVer)
 	 {
-	    // Yes, it is. This is a good solution.
-	    GoodSolutions.push_back(PrvPkg);
-	    if (instVirtual)
-		break;
-	    continue;
+	    if (PrvPkgCandVer == Prv.OwnerVer())
+	    {
+	       // Yes, it is. This is a good solution.
+	       good = true;
+	       GoodSolutions.push_back(PrvPkg);
+	    }
 	 }
+	 if (good && instVirtual)
+	    break;
       }
       vector<string> GoodSolutionNames;
       unsigned int GoodSolutionsInstalled = 0, GoodSolutionInstallNumber = 0;
