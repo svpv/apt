@@ -33,7 +33,7 @@ class pkgRepository
 
    string URI;
    string Dist;
-   string FingerPrint;
+   vector<string> FingerPrint;
    string RootURI;
 
    bool Acquire;

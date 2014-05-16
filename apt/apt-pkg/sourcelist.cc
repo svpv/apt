@@ -150,7 +150,7 @@ pkgSourceList::~pkgSourceList()
 {
    for (const_iterator I = SrcList.begin(); I != SrcList.end(); I++)
       delete *I;
-   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
+   for (vector<Vendor *>::iterator I = VendorList.begin(); 
 	I != VendorList.end(); I++)
       delete *I;
 }
@@ -174,38 +174,54 @@ bool pkgSourceList::ReadVendors()
       if (ReadConfigFile(Cnf,CnfFile,true) == false)
 	 return false;
 
-   for (vector<Vendor const *>::const_iterator I = VendorList.begin(); 
+   for (vector<Vendor *>::iterator I = VendorList.begin(); 
 	I != VendorList.end(); I++)
       delete *I;
    VendorList.erase(VendorList.begin(),VendorList.end());
-   
+
    // Process 'simple-key' type sections
    const Configuration::Item *Top = Cnf.Tree("simple-key");
    for (Top = (Top == 0?0:Top->Child); Top != 0; Top = Top->Next)
    {
       Configuration Block(Top);
-      Vendor *Vendor;
+      Vendor *Vendor = 0;
+      string Group = Block.Find("Group");
+      bool New = true;
       
-      Vendor = new pkgSourceList::Vendor;
-      
-      Vendor->VendorID = Top->Tag;
-      Vendor->FingerPrint = Block.Find("Fingerprint");
-      Vendor->Description = Block.Find("Name");
+      for (vector<pkgSourceList::Vendor *>::iterator I = VendorList.begin(); 
+	   I != VendorList.end(); I++)
+      {
+        if ((*I)->VendorID == Group)
+	{
+	  Vendor = *I;
+	  New = false;
+	  break;
+	}
+      }
+
+      if (!Vendor)
+      {
+        Vendor = new pkgSourceList::Vendor;
+
+        Vendor->Description = Block.Find("Name");
+        Vendor->VendorID = Top->Tag;
+      }
+      string FingerPrint = Block.Find("Fingerprint");
 
       // CNC:2002-08-15
-      char *buffer = new char[Vendor->FingerPrint.length()+1];
+      char *buffer = new char[FingerPrint.length()+1];
       char *p = buffer;;
-      for (string::const_iterator I = Vendor->FingerPrint.begin();
-	   I != Vendor->FingerPrint.end(); I++)
+      for (string::const_iterator I = FingerPrint.begin();
+	   I != FingerPrint.end(); I++)
       {
 	 if (*I != ' ' && *I != '\t')
 	    *p++ = *I;
       }
       *p = 0;
-      Vendor->FingerPrint = buffer;
+      Vendor->FingerPrint.push_back(string(buffer));
       delete [] buffer;
       
-      if (Vendor->FingerPrint.empty() == true || 
+      if (Vendor->FingerPrint.size() == 0 || 
 	  Vendor->Description.empty() == true)
       {
          _error->Error(_("Vendor block %s is invalid"), Vendor->VendorID.c_str());
@@ -213,7 +229,8 @@ bool pkgSourceList::ReadVendors()
 	 continue;
       }
       
-      VendorList.push_back(Vendor);
+      if (New)
+         VendorList.push_back(Vendor);
    }
 
    /* XXX Process 'group-key' type sections
@@ -355,7 +372,7 @@ bool pkgSourceList::ReadAppend(string File)
 	     return _error->Error(_("Malformed line %u in source list %s (vendor id)"),CurLine,File.c_str());
 	 VendorID = string(VendorID,1,VendorID.size()-2);
 	 
-	 for (vector<Vendor const *>::const_iterator iter = VendorList.begin();
+	 for (vector<Vendor *>::iterator iter = VendorList.begin();
 	      iter != VendorList.end(); iter++) 
 	 {
 	    if ((*iter)->VendorID == VendorID)
