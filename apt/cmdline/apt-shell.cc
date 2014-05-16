@@ -1,4 +1,4 @@
-// -*- mode: cpp; mode: fold -*-
+// -*- mode: c++; mode: folding -*-
 // Description								/*{{{*/
 // $Id: apt-get.cc,v 1.126 2003/02/12 16:14:08 doogie Exp $
 /* ######################################################################
@@ -65,8 +65,10 @@
 #include <regex.h>
 #include <sys/wait.h>
 
+#ifndef APT_PIPE
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 #include <fnmatch.h>
 									/*}}}*/
 
@@ -3744,9 +3746,7 @@ bool ShowPackage(CommandLine &CmdL)
         return true;
    return _error->Error(_("No packages found"));
 }
-									/*}}}*/
-// --- End of stuff from apt-cache.
-
+/*}}}*/
 
 // ShowHelp - Show a help screen					/*{{{*/
 // ---------------------------------------------------------------------
@@ -4127,6 +4127,7 @@ void SigWinch(int)
 }
 									/*}}}*/
 
+#ifndef APT_PIPE
 // ReadLine* - readline library stuff					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -4294,6 +4295,7 @@ void ReadLineFinish()
       write_history(History.c_str());
 }
 									/*}}}*/
+#endif
 
 CommandLine::Args *CommandArgs(const char *Name)
 {
@@ -4421,6 +4423,138 @@ CommandLine::Args *CommandArgs(const char *Name)
    }
 }
 									/*}}}*/
+
+#ifdef APT_PIPE
+bool DumpConfig(CommandLine &CmdL)
+{
+	_config->Dump(cout);
+	return true;
+}
+
+bool DoErrors(CommandLine &CmdL)
+{
+	if (_error->empty() == false) {
+		_error->DumpErrors();
+	}
+
+	return true;
+}
+
+extern "C" {
+	int aptpipe_init(void);
+	int aptpipe_main(int ac, const char *av[]);
+	int aptpipe_fini(void);
+}
+
+int aptpipe_init(void)
+{
+	// initialize config
+	CommandLine CmdL(CommandArgs(""), _config);
+
+	// Setup the output streams
+	c0out.rdbuf(devnull.rdbuf());
+	c1out.rdbuf(cout.rdbuf());
+	c2out.rdbuf(cout.rdbuf());
+
+	// Initialize the package library
+	if (pkgInitConfig(*_config) == false ||
+		pkgInitSystem(*_config, _system) == false) {
+		_error->DumpErrors();
+		return 100;
+	}
+
+	// add our nasty defaults
+	_config->Set("Acquire::CDROM::Copy", "false");
+	_config->Set("Acquire::CDROM::Copy-All", "false");
+
+	// Prepare the cache
+	GCache = new CacheFile();
+	GCache->Open();
+
+	if (_error->empty() == false) {
+		bool Errors = _error->PendingError();
+		_error->DumpErrors();
+		return Errors == true?100:0;
+	}
+
+	// TODO check for unmets
+
+#ifdef WITH_LUA
+	_lua->SetDepCache(*GCache);
+	_lua->RunScripts("Scripts::AptShell::Init");
+	_lua->ResetCaches();
+	bool HasCmdScripts = (_lua->HasScripts("Scripts::AptGet::Command") ||
+						  _lua->HasScripts("Scripts::AptCache::Command"));
+#endif
+
+	return 0;
+}
+
+int aptpipe_main(int ac, const char *av[])
+{
+	int rc;
+	CommandLine::Dispatch Cmds[] = {
+		{"update", &DoUpdate},
+		{"upgrade", &DoUpgrade},
+		{"install", &DoInstall},
+		{"remove", &DoInstall},
+		{"keep", &DoInstall},
+		{"dist-upgrade", &DoDistUpgrade},
+		{"dselect-upgrade", &DoDSelectUpgrade},
+		{"build-dep", &DoBuildDep},
+		{"clean", &DoClean},
+		{"autoclean", &DoAutoClean},
+		{"check", &DoCheck},
+		{"help", &ShowHelp},
+		{"commit", &DoCommit},
+		{"quit", &DoQuit},
+		{"exit", &DoQuit},
+		{"status", &DoStatus},
+		{"script", &DoScript},
+		{"errors", &DoErrors},
+		// apt-cache
+		{"showpkg", &DumpPackage},
+		{"unmet", &UnMet},
+		{"search", &Search},
+		{"list", &DoList},
+		{"ls", &DoList},
+		{"depends", &Depends},
+		{"whatdepends", &WhatDepends},
+		{"rdepends", &RDepends},
+		{"show", &ShowPackage},
+		// apt-config
+		{"dumpconfig", &DumpConfig},
+		{0, 0}
+	};
+
+	// Make our own copy of the configuration.
+	Configuration _Config(*_config);
+
+	delete _config;
+	_config = new Configuration(_Config);
+
+	// Parse skips av[0]
+	CommandLine CmdL(CommandArgs(av[1]), _config);
+	CmdL.Parse(ac, av);
+	CmdL.DispatchArg(Cmds);
+
+	rc = (_error->PendingError() == false ?
+		  ((_config->FindB("quit") == true) ? 1 : 0) : -1);
+
+	// restore saved config
+	delete _config;
+	_config = new Configuration(_Config);
+
+	return rc;
+}
+
+int aptpipe_fini()
+{
+   delete GCache;
+   return 0;
+}
+
+#else
 int main(int argc,const char *argv[])
 {
    CommandLine::Dispatch Cmds[] = {{"update",&DoUpdate},
@@ -4639,5 +4773,5 @@ int main(int argc,const char *argv[])
    
    return 0;   
 }
-
+#endif
 // vim:sts=3:sw=3
