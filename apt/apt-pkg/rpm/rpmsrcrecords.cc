@@ -240,20 +240,22 @@ void rpmSrcRecordParser::BufCat(const char *begin, const char *end)
 {
    unsigned len = end - begin;
     
-   if (BufUsed+len+1 >= BufSize)
+   while (BufUsed + len + 1 >= BufSize)
    {
-      BufSize += 512;
-      char *tmp = (char*)realloc(Buffer, BufSize);
-      if (tmp == NULL)
+      size_t new_size = BufSize + 512;
+      char *new_buf = (char*)realloc(Buffer, new_size);
+      if (new_buf == NULL)
       {
 	 _error->Errno("realloc", _("Could not allocate buffer for record text"));
 	 return;
       }
-      Buffer = tmp;
+      Buffer = new_buf;
+      BufSize = new_size;
    }
 
-   strncpy(Buffer+BufUsed, begin, len);
+   memcpy(Buffer+BufUsed, begin, len);
    BufUsed += len;
+   Buffer[BufUsed] = '\0';
 }
 
 void rpmSrcRecordParser::BufCatTag(const char *tag, const char *value)
