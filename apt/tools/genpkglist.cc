@@ -18,6 +18,8 @@
 #include <map>
 #include <iostream>
 
+#include <tr1/unordered_set>
+
 #include <apt-pkg/error.h>
 #include <apt-pkg/tagfile.h>
 #include <apt-pkg/configuration.h>
@@ -77,115 +79,173 @@ typedef struct {
    string url;
 } UpdateInfo;
 
+// path-like Requires
+static
+std::tr1::unordered_set<std::string> reqfiles;
 
-static inline int usefullFile(char *a)
+static
+void addRequiredPath(const char *str)
 {
-   int l = strlen(a);
+   reqfiles.insert(str);
+}
+
+static
+bool isRequiredPath(const char *dir, const char *basename)
+{
+   char fullname[strlen(dir) + strlen(basename) + 1];
+   strcpy(fullname, dir);
+   strcat(fullname, basename);
+   if (reqfiles.find(fullname) != reqfiles.end())
+      return true;
+   return false;
+}
+
+// atoms are constant strings with fixed address
+static
+std::tr1::unordered_set<std::string> atoms;
+
+static
+const char *atom(const char *str)
+{
+   return atoms.insert(str).first->c_str();
+}
+
+// memory-efficient way to map path -> packages:
+// dir -> <basename -> pkg+>
+typedef std::multimap<const char * /* basename */, const char * /* pkg */> BPM;
+static
+std::map<const char * /* dir */, BPM> pathOwners;
+
+typedef BPM::const_iterator BPI;
+
+static
+void addPathOwner(const char *dir, const char *basename, const char *pkg)
+{
+   BPM& bp = pathOwners[atom(dir)];
+   basename = atom(basename);
+   pkg = atom(pkg);
+   // check if pkg is already there
+   std::pair<BPI, BPI> ii = bp.equal_range(basename);
+   for (BPI i = ii.first; i != ii.second; ++i) {
+      if (i->second == pkg) {
+         //fprintf(stderr, "already: %s%s %s\n", dir, basename, pkg);
+         return;
+      }
+   }
+   bp.insert(std::make_pair(basename, pkg));
+}
+
+static
+int countPathOwners(const char *dir, const char *basename)
+{
+   BPM& bp = pathOwners[atom(dir)];
+   basename = atom(basename);
+   std::pair<BPI, BPI> ii = bp.equal_range(basename);
+   return std::distance(ii.first, ii.second);
+}
+
+static
+int usefulFile(const char *dir, const char *basename)
+{
+   // standard dirs
+   if (strstr(dir, "/bin/"))
+      return 1;
+   if (strstr(dir, "/sbin/"))
+      return 1;
+   if (strstr(dir, "/etc/"))
+      return 1;
    
-   if (strstr(a, "bin") || strstr(a, "/etc") || strncmp(a, "/lib", 4) == 0)
-       return 1;
-   
-   if (l < 3)
-       return 0;
-   
-   if (strcmp(a + l - 3, ".so") == 0
-       || strstr(a, ".so."))
-       return 1;
+   // libraries
+   const char *pos = strstr(basename, ".so");
+   if (pos > basename) {
+      int c = pos[3];
+      if (c == '.' || c == '\0')
+         return 1;
+   }
+
+   // if this path is required by any package, it is useful
+   if (isRequiredPath(dir, basename))
+      return 2;
+
+   // if the path is owned by two or more packages, it is still useful
+   if (countPathOwners(dir, basename) > 1)
+      return 3;
+
+   // other paths are not useful
    return 0;
 }
 
 
-static void copyStrippedFileList(Header header, Header newHeader)
+static
+void copyStrippedFileList(Header h1, Header h2)
 {
-   int i;
-   int i1, i2;
-   
-   int type1, type2, type3;
-   int count1, count2, count3;
-   char **dirnames = NULL, **basenames = NULL;
-   int_32 *dirindexes = NULL;
-   char **dnames, **bnames;
-   int_32 *dindexes;
-   int res1, res2, res3;
-   
-#define FREE(a) if (a) free(a);
-   
-   res1 = headerGetEntry(header, RPMTAG_DIRNAMES, &type1, 
-			 (void**)&dirnames, &count1);
-   res2 = headerGetEntry(header, RPMTAG_BASENAMES, &type2, 
-			 (void**)&basenames, &count2);
-   res3 = headerGetEntry(header, RPMTAG_DIRINDEXES, &type3, 
-			 (void**)&dirindexes, &count3);
-   
-   if (res1 != 1 || res2 != 1 || res3 != 1) {
-      FREE(dirnames);
-      FREE(basenames);
+   int_32 bnt = 0, dnt = 0, dit = 0;
+   struct {
+      const char **bn, **dn;
+      int_32 *di;
+      int_32 bnc, dnc, dic;
+   } l1 = {0}, l2 = {0};
+
+   if (!headerGetEntry(h1, RPMTAG_BASENAMES, &bnt, (void**)&l1.bn, &l1.bnc))
+      return;
+   if (!headerGetEntry(h1, RPMTAG_DIRNAMES, &dnt, (void**)&l1.dn, &l1.dnc)) {
+      headerFreeData(l1.bn, (rpmTagType)bnt);
+      return;
+   }
+   if (!headerGetEntry(h1, RPMTAG_DIRINDEXES, &dit, (void**)&l1.di, &l1.dic)) {
+      headerFreeData(l1.bn, (rpmTagType)bnt);
+      headerFreeData(l1.dn, (rpmTagType)dnt);
       return;
    }
 
-   dnames = dirnames;
-   bnames = basenames;
-   dindexes = (int_32*)malloc(sizeof(int_32)*count3);
-   
-   i1 = 0;
-   i2 = 0;
-   for (i = 0; i < count2 ; i++) 
-   {
-      int ok = 0;
-      
-      ok = usefullFile(basenames[i]);
-      if (!ok) 
-	  ok = usefullFile(dirnames[dirindexes[i]]);
-      
-      if (!ok) {
-	 int k = i;
-	 while (dirindexes[i] == dirindexes[k] && i < count2)
-	     i++;
-	 i--;
-	 continue;
+   assert(l1.bnc == l1.dic);
+
+   for (int i = 0; i < l1.bnc; i++) {
+      const char *d = l1.dn[l1.di[i]], *b = l1.bn[i];
+      int ok = usefulFile(d, b);
+      // if (ok > 1) cerr << "useful(" << ok << "): " << d << b << std::endl;
+      if (ok < 1)
+         continue;
+
+      if (!l2.bn) {
+         l2.bn = new const char*[l1.bnc];
+         l2.dn = new const char*[l1.dnc];
+         l2.di = new int_32[l1.dic];
       }
-      
-      
-      if (ok)
-      {
-	 int j;
-	 
-	 bnames[i1] = basenames[i];
-	 for (j = 0; j < i2; j++)
-	 {
-	    if (dnames[j] == dirnames[dirindexes[i]])
-	    {
-	       dindexes[i1] = j;
-	       break;
-	    }
-	 }
-	 if (j == i2) 
-	 {
-	    dnames[i2] = dirnames[dirindexes[i]];
-	    dindexes[i1] = i2;
-	    i2++;
-	 }
-	 assert(i2 <= count1);
-	 i1++;
-      } 
+
+      l2.bn[l2.bnc++] = b;
+
+      bool has_dir = false;
+      for (int j = 0; j < l2.dnc; j++) {
+         if (l2.dn[j] == d) {
+            l2.di[l2.dic++] = j;
+            has_dir = true;
+            break;
+         }
+      }
+      if (!has_dir) {
+         l2.dn[l2.dnc] = d;
+         l2.di[l2.dic++] = l2.dnc++;
+      }
    }
-   
-   if (i1 == 0) {
-      FREE(dirnames);
-      FREE(basenames);
-      FREE(dindexes);
-      return;
+
+   assert(l2.bnc == l2.dic);
+
+   if (l2.bnc > 0) {
+      headerAddEntry(h2, RPMTAG_BASENAMES, bnt, l2.bn, l2.bnc);
+      headerAddEntry(h2, RPMTAG_DIRNAMES, dnt, l2.dn, l2.dnc);
+      headerAddEntry(h2, RPMTAG_DIRINDEXES, dit, l2.di, l2.dic);
    }
-   
-   headerAddEntry(newHeader, RPMTAG_DIRNAMES, type1, dnames, i2);
-   
-   headerAddEntry(newHeader, RPMTAG_BASENAMES, type2, bnames, i1);
-   
-   headerAddEntry(newHeader, RPMTAG_DIRINDEXES, type3, dindexes, i1);
-   
-   FREE(dirnames);
-   FREE(basenames);
-   FREE(dindexes);
+
+   if (l2.bn) {
+      delete[] l2.bn;
+      delete[] l2.dn;
+      delete[] l2.di;
+   }
+
+   headerFreeData(l1.bn, (rpmTagType)bnt);
+   headerFreeData(l1.dn, (rpmTagType)dnt);
+   headerFreeData(l1.di, (rpmTagType)dit);
 }
 
 
@@ -599,6 +659,76 @@ int main(int argc, char ** argv)
    int isSource;
 #endif   
 
+   if (!fullFileList) {
+      // ALT: file list cannot be stripped in a dumb manner -- this is going
+      // to produce unmet dependencies.  First pass is required to initialize
+      // certain data structures.
+      for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
+         if (progressBar) {
+            if (entry_cur)
+               printf("\b\b\b\b\b\b\b\b\b\b");
+            printf(" %04i/%04i", entry_cur + 1, entry_no);
+            fflush(stdout);
+         }
+
+         fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
+         if (!fd)
+            continue;
+         int rc;
+         Header h;
+#if RPM_VERSION >= 0x040100
+         rc = rpmReadPackageFile(ts, fd, dirEntries[entry_cur]->d_name, &h);
+         if (rc == RPMRC_OK || rc == RPMRC_NOTTRUSTED || rc == RPMRC_NOKEY) {
+#else
+         rc = rpmReadPackageHeader(fd, &h, &isSource, NULL, NULL);
+         if (rc == 0) {
+#endif
+            // path-like Requires
+            int_32 reqtype = 0;
+            const char **requires = NULL;
+            int_32 nreq = 0;
+            rc = headerGetEntry(h, RPMTAG_REQUIRENAME, &reqtype, (void**)&requires, &nreq);
+            if (rc == 1) {
+               if (reqtype == RPM_STRING_ARRAY_TYPE) {
+                  int i;
+                  for (i = 0; i < nreq; i++) {
+                     const char *req = requires[i];
+                     if (*req == '/') {
+                        // cerr << dirEntries[entry_cur]->d_name << " requires " << req << endl;
+                        addRequiredPath(req);
+                     }
+                  }
+               }
+            }
+            headerFreeTag(h, requires, (rpmTagType)reqtype);
+
+            // path ownership
+            const char *pkg = NULL;
+            int_32 pkgt = 0;
+            const char **bn = NULL, **dn = NULL;
+            int_32 *di = NULL;
+            int_32 bnt = 0, dnt = 0, dit = 0;
+            int_32 bnc = 0;
+            rc = headerGetEntry(h, RPMTAG_NAME, &pkgt, (void**)&pkg, NULL)
+              && headerGetEntry(h, RPMTAG_BASENAMES, &bnt, (void**)&bn, &bnc)
+              && headerGetEntry(h, RPMTAG_DIRNAMES, &dnt, (void**)&dn, NULL)
+              && headerGetEntry(h, RPMTAG_DIRINDEXES, &dit, (void**)&di, NULL)
+              ;
+            if (rc == 1) {
+               int i;
+               for (i = 0; i < bnc; i++)
+                  addPathOwner(dn[di[i]], bn[i], pkg);
+            }
+            headerFreeTag(h, pkg, (rpmTagType)pkgt);
+            headerFreeTag(h, bn, (rpmTagType)bnt);
+            headerFreeTag(h, dn, (rpmTagType)dnt);
+            headerFreeTag(h, di, (rpmTagType)dit);
+            
+            headerFree(h);
+         }
+         Fclose(fd);
+      }
+   }
    for (entry_cur = 0; entry_cur < entry_no; entry_cur++) {
       struct stat sb;
 
