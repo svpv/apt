@@ -34,6 +34,9 @@ class debSrcRecordParser : public pkgSrcRecords::Parser
    virtual bool Step() {iOffset = Tags.Offset(); return Tags.Step(Sect);};
    virtual bool Jump(unsigned long Off) {iOffset = Off; return Tags.Jump(Sect,Off);};
 
+   // These refer to the archive file for the Version
+   virtual string FileName() const {return Sect.FindS("Filename");};
+
    virtual string Package() const {return Sect.FindS("Package");};
    virtual string Version() const {return Sect.FindS("Version");};
    virtual string Maintainer() const {return Sect.FindS("Maintainer");};

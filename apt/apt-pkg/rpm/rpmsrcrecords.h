@@ -44,6 +44,8 @@ public:
    virtual bool Step(); 
    virtual bool Jump(unsigned long Off);
 
+   virtual string FileName() const;
+
    virtual string Package() const;
    virtual string Version() const;
    virtual string Maintainer() const;

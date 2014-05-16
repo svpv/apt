@@ -123,6 +123,20 @@ bool rpmSrcRecordParser::Jump(unsigned long Off)
    return true;
 }
 
+// RecordParser::FileName - Return the archive filename on the site	/*{{{*/
+// ---------------------------------------------------------------------
+/* */
+string rpmSrcRecordParser::FileName() const
+{
+   char *str;
+   int_32 count, type;
+   assert(HeaderP != NULL);
+   int rc = headerGetEntry(HeaderP, CRPMTAG_FILENAME,
+			   &type, (void**)&str, &count);
+   return string(rc?str:"");
+}
+									/*}}}*/
+
 string rpmSrcRecordParser::Package() const
 {
    char *str;

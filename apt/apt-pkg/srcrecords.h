@@ -66,6 +66,8 @@ class pkgSrcRecords
       virtual unsigned long Offset() = 0;
       virtual string AsStr() = 0;
       
+      virtual string FileName() const = 0;
+
       virtual string Package() const = 0;
       virtual string Version() const = 0;
       virtual string Maintainer() const = 0;

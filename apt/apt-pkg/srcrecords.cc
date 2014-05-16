@@ -82,7 +82,7 @@ bool pkgSrcRecords::Restart()
 									/*}}}*/
 // SrcRecords::Find - Find the first source package with the given name	/*{{{*/
 // ---------------------------------------------------------------------
-/* This searches on both source package names and output binary names and
+/* This searches on both source package filenames and output binary names and
    returns the first found. A 'cursor' like system is used to allow this
    function to be called multiple times to get successive entries */
 pkgSrcRecords::Parser *pkgSrcRecords::Find(const char *Package,bool SrcOnly)
@@ -92,6 +92,8 @@ pkgSrcRecords::Parser *pkgSrcRecords::Find(const char *Package,bool SrcOnly)
    
    while (true)
    {
+      // DEBUG:
+      //std::cerr << "start loop" << std::endl;
       // Step to the next record, possibly switching files
       while ((*Current)->Step() == false)
       {
@@ -107,7 +109,7 @@ pkgSrcRecords::Parser *pkgSrcRecords::Find(const char *Package,bool SrcOnly)
 	 return 0;
 
       // Source name hit
-      if ((*Current)->Package() == Package)
+      if ((*Current)->FileName() == Package)
 	 return *Current;
       
 
