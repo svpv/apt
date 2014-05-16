@@ -568,7 +568,7 @@ bool DoAdd(CommandLine &)
    if (CDROM[0] == '.')
       CDROM= SafeGetCWD() + '/' + CDROM;
    
-   cout << _("Using CD-ROM mount point ") << CDROM << endl;
+   cout << _("Using Media mount point ") << CDROM << endl;
       
    // Read the database
    Configuration Database;
@@ -593,14 +593,14 @@ bool DoAdd(CommandLine &)
    if (PreFetch == false && _config->FindB("APT::CDROM::NoMount",false) == false)
    {
       Mounted = true;
-      cout << _("Unmounting CD-ROM") << endl;
+      cout << _("Unmounting Media") << endl;
       UnmountCdrom(CDROM);
 
       // Mount the new CDROM
-      Prompt(_("Please insert a Disc in the drive and press enter"));
-      cout << _("Mounting CD-ROM") << endl;
+      Prompt(_("Please insert a Media and press enter"));
+      cout << _("Mounting Media") << endl;
       if (MountCdrom(CDROM) == false)
-	 return _error->Error(_("Failed to mount the cdrom."));
+	 return _error->Error(_("Failed to mount the Media."));
    }
    
    // Hash the CD to get an ID
@@ -624,7 +624,7 @@ bool DoAdd(CommandLine &)
 
    cout << '[' << ID << ']' << endl;
 
-   cout << _("Scanning Disc for index files..  ") << flush;
+   cout << _("Scanning Media for index files..  ") << flush;
    // Get the CD structure
    vector<string> List;
    vector<string> sList;
@@ -700,7 +700,7 @@ bool DoAdd(CommandLine &)
 	  Name.empty() == true)
       {
 	 // CNC:2003-11-25
-	 cout << _("Please provide a name for this Disc, such as 'Distribution Disk 1'");
+	 cout << _("Please provide a name for this Media, such as 'Distribution Disk 1'");
 	 while (1)
 	 {
 	    Name = PromptLine("");
@@ -723,7 +723,7 @@ bool DoAdd(CommandLine &)
 	 *J = '_';
    
    Database.Set("CD::" + ID,Name);
-   cout << _("This Disc is called:") << endl << " '" << Name << "'" << endl;
+   cout << _("This Media is called:") << endl << " '" << Name << "'" << endl;
    
    // Copy the package files to the state directory
 // CNC:2002-07-11
@@ -756,7 +756,7 @@ bool DoAdd(CommandLine &)
    }
 
    // Print the sourcelist entries
-   cout << _("Source List entries for this Disc are:") << endl;
+   cout << _("Source List entries for this Media are:") << endl;
    for (vector<string>::iterator I = List.begin(); I != List.end(); I++)
    {
       string::size_type Space = (*I).find(' ');
@@ -789,7 +789,7 @@ bool DoAdd(CommandLine &)
 #endif
    }
 
-   cout << _("Repeat this process for the rest of the CDs in your set.") << endl;
+   cout << _("Repeat this process for the rest of the Media in your set.") << endl;
 
    // Unmount and finish
    // CNC:2002-10-29
@@ -809,8 +809,8 @@ bool DoIdent(CommandLine &)
    if (CDROM[0] == '.')
       CDROM= SafeGetCWD() + '/' + CDROM;
    
-   cout << _("Using CD-ROM mount point ") << CDROM << endl;
-   cout << _("Mounting CD-ROM") << endl;
+   cout << _("Using Media mount point ") << CDROM << endl;
+   cout << _("Mounting Media") << endl;
    if (MountCdrom(CDROM) == false)
       return _error->Error(_("Failed to mount the cdrom."));
    
@@ -852,18 +852,18 @@ int ShowHelp()
    cout << 
     _("Usage: apt-cdrom [options] command\n"
       "\n"
-      "apt-cdrom is a tool to add CDROM's to APT's source list. The\n"
-      "CDROM mount point and device information is taken from apt.conf\n"
+      "apt-cdrom is a tool to add Media to APT's source list. The\n"
+      "mount point and device information is taken from apt.conf\n"
       "and /etc/fstab.\n"
       "\n"
       "Commands:\n"
-      "   add - Add a CDROM\n"
-      "   ident - Report the identity of a CDROM\n"
+      "   add - Add a Media\n"
+      "   ident - Report the identity of a Media\n"
       "\n"
       "Options:\n"
       "  -h   This help text\n"
-      "  -d   CD-ROM mount point\n"
-      "  -r   Rename a recognized CD-ROM\n"
+      "  -d   Media mount point\n"
+      "  -r   Rename a recognized Media\n"
       "  -m   No mounting\n"
       "  -f   Fast mode, don't check package files\n"
       "  -a   Thorough scan mode\n"

@@ -78,7 +78,7 @@ string CDROMMethod::PreferredURI()
 	 if (FileExists(DFile) == true)
 	 {
 	    if (ReadConfigFile(Database,DFile) == false) {
-	       _error->Error(_("Unable to read the cdrom database %s"),
+	       _error->Error(_("Unable to read the media database %s"),
 			     DFile.c_str());
 	       return "";
 	    }
@@ -190,7 +190,7 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
       if (FileExists(DFile) == true)
       {
 	 if (ReadConfigFile(Database,DFile) == false)
-	    return _error->Error(_("Unable to read the cdrom database %s"),
+	    return _error->Error(_("Unable to read the media database %s"),
 			  DFile.c_str());
       }
       DatabaseLoaded = true;
@@ -199,8 +199,8 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
    // All non IMS queries for package files fail.
    if (Itm->IndexFile == true || GetID(Get.Host).empty() == true)
    {
-      Fail(_("Please use apt-cdrom to make this CD recognized by APT."
-	   " apt-get update cannot be used to add new CDs"));
+      Fail(_("Please use apt-cdrom to make this media recognized by APT."
+	   " apt-get update cannot be used to add new Media"));
       return true;
    }
 
@@ -240,12 +240,12 @@ bool CDROMMethod::Fetch(FetchItem *Itm)
 	 
       // I suppose this should prompt somehow?
       if (UnmountCdrom(CDROM) == false)
-	 return _error->Error(_("Unable to unmount the CD-ROM in %s, it may still be in use."),
+	 return _error->Error(_("Unable to unmount media in %s, it may still be in use."),
 			      CDROM.c_str());
       if (MediaFail(Get.Host,CDROM) == false)
       {
 	 CurrentID = "FAIL";
-	 Fail(_("Wrong CD"),true);
+	 Fail(_("Wrong media"),true);
 	 return true;
       }
    }
