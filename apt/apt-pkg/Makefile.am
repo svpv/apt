@@ -6,10 +6,8 @@ libapt_pkg_la_LDFLAGS = -version-info 4:0:1 -release @GLIBC_VER@-@LIBSTDCPP_VER@
 
 AM_CPPFLAGS = -DLIBDIR=\"$(libdir)\"
 
-INCLUDES = -I$(top_srcdir)/lua/include -I$(top_srcdir)/lua/local
-
 if WITH_LUA
-libapt_pkg_la_LIBADD += $(top_builddir)/lua/liblua.la
+libapt_pkg_la_LIBADD += -llua
 endif
 
 libapt_pkg_la_SOURCES = \

@@ -17,12 +17,12 @@
 #ifdef WITH_LUA
 
 extern "C" {
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-#include "lposix.h"
-#include "lrexlib.h"
-#include "linit.h"
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#if LUA_VERSION_NUM < 501
+#error lua 5.1 required
+#endif
 }
 
 #include <apt-pkg/depcache.h>
@@ -52,12 +52,9 @@ extern "C" {
    } while (0)
 
 #define checkudata(ctype, target, n) \
-   do { \
-      ctype *_tmp = (ctype *) luaL_checkudata(L, n, #ctype); \
-      if (_tmp != NULL) \
-	 target = *_tmp; \
-      else \
-	 target = NULL; \
+   do { ctype *_tmp; target = NULL; \
+      if ( !lua_isnil(L, n) && (_tmp = (ctype *) luaL_checkudata(L, n, #ctype)) ) \
+	    target = *_tmp; \
    } while (0)
 
 Lua *_GetLuaObj()
@@ -78,26 +75,13 @@ Lua::Lua()
 {
    _config->CndSet("Dir::Bin::scripts", "/usr/share/apt/scripts");
 
-   const luaL_reg lualibs[] = {
-      {"base", luaopen_base},
-      {"table", luaopen_table},
-      {"io", luaopen_io},
-      {"string", luaopen_string},
-      {"math", luaopen_math},
-      {"debug", luaopen_debug},
-      {"loadlib", luaopen_loadlib},
-      {"posix", luaopen_posix},
-      {"rex", luaopen_rex},
-      {"init", luaopen_init},
-      {"apt", luaopen_apt},
-      {NULL, NULL}
-   };
    L = lua_open();
-   const luaL_reg *lib = lualibs;
-   for (; lib->name; lib++) {
-      lib->func(L);  /* open library */
-      lua_settop(L, 0);  /* discard any results */
-   }
+   luaL_openlibs(L);
+
+   lua_pushcfunction(L, luaopen_apt);
+   lua_pushstring(L, "apt");
+   lua_call(L, 1, 0);
+
    luaL_newmetatable(L, "pkgCache::Package*");
    lua_pushstring(L, "__eq");
    lua_pushcfunction(L, AptLua_pkgcomp);
@@ -198,7 +182,7 @@ bool Lua::RunScripts(const char *ConfListKey, bool CacheChunks)
    lua_pushnil(L);
    lua_rawset(L, LUA_GLOBALSINDEX);
 
-   lua_pop(L, 1);
+   lua_settop(L, 0);
 
    return true;
 }
