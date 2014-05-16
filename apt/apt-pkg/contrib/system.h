@@ -26,7 +26,7 @@
 #endif
 
 // GNU C++ has a min/max operator <coolio>
-#if defined(__GNUG__)
+#if 0
 #define MIN(A,B) ((A) <? (B))
 #define MAX(A,B) ((A) >? (B))
 #endif

@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <mntent.h>
+#include <cstdlib>
 									/*}}}*/
 
 // IsMounted - Returns true if the mount point is mounted		/*{{{*/

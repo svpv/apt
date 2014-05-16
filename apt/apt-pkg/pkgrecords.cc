@@ -18,6 +18,7 @@
 #include <apt-pkg/configuration.h>
     
 #include <apti18n.h>   
+#include <cstring>
 									/*}}}*/
 
 // Records::pkgRecords - Constructor					/*{{{*/

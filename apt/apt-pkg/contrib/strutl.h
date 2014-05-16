@@ -25,6 +25,7 @@
 #include <vector>
 #include <iostream>
 #include <time.h>
+#include <cstring>
 
 using std::string;
 using std::vector;

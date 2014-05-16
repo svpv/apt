@@ -30,6 +30,8 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#include <cstdlib>
+#include <cstring>
 
 // CNC:2003-02-14 - Ralf Corsepius told RH8 with GCC 3.2.1 fails
 //                  compiling without moving this header to here.

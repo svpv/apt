@@ -4,6 +4,7 @@
 #ifdef WITH_GNU_HASH_MAP
 
 #include <ext/hash_map>
+#include <cstring>
 
 using namespace __gnu_cxx;
 

@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <regex.h>
+#include <cstring>
 
 using namespace std;
 

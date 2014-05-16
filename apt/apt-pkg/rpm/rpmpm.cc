@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <iostream>
+#include <cstring>
 
 #if RPM_VERSION >= 0x040100
 #include <rpm/rpmdb.h>

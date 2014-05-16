@@ -20,6 +20,8 @@
 // CNC:2003-03-17
 #include <apt-pkg/luaiface.h>
 
+#include <cstring>
+#include <cstdlib>
 									/*}}}*/
 
 #define Stringfy_(x) # x
