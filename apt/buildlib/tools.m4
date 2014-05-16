@@ -119,16 +119,13 @@ AC_DEFUN([rc_LIBSTDCPP_VER],
 	[AC_MSG_CHECKING([libstdc++ version])
 	dummy=if$$
 	cat <<_LIBSTDCPP_>$dummy.cc
-#include <features.h>
-#include <stdio.h>
-#include <stdlib.h>
-int main(int argc, char **argv) { exit(0); }
+#include <iostream>
+int main(void) { std::cout << std::endl; return 0; }
 _LIBSTDCPP_
 	${CXX-c++} $dummy.cc -o $dummy > /dev/null 2>&1
 
 	if test "$?" = 0; then
-		soname=`objdump -p ./$dummy |grep NEEDED|grep libstd`
-                LIBSTDCPP_VER=`echo $soname | sed -e 's/.*NEEDED.*libstdc++\(-libc.*\(-.*\)\)\?.so.\(.*\)/\3\2/'`
+                LIBSTDCPP_VER=`objdump -p ./$dummy | sed -ne 's/.*NEEDED.*libstdc++\(-libc.*\(-.*\)\)\?.so.\(.*\)/\3\2/p'`
 	fi
 	rm -f $dummy $dummy.cc
 
