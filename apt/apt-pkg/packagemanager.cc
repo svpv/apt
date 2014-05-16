@@ -216,7 +216,7 @@ bool pkgPackageManager::CheckRConflicts(PkgIterator Pkg,DepIterator D,
       if (D.ParentPkg() == Pkg || D.ParentVer() != D.ParentPkg().CurrentVer())
 	 continue;
       
-      if (Cache.VS().CheckDep(Ver,D) == false) // CNC:2002-07-10
+      if (D.TargetVer() == 0 || Cache.VS().CheckDep(Ver,D) == false) // CNC:2002-07-10
 	 continue;
 
       if (EarlyRemove(D.ParentPkg()) == false)
