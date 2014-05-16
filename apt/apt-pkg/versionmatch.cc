@@ -164,11 +164,12 @@ bool pkgVersionMatch::MatchVer(const char *A,string B,bool Prefix)
 // VersionMatch::Find - Locate the best match for the select type	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
+std::list<pkgCache::VerIterator> pkgVersionMatch::FindAll(pkgCache::PkgIterator Pkg)
 {
    // CNC:2003-11-05
    pkgVersioningSystem *VS = Pkg.Cache()->VS;
    pkgCache::VerIterator Ver = Pkg.VersionList();
+   std::list<pkgCache::VerIterator> found;
 
    for (; Ver.end() == false; Ver++)
    {
@@ -178,10 +179,10 @@ pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
          if (VerPrefixMatch)
 	 {
 	    if (MatchVer(Ver.VerStr(),VerStr,VerPrefixMatch) == true)
-	       return Ver;
+	       found.push_back(Ver);
 	 } else {
 	    if (VS->CheckDep(Ver.VerStr(),VerOp,VerStr.c_str()) == true)
-	       return Ver;
+	       found.push_back(Ver);
 	 }
 
 	 continue;
@@ -189,8 +190,11 @@ pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
       
       for (pkgCache::VerFileIterator VF = Ver.FileList(); VF.end() == false; VF++)
 	 if (FileMatch(VF.File()) == true)
-	    return Ver;
+	    found.push_back(Ver);
    }
+
+   if (found.size() > 0)
+      goto done;
       
    // CNC:2003-11-11 - Virtual package handling.
    if (Type == Version)
@@ -205,15 +209,28 @@ pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
          if (VerPrefixMatch || (HasRelease && strchr(PrvVerStr, '-') == NULL))
          {
             if (MatchVer(PrvVerStr,VerStr,VerPrefixMatch) == true)
-               return Prv.OwnerVer();
+               found.push_back(Prv.OwnerVer());
          } else {
             if (VS->CheckDep(PrvVerStr,VerOp,VerStr.c_str()) == true)
-               return Prv.OwnerVer();
+               found.push_back(Prv.OwnerVer());
          }
       }
    }
 
-   // This will be Ended by now.
+done:
+   return found;
+}
+
+pkgCache::VerIterator pkgVersionMatch::Find(pkgCache::PkgIterator Pkg)
+{
+   std::list<pkgCache::VerIterator> found = FindAll(Pkg);
+   if (found.size() > 0)
+      return found.front();
+
+   // return "empty" iterator at its end
+   pkgCache::VerIterator Ver = Pkg.VersionList();
+   while (Ver.end() == false)
+      Ver++;
    return Ver;
 }
 									/*}}}*/

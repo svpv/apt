@@ -1531,17 +1531,64 @@ static const char *op2str(int op)
    }
 }
 
+// best versions go first
+class bestVersionOrder
+{
+   private:
+      pkgDepCache &Cache_;
+      pkgProblemResolver &Fix_;
+   public:
+      bestVersionOrder(pkgDepCache &Cache, pkgProblemResolver &Fix)
+	 : Cache_(Cache), Fix_(Fix) { }
+      bool operator() (const pkgCache::VerIterator &a, const pkgCache::VerIterator &b)
+      {
+	 // CmpVersion sorts ascending
+	 int cmp = Cache_.VS().CmpVersion(a.VerStr(), b.VerStr());
+	 if (cmp == 0)
+	 {
+	    const pkgCache::Package *A = &(*a.ParentPkg());
+	    const pkgCache::Package *B = &(*b.ParentPkg());
+	    // ScoreSort sorts descending
+	    cmp = Fix_.ScoreSort(&B, &A);
+	 }
+	 //fprintf(stderr, "%s %s <=> %s %s = %d\n",
+	 //      a.ParentPkg().Name(), a.VerStr(),
+	 //      b.ParentPkg().Name(), b.VerStr(),
+	 //      cmp);
+	 return cmp > 0;
+      }
+};
+
+static void __attribute__((unused))
+printVerList(const char *msg, const std::list<pkgCache::VerIterator> &list)
+{
+   std::list<pkgCache::VerIterator>::const_iterator I = list.begin();
+   for ( ; I != list.end(); ++I)
+   {
+      if (I == list.begin())
+	 fprintf(stderr, "%s: ", msg);
+      else
+	 fprintf(stderr, ", ");
+      
+      const pkgCache::VerIterator &Ver = *I;
+      fprintf(stderr, "%s#%s", Ver.ParentPkg().Name(), Ver.VerStr());
+   }
+   fprintf(stderr, "\n");
+}
+
 // CNC:2003-11-11
 bool TryToChangeVer(pkgCache::PkgIterator &Pkg,pkgDepCache &Cache,
+		    pkgProblemResolver &Fix,
  		    int VerOp,const char *VerTag,bool IsRel)
 {
    // CNC:2003-11-05
    pkgVersionMatch Match(VerTag,(IsRel == true?pkgVersionMatch::Release : 
  				 pkgVersionMatch::Version),VerOp);
    
-   pkgCache::VerIterator Ver = Match.Find(Pkg);
-			 
-   if (Ver.end() == true)
+   std::list<pkgCache::VerIterator> found = Match.FindAll(Pkg);
+   //printVerList("found", found);
+
+   if (found.size() == 0)
    {
       // CNC:2003-11-05
       if (IsRel == true)
@@ -1550,16 +1597,67 @@ bool TryToChangeVer(pkgCache::PkgIterator &Pkg,pkgDepCache &Cache,
       return _error->Error(_("Version %s'%s' for '%s' was not found"),
 			   op2str(VerOp),VerTag,Pkg.Name());
    }
+
+   if (found.size() > 1)
+   {
+      Fix.MakeScores();
+      bestVersionOrder order(Cache,Fix);
+      found.sort(order);
+      found.unique();
+      //printVerList("sorted", found);
+   }
+
+   pkgCache::VerIterator Ver = found.front();
+   int already = 0;
+
+   std::list<pkgCache::VerIterator>::const_iterator I = found.begin();
+   for ( ; I != found.end(); ++I)
+   {
+      const pkgCache::VerIterator &V = *I;
+      if (V.ParentPkg().CurrentVer() == V)
+      {
+	 Ver = V;
+	 already = 2;
+	 break;
+      }
+      if (Cache[V.ParentPkg()].InstallVer == V)
+      {
+	 Ver = V;
+	 already = 1;
+	 break;
+      }
+   }
    
-   if (strcmp(VerTag,Ver.VerStr()) != 0)
+   if (strcmp(VerTag,Ver.VerStr()) != 0 || found.size() > 1)
    {
       // CNC:2003-11-11
+      const char *fmt;
       if (IsRel == true)
-	 ioprintf(c1out,_("Selected version %s (%s) for %s\n"),
-		  Ver.VerStr(),Ver.RelStr().c_str(),Pkg.Name());
+      {
+	 if (already > 1)
+	    fmt = _("Version %s#%s (%s) for %s%s%s is already installed\n");
+	 else if (already)
+	    fmt = _("Version %s#%s (%s) for %s%s%s is already selected for install\n");
+	 else
+	    fmt = _("Selected version %s#%s (%s) for %s%s%s\n");
+
+	 ioprintf(c1out,fmt,
+		  Ver.ParentPkg().Name(),Ver.VerStr(),Ver.RelStr().c_str(),
+		  Pkg.Name(),op2str(VerOp),VerTag);
+      }
       else
-	 ioprintf(c1out,_("Selected version %s for %s\n"),
-		  Ver.VerStr(),Pkg.Name());
+      {
+	 if (already > 1)
+	    fmt = _("Version %s#%s for %s%s%s is already installed\n");
+	 else if (already)
+	    fmt = _("Version %s#%s for %s%s%s is already selected for install\n");
+	 else
+	    fmt = _("Selected version %s#%s for %s%s%s\n");
+
+	 ioprintf(c1out,fmt,
+		  Ver.ParentPkg().Name(),Ver.VerStr(),
+		  Pkg.Name(),op2str(VerOp),VerTag);
+      }
    }
    
    Cache.SetCandidateVersion(Ver);
@@ -2092,7 +2190,7 @@ bool DoInstall(CommandLine &CmdL)
 	    
 	    if (VerTag != 0)
 	       // CNC:2003-11-05
-	       if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
+	       if (TryToChangeVer(Pkg,Cache,Fix,VerOp,VerTag,VerIsRel) == false)
 		  return false;
 	    
 	    Hit |= TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,
@@ -2107,7 +2205,7 @@ bool DoInstall(CommandLine &CmdL)
       {
 	 if (VerTag != 0)
 	    // CNC:2003-11-05
-	    if (TryToChangeVer(Pkg,Cache,VerOp,VerTag,VerIsRel) == false)
+	    if (TryToChangeVer(Pkg,Cache,Fix,VerOp,VerTag,VerIsRel) == false)
 	       return false;
 	 if (TryToInstall(Pkg,Cache,Fix,Remove,BrokenFix,ExpectedInst) == false)
 	    return false;

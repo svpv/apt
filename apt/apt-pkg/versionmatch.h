@@ -36,6 +36,7 @@
 #endif
 
 #include <string>
+#include <list>
 #include <apt-pkg/pkgcache.h>
 
 using std::string;
@@ -70,6 +71,7 @@ class pkgVersionMatch
 			       
    // CNC:2003-11-05
    pkgVersionMatch(string Data,MatchType Type,int Op=pkgCache::Dep::Equals);
+   std::list<pkgCache::VerIterator> FindAll(pkgCache::PkgIterator Pkg);
 };
 
 #endif
