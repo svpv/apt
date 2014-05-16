@@ -1216,10 +1216,24 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
    if (Pkg->VersionList == 0 && Pkg->ProvidesList != 0)
    {
       vector<pkgCache::Package *> GoodSolutions;
+      unsigned long Size = 0;
       for (pkgCache::PrvIterator Prv = Pkg.ProvidesList();
 	   Prv.end() == false; Prv++)
+	 Size++;
+      SPtrArray<pkgCache::Package *> PList = new pkgCache::Package *[Size];
+      pkgCache::Package **PEnd = PList;
+      for (pkgCache::PrvIterator Prv = Pkg.ProvidesList(); Prv.end() == false; Prv++)
+         *PEnd++ = Prv.OwnerPkg();
+      Fix.MakeScores();
+      qsort(PList,PEnd - PList,sizeof(*PList),&(Fix.ScoreSort));
+
+      for (unsigned int p=0; p<Size; ++p)
       {
-	 pkgCache::PkgIterator PrvPkg = Prv.OwnerPkg();
+         bool instVirtual = _config->FindB("APT::Install::Virtual", false);
+         pkgCache::PkgIterator PrvPkg = pkgCache::PkgIterator(*Pkg.Cache(), PList[p]);
+         pkgCache::PrvIterator Prv = Pkg.ProvidesList();
+         for (; Prv.end() == false && Prv.OwnerPkg() != PrvPkg; Prv++)
+           ;
 	 // Check if it's a different version of a package already
 	 // considered as a good solution.
 	 bool AlreadySeen = false;
@@ -1241,6 +1255,8 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	    // the user might try to install something he already has
 	    // without being aware.
 	    GoodSolutions.push_back(PrvPkg);
+	    if (instVirtual)
+		break;
 	    continue;
 	 }
 	 pkgCache::VerIterator PrvPkgCandVer =
@@ -1255,6 +1271,8 @@ bool TryToInstall(pkgCache::PkgIterator Pkg,pkgDepCache &Cache,
 	 {
 	    // Yes, it is. This is a good solution.
 	    GoodSolutions.push_back(PrvPkg);
+	    if (instVirtual)
+		break;
 	    continue;
 	 }
       }

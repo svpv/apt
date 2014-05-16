@@ -96,7 +96,6 @@ class pkgProblemResolver
    
    // Sort stuff
    static pkgProblemResolver *This;
-   static int ScoreSort(const void *a,const void *b);
 
    struct PackageKill
    {
@@ -104,7 +103,6 @@ class pkgProblemResolver
       DepIterator Dep;
    };
 
-   void MakeScores();
    bool DoUpgrade(pkgCache::PkgIterator Pkg);
    
    public:
@@ -125,6 +123,10 @@ class pkgProblemResolver
    
    pkgProblemResolver(pkgDepCache *Cache);
    ~pkgProblemResolver();
+
+   // Sort stuff
+   static int ScoreSort(const void *a,const void *b);
+   void MakeScores();
 };
 
 bool pkgDistUpgrade(pkgDepCache &Cache);

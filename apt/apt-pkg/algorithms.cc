@@ -540,6 +540,9 @@ int pkgProblemResolver::ScoreSort(const void *a,const void *b)
 // ProblemResolver::MakeScores - Make the score table			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
+
+#include "rpm/rpmpackagedata.h"
+
 void pkgProblemResolver::MakeScores()
 {
    unsigned long Size = Cache.Head().PackageCount;
@@ -623,13 +626,28 @@ void pkgProblemResolver::MakeScores()
 
    /* Protected things are pushed really high up. This number should put them
       ahead of everything */
+   RPMPackageData *rpmdata = new RPMPackageData();
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; I++)
    {
       if ((Flags[I->ID] & Protected) != 0)
 	 Scores[I->ID] += 10000;
       if ((I->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
 	 Scores[I->ID] += 5000;
+      pkgCache::State::VerPriority p = rpmdata->VerPriority(I.Name());
+      switch (p) {
+         case pkgCache::State::Important:
+	   Scores[I->ID] += 1000;
+	 case pkgCache::State::Required:
+	   Scores[I->ID] += 1000;
+	 case pkgCache::State::Standard:
+	   Scores[I->ID] += 1000;
+	 case pkgCache::State::Optional:
+	 case pkgCache::State::Extra:
+	 default:
+	   break;
+      }
    }   
+   This = this;
 }
 									/*}}}*/
 // ProblemResolver::DoUpgrade - Attempt to upgrade this package		/*{{{*/

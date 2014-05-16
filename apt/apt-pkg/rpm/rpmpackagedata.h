@@ -75,7 +75,7 @@ class RPMPackageData
    {
       if (Priorities.find(Package) != Priorities.end())
 	 return Priorities[Package];
-      return pkgCache::State::Standard;
+      return pkgCache::State::Optional;
    };
    inline pkgCache::Flag::PkgFlags PkgFlags(const string &Package) 
    	{return Flags[Package];};
