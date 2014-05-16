@@ -929,11 +929,11 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
       _error->Error(_("Error while running transaction"));
       if (probs->numProblems > 0)
 	 rpmpsPrint(stderr, probs);
+   } else if (rc < 0) {
+      _error->Error(_("Some errors occurred while running transaction"));
    } else {
       Success = true;
-      if (rc < 0)
-	 _error->Warning(_("Some errors occurred while running transaction"));
-      else if (quiet <= 2)
+      if (quiet <= 2)
 	 cout << _("Done.") << endl;
    }
    rpmpsFree(probs);
