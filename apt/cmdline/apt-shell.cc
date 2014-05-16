@@ -3814,7 +3814,7 @@ bool ShowHelp(CommandLine &CmdL)
       "   remove - Remove packages\n"
       "   keep - Keep packages\n"
       "   upgrade - Perform a global upgrade\n"
-      "   dist-upgrade - Perform a globla distribution upgrade\n"
+      "   dist-upgrade - Perform a global distribution upgrade\n"
       "   build-dep - Install build-dependencies for source packages\n"
 //      "   dselect-upgrade - Follow dselect selections\n"
       "   update - Retrieve new lists of packages\n"
