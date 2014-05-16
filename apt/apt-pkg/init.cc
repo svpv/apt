@@ -15,6 +15,7 @@
 #include <apti18n.h>
 #include <config.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 
 // CNC:2003-03-17
 #include <apt-pkg/luaiface.h>
@@ -37,10 +38,17 @@ const char *pkgOS = COMMON_OS;
    is prepended, this allows a fair degree of flexability. */
 bool pkgInitConfig(Configuration &Cnf)
 {
+   const char *cpu = NULL;
+   struct utsname name;
+   if (uname(&name) == 0)
+      cpu = strdup(name.machine);
+   if (cpu == NULL)
+      cpu = COMMON_CPU;
+
    // General APT things
    if (strcmp(COMMON_OS,"linux") == 0 ||
        strcmp(COMMON_OS,"unknown") == 0)
-      Cnf.CndSet("APT::Architecture",COMMON_CPU);
+      Cnf.CndSet("APT::Architecture",cpu);
    else
       Cnf.CndSet("APT::Architecture",COMMON_OS "-" COMMON_CPU);
    // CNC:2002-09-10
