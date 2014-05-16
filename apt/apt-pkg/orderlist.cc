@@ -299,7 +299,7 @@ int pkgOrderList::Score(PkgIterator Pkg)
    if (Cache[Pkg].InstVerIter(Cache).end() == true)
       return -1;
    
-   int Score = 0;
+   int Score = 1;
    if ((Pkg->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
       Score += 100;
 
@@ -310,7 +310,7 @@ int pkgOrderList::Score(PkgIterator Pkg)
 	D.end() == false; D++)
       if (D->Type == pkgCache::Dep::PreDepends)
       {
-	 Score += 50;
+	 Score -= 1;
 	 break;
       }
       
