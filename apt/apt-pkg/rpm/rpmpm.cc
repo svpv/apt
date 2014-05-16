@@ -807,7 +807,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    const char *RootDir = NULL;
    if (!Dir.empty())
       RootDir = Dir.c_str();
-   if (rpmdbOpen(RootDir, &DB, O_RDWR, 0644) != 0)
+   if (rpmdbOpen(RootDir, &DB, O_RDWR|O_CREAT, 0644) != 0)
    {
       _error->Error(_("Could not open RPM database"));
       goto exit;
