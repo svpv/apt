@@ -1755,7 +1755,7 @@ bool DoUpdate(CommandLine &CmdL)
 #endif
 
    // CNC:2004-04-19
-   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",true) == true)
+   if (Failed == false && _config->FindB("APT::Get::Archive-Cleanup",false) == true)
    {
       UpdateLogCleaner Cleaner;
       Cleaner.Go(_config->FindDir("Dir::Cache::archives"), *Cache);

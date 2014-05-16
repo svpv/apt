@@ -136,13 +136,13 @@ pkgPackageManager *rpmSystem::CreatePM(pkgDepCache *Cache) const
 bool rpmSystem::Initialize(Configuration &Cnf)
 {
    Cnf.CndSet("Dir::Bin::rpm","/bin/rpm");
-   Cnf.CndSet("Dir::Etc::rpmpriorities", "rpmpriorities");
+   Cnf.CndSet("Dir::Etc::pkgpriorities", "pkgpriorities");
    Cnf.CndSet("Dir::Etc::translatelist", "translate.list");
    Cnf.CndSet("Dir::Etc::translateparts", "translate.list.d");
    Cnf.CndSet("Dir::State::prefetch", "prefetch");
    Cnf.CndSet("Dir::Locale","/usr/share/locale");
    Cnf.CndSet("Acquire::DistroID","ALT Linux"); // hee hee
-   Cnf.CndSet("Acquire::CDROM::Mount", "/mnt/cdrom");
+   Cnf.CndSet("Acquire::CDROM::Mount", "/media/ALTLinux");
    Cnf.CndSet("Acquire::CDROM::Copy-All", "true");
 
    // Compatibility with obsoleted options
@@ -596,7 +596,7 @@ unsigned long rpmSystem::OptionsHash() const
    HashOptionTree(Hash, "RPM::Allow-Duplicated");
    HashOptionTree(Hash, "RPM::MultiArch");
    HashOptionTree(Hash, "RPM::Ignore");
-   HashOptionFile(Hash, "Dir::Etc::rpmpriorities");
+   HashOptionFile(Hash, "Dir::Etc::pkgpriorities");
    HashEnv(Hash, "LANG");
    HashEnv(Hash, "LC_ALL");
    HashEnv(Hash, "LC_MESSAGES");

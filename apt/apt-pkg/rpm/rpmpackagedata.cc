@@ -39,7 +39,7 @@ RPMPackageData::RPMPackageData()
    }
 
    // Populate priorities
-   string FileName = _config->FindFile("Dir::Etc::rpmpriorities");
+   string FileName = _config->FindFile("Dir::Etc::pkgpriorities");
    FileFd F(FileName, FileFd::ReadOnly);
    if (_error->PendingError()) 
    {

@@ -5,8 +5,10 @@
 
 # The left side is a regex for awk
 
-i.86	i386
-pentium	i386
+i[34]86	i386
+i.86	i586
+pentium.*	i586
+athlon	i586
 sparc	sparc
 sparc64	sparc
 alpha.*	alpha
