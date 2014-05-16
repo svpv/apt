@@ -4376,6 +4376,10 @@ CommandLine::Args *CommandArgs(const char *Name)
       {'o',"option",0,CommandLine::ArbItem},
       {0,0,0,0}};
 
+   static CommandLine::Args UpdateArgs[] = {
+      {'q',"quiet","quiet",CommandLine::IntLevel},
+      {0,0,0,0}};
+
    static CommandLine::Args NoArgs[] = {
       {'h',"help","help",0},
       {'v',"version","version",0},
@@ -4409,6 +4413,9 @@ CommandLine::Args *CommandArgs(const char *Name)
       case 655: // ls
 	 return ListArgs;
 
+   case 451231: // update
+	   return UpdateArgs;
+	   
       default:
 	 return NoArgs;
    }
