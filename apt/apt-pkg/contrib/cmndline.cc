@@ -333,6 +333,7 @@ unsigned int CommandLine::FileSize() const
 bool CommandLine::DispatchArg(Dispatch *Map,bool NoMatch)
 {
    int I;
+   if (FileSize() == 0) return false;
    for (I = 0; Map[I].Match != 0; I++)
    {
       if (strcmp(FileList[0],Map[I].Match) == 0)
