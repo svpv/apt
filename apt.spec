@@ -1,6 +1,6 @@
 Name: apt
 Version: 0.5.15lorg2
-Release: alt44
+Release: alt45
 
 Summary: Debian's Advanced Packaging Tool with RPM support
 Summary(ru_RU.UTF-8): Debian APT - Усовершенствованное средство управления пакетами с поддержкой RPM
@@ -203,7 +203,7 @@ find -type f -print0 |
 %make_build
 
 %install
-mkdir -p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list}.d
+mkdir -p %buildroot%_sysconfdir/%name/{%name.conf,sources.list,vendors.list,preferences}.d
 mkdir -p %buildroot%_libdir/%name/scripts
 mkdir -p %buildroot%_localstatedir/%name/{lists/partial,prefetch}
 mkdir -p %buildroot%_cachedir/%name/{archives/partial,gen{pkg,src}list}
@@ -274,6 +274,13 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
+* Tue Jun 24 2014 Gleb F-Malinovskiy <glebfm@altlinux.org> 0.5.15lorg2-alt45
+- Honor buildtime.
+- Added support of preferences.d dir.
+- apt-pkg/algorithms.cc: mark all installed packages first without auto
+  installation in a dist-upgrade (probably fixes
+  http://lists.altlinux.org/pipermail/devel/2009-May/171113.html ).
+
 * Tue Mar 11 2014 Dmitry V. Levin <ldv@altlinux.org> 0.5.15lorg2-alt44
 - libapt: enlarged integer types in pkgCache::Version (closes: #29514).
 
