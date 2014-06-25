@@ -337,6 +337,32 @@ bool pkgFixBroken(pkgDepCache &Cache)
  */
 bool pkgDistUpgrade(pkgDepCache &Cache)
 {
+   /* Upgrade all installed packages first without autoinst to help the resolver
+      in versioned or-groups to upgrade the old solver instead of installing
+      a new one (if the old solver is not the first one [anymore]) */
+   for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
+      // ALT:2014-06-25
+      if (I->CurrentVer != 0)
+      {
+	 // Was it obsoleted?
+	 bool Obsoleted = false;
+	 for (pkgCache::DepIterator D = I.RevDependsList(); D.end() == false; D++)
+	 {
+	    if (D->Type == pkgCache::Dep::Obsoletes &&
+	        Cache[D.ParentPkg()].CandidateVer != 0 &&
+		Cache[D.ParentPkg()].CandidateVerIter(Cache).Downloadable() == true &&
+	        (pkgCache::Version*)D.ParentVer() == Cache[D.ParentPkg()].CandidateVer &&
+	        Cache.VS().CheckDep(I.CurrentVer().VerStr(), D) == true &&
+		Cache.GetPkgPriority(D.ParentPkg()) >= Cache.GetPkgPriority(I))
+	    {
+	       Obsoleted = true;
+	       break;
+	    }
+	 }
+	 if (Obsoleted == false)
+	    Cache.MarkInstall(I,false);
+      }
+
    /* Auto upgrade all installed packages, this provides the basis 
       for the installation */
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; I++)
