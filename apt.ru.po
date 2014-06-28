@@ -2410,8 +2410,8 @@ msgid "Index file type '%s' is not supported"
 msgstr "Тип индексного файла '%s' не поддерживается"
 
 #: apt-pkg/policy.cc:312
-msgid "Invalid record in the preferences file, no Package header"
-msgstr "Ошибочная запись в конфигурационном файле. Отсутствует заголовок пакета."
+msgid "Invalid record in the preferences file %s, no Package header"
+msgstr "Ошибочная запись в конфигурационном файле %s. Отсутствует заголовок пакета."
 
 #: apt-pkg/policy.cc:334
 #, c-format

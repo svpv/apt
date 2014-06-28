@@ -2192,8 +2192,8 @@ msgid "Index file type '%s' is not supported"
 msgstr "Tipo de arquivo de índice '%s' não é suportado"
 
 #: apt-pkg/policy.cc:312
-msgid "Invalid record in the preferences file, no Package header"
-msgstr "Registro inválido no arquivo de preferências, nenhum cabeçalho Package"
+msgid "Invalid record in the preferences file %s, no Package header"
+msgstr "Registro inválido no arquivo de preferências %s, nenhum cabeçalho Package"
 
 #: apt-pkg/policy.cc:334
 #, c-format

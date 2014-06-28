@@ -2394,9 +2394,9 @@ msgid "Index file type '%s' is not supported"
 msgstr "Тып індэкснага файлу '%s' не падтрымліваецца"
 
 #: apt-pkg/policy.cc:312
-msgid "Invalid record in the preferences file, no Package header"
+msgid "Invalid record in the preferences file %s, no Package header"
 msgstr ""
-"Памылковы запіс у канфігурацыйным файле. Адсутнічае загаловак пакету."
+"Памылковы запіс у канфігурацыйным файле %s. Адсутнічае загаловак пакету."
 
 #: apt-pkg/policy.cc:334
 #, c-format

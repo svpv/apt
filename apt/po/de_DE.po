@@ -2205,7 +2205,7 @@ msgstr "Index-Dateityp '%s' wird nicht unterstützt"
 
 #: apt-pkg/policy.cc:312
 msgid "Invalid record in the preferences file, no Package header"
-msgstr "Ungültiger Eintrag in preferences Datei, kein Paketkopf"
+msgstr "Ungültiger Eintrag in preferences Datei %s, kein Paketkopf"
 
 #: apt-pkg/policy.cc:334
 #, c-format
