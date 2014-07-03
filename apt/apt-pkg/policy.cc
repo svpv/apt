@@ -306,7 +306,11 @@ signed short pkgPolicy::GetPkgPriority(const pkgCache::PkgIterator &Pkg)
 bool ReadPinDir(pkgPolicy &Plcy,string Dir)
 {
    if (Dir.empty() == true)
+   {
       Dir = _config->FindDir("Dir::Etc::PreferencesParts");
+      if (FileExists(Dir) == false)
+	 return true;
+   }
 
    DIR *D = opendir(Dir.c_str());
    if (D == 0)
