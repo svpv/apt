@@ -62,6 +62,7 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    // These all operate against the current header
    virtual string Package();
    virtual string Version();
+   virtual int BuildTime();
    virtual string Architecture();
    virtual bool NewVersion(pkgCache::VerIterator Ver);
    virtual unsigned short VersionHash();
@@ -88,7 +89,6 @@ class rpmListParser : public pkgCacheGenerator::ListParser
    
    rpmListParser(RPMHandler *Handler);
    ~rpmListParser();
-   virtual int BuildTime();
 };
 
 #endif
