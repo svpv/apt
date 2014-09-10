@@ -274,8 +274,9 @@ unset RPM_PYTHON
 # Probably %%doc with README.rsync?
 
 %changelog
-* Wed Aug 13 2014 Gleb F-Malinovskiy <glebfm@altlinux.org> 0.5.15lorg2-alt46.1
-- Bump soversion.
+* Wed Sep 10 2014 Gleb F-Malinovskiy <glebfm@altlinux.org> 0.5.15lorg2-alt46.1
+- Bumped soversion.
+- Added aarch64 to archtable.
 
 * Fri Jul 04 2014 Gleb Fotengauer-Malinovskiy <glebfm@altlinux.org> 0.5.15lorg2-alt46
 - apt-pkg/policy.cc: it is ok, if default PinDir doesn't exist
