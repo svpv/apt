@@ -592,6 +592,9 @@ static void HashOptionFile(unsigned long &Hash, const char *Name)
 unsigned long rpmSystem::OptionsHash() const
 {
    unsigned long Hash = 0;
+#ifdef PKG_NEVRA
+   HashString(Hash, PKG_NEVRA);
+#endif
    HashOption(Hash, "RPM::Architecture");
    HashOptionTree(Hash, "RPM::Allow-Duplicated");
    HashOptionTree(Hash, "RPM::MultiArch");
