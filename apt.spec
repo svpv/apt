@@ -991,12 +991,6 @@ unset RPM_PYTHON
 - It's a just build for Deadalus - not for actual use.
 - I just built it but not test yet.
 
-# Local Variables:
-# mode: rpm-spec
-# mode: folding
-# coding: koi8-r
-# compile-command: "rpmbuild -ba --target=i586 apt.spec"
-# End:
 
 
 
