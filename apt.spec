@@ -990,7 +990,3 @@ unset RPM_PYTHON
 - Spec modified for new version.
 - It's a just build for Deadalus - not for actual use.
 - I just built it but not test yet.
-
-
-
-
