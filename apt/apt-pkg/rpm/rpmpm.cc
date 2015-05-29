@@ -404,13 +404,14 @@ pkgRPMExtPM::~pkgRPMExtPM()
 
 bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
 {
-   const char *Args[10000];      
+   const char *Args[10000];
    const char *operation;
    unsigned int n = 0;
    bool Interactive = _config->FindB("RPM::Interactive",true);
    int quiet = _config->FindI("quiet",0);
-   
-   Args[n++] = _config->Find("Dir::Bin::rpm","rpm").c_str();
+
+   string rpmbinary = _config->Find("Dir::Bin::rpm","rpm");
+   Args[n++] = rpmbinary.c_str();
 
    bool nodeps = false;
 
