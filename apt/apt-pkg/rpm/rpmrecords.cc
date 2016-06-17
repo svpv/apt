@@ -87,7 +87,8 @@ string rpmRecordParser::FileName()
 string rpmRecordParser::Name()
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, RPMTAG_NAME,
 			   &type, (void**)&str, &count);
@@ -108,7 +109,8 @@ string rpmRecordParser::MD5Hash()
 string rpmRecordParser::Maintainer()
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, RPMTAG_PACKAGER,
 			   &type, (void**)&str, &count);
@@ -121,7 +123,8 @@ string rpmRecordParser::Maintainer()
 string rpmRecordParser::ShortDesc()
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, RPMTAG_SUMMARY,
 			   &type, (void**)&str, &count);
@@ -137,7 +140,8 @@ string rpmRecordParser::ShortDesc()
 string rpmRecordParser::LongDesc()
 {
    char *str, *ret, *x, *y;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int len;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, RPMTAG_DESCRIPTION,
@@ -188,7 +192,7 @@ string rpmRecordParser::Changelog()
 	  rval = (const char *)str;
    }
    if (str)
-      str = (char *)_free(str);
+      free(str);
 
    return rval;
 }
@@ -202,7 +206,8 @@ string rpmRecordParser::SourcePkg()
    // This must be the *package* name, not the *file* name. We have no
    // current way to extract it safely from the file name.
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, RPMTAG_SOURCERPM,
 			   &type, (void**)&str, &count);
@@ -311,7 +316,8 @@ void rpmRecordParser::BufCatDescr(const char *descr)
 void rpmRecordParser::GetRec(const char *&Start,const char *&Stop) 
 {
    // FIXME: This method is leaking memory from headerGetEntry().
-   int type, type2, type3, count;
+   rpm_tagtype_t type, type2, type3;
+   rpm_count_t count;
    char *str;
    char **strv;
    char **strv2;
@@ -461,7 +467,7 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
       BufCatDescr(str);
    }
    if (str)
-      str = (char *)_free(str);
+      free(str);
 
    BufCat("\n");
    
@@ -472,20 +478,29 @@ void rpmRecordParser::GetRec(const char *&Start,const char *&Stop)
 
 bool rpmRecordParser::HasFile(const char *File)
 {
+   bool ret = false;
+   const char *FileName;
+   int count = 0;
+
    if (*File == '\0')
       return false;
-   char **names = NULL;
-   int_32 count = 0;
-   rpmHeaderGetEntry(HeaderP, RPMTAG_OLDFILENAMES,
-		     NULL, (void **) &names, &count);
-   while (count--) 
-   {
-      char *name = names[count];
-      if (strcmp(name, File) == 0)
-	 return true;
+
+   rpmtd fileNames = rpmtdNew();
+
+   if (headerGet(HeaderP, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) != 1 &&
+       headerGet(HeaderP, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) != 1) {
+      rpmtdFree(fileNames);
+      return ret;
    }
-   free(names);
-   return false;
+   while ((FileName = rpmtdNextString(fileNames)) != NULL) {
+      if (strcmp(File, FileName) == 0) {
+         ret = true;
+         break;
+      }
+   }
+   rpmtdFreeData(fileNames);
+   rpmtdFree(fileNames);
+   return ret;
 }
 
 #endif /* HAVE_RPM */

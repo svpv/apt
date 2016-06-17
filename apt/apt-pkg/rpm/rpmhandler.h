@@ -14,6 +14,9 @@
 #include <config.h>
 #endif
 
+#include <sys/types.h>
+#include <dirent.h>
+
 #include <apt-pkg/fileutl.h>
 
 #include <rpm/rpmlib.h>

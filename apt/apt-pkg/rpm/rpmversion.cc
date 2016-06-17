@@ -23,7 +23,6 @@
 #include <apt-pkg/pkgcache.h>
 
 #include <rpm/rpmlib.h>
-#include <rpm/misc.h>
 
 #include <stdlib.h>
 #include <assert.h>

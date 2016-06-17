@@ -65,7 +65,8 @@ const char **rpmSrcRecordParser::Binaries()
 {
    int i = 0;
    char **bins;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, CRPMTAG_BINARY,
 			   &type, (void**)&bins, &count);
@@ -129,7 +130,8 @@ bool rpmSrcRecordParser::Jump(unsigned long Off)
 string rpmSrcRecordParser::FileName() const
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    assert(HeaderP != NULL);
    int rc = headerGetEntry(HeaderP, CRPMTAG_FILENAME,
 			   &type, (void**)&str, &count);
@@ -140,7 +142,8 @@ string rpmSrcRecordParser::FileName() const
 string rpmSrcRecordParser::Package() const
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int rc = headerGetEntry(HeaderP, RPMTAG_NAME,
 			   &type, (void**)&str, &count);
    return string(rc?str:"");
@@ -150,7 +153,8 @@ string rpmSrcRecordParser::Version() const
 {
    char *version, *release;
    int_32 *epoch;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int rc;
    
    rc = headerGetEntry(HeaderP, RPMTAG_VERSION,
@@ -190,7 +194,8 @@ string rpmSrcRecordParser::Version() const
 string rpmSrcRecordParser::Maintainer() const
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int rc = headerGetEntry(HeaderP, RPMTAG_PACKAGER,
 			   &type, (void**)&str, &count);
    return string(rc?str:"");
@@ -199,7 +204,8 @@ string rpmSrcRecordParser::Maintainer() const
 string rpmSrcRecordParser::Section() const
 {
    char *str;
-   int_32 count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int rc = headerGetEntry(HeaderP, RPMTAG_GROUP,
 			   &type, (void**)&str, &count);
    return string(rc?str:"");
@@ -220,7 +226,7 @@ string rpmSrcRecordParser::Changelog() const
 	  rval = (const char *)str;
    }
    if (str)
-      str = (char *)_free(str);
+      free(str);
 
    return rval;
 }
@@ -330,7 +336,8 @@ void rpmSrcRecordParser::BufCatDescr(const char *descr)
 string rpmSrcRecordParser::AsStr() 
 {
    // FIXME: This method is leaking memory from headerGetEntry().
-   int type, type2, type3, count;
+   rpm_tagtype_t type, type2, type3;
+   rpm_count_t count;
    char *str;
    char **strv;
    char **strv2;
@@ -444,7 +451,7 @@ string rpmSrcRecordParser::AsStr()
       BufCatDescr(str);
    }
    if (str)
-      str = (char *)_free(str);
+      free(str);
 
    BufCat("\n");
    
@@ -475,7 +482,9 @@ bool rpmSrcRecordParser::BuildDepends(vector<pkgSrcRecords::Parser::BuildDepRec>
       char **namel = NULL;
       char **verl = NULL;
       int *flagl = NULL;
-      int res, type, count;
+      int res;
+      rpm_tagtype_t type;
+      rpm_count_t count;
 
       res = headerGetEntry(HeaderP, RpmTypeTag[0+Type*3], &type, 
 			 (void **)&namel, &count);
@@ -488,7 +497,7 @@ bool rpmSrcRecordParser::BuildDepends(vector<pkgSrcRecords::Parser::BuildDepRec>
       
       for (int i = 0; i < count; i++) 
       {
-#if RPM_VERSION >= 0x040404
+#if RPM_VERSION >= 0x040404 && 0
          if (namel[i][0] == 'g' && strncmp(namel[i], "getconf", 7) == 0)
          {
             rpmds getconfProv = NULL;
@@ -508,8 +517,7 @@ bool rpmSrcRecordParser::BuildDepends(vector<pkgSrcRecords::Parser::BuildDepRec>
 	    rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
 				   namel[i], verl?verl[i]:NULL, flagl[i]);
 	    rpmdsRpmlib(&rpmlibProv, NULL);
-	    rpmdsSearch(rpmlibProv, ds);
-	    int res = rpmdsResult(ds);
+	    int res = (rpmdsSearch(rpmlibProv, ds) != -1);
 	    rpmdsFree(ds);
 	    rpmdsFree(rpmlibProv);
 #elif RPM_VERSION >= 0x040100

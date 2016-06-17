@@ -277,7 +277,8 @@ string rpmSystem::DistroVer(Configuration const &Cnf)
    Header hdr;
    while ((hdr = rpmdbNextIterator(iter)) != NULL) {
       void *version;
-      int type, count;
+      rpm_tagtype_t type;
+      rpm_count_t count;
 
       if (headerGetEntry(hdr, RPMTAG_VERSION, &type, &version, &count)) {
          DistroVersion = (char *)version;
@@ -332,7 +333,8 @@ void rpmSystem::AddSourceFiles(vector<pkgIndexFile *> &List)
 #ifdef OLD_FILEDEPS
 static void gatherFileDependencies(map<string,int> &filedeps, Header header)
 {
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    char **namel;
    //char **verl;
    //int *flagl;
@@ -372,7 +374,9 @@ bool rpmSystem::processIndexFile(rpmIndexFile *Index,OpProgress &Progress)
 
    while (Handler->Skip() == true)
    {
-      int type, count, res;
+      int res;
+      rpm_tagtype_t type;
+      rpm_count_t count;
       char *arch;
 
       hdr = Handler->GetHeader();

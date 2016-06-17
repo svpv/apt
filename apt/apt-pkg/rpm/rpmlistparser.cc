@@ -73,8 +73,8 @@ unsigned long rpmListParser::UniqFindTagWrite(int Tag)
 {
    char *Start;
    char *Stop;
-   int type;
-   int count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    void *data;
    
    if (headerGetEntry(header, Tag, &type, &data, &count) != 1)
@@ -109,7 +109,8 @@ string rpmListParser::Package()
 #endif
 
    char *str;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    
    Duplicated = false;
    
@@ -177,7 +178,8 @@ string rpmListParser::Architecture()
       return VI->Arch();
 #endif
 
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    char *arch;
    int res;
    res = headerGetEntry(header, RPMTAG_ARCH, &type, (void **)&arch, &count);
@@ -199,7 +201,8 @@ string rpmListParser::Version()
    char *ver, *rel;
    int_32 *ser;
    bool has_epoch = false;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    string str;
    str.reserve(10);
 
@@ -239,7 +242,8 @@ int rpmListParser::BuildTime()
 #endif
 
    int *buildtime;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
 
    if (headerGetEntry(header, RPMTAG_BUILDTIME, &type, (void **)&buildtime, &count) == 1
        && count > 0)
@@ -252,7 +256,8 @@ int rpmListParser::BuildTime()
 /* */
 bool rpmListParser::NewVersion(pkgCache::VerIterator Ver)
 {
-   int count, type;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    int_32 *num;
 
 #if WITH_VERSION_CACHING
@@ -355,7 +360,8 @@ unsigned short rpmListParser::VersionHash()
    {
       char *Str;
       int Len;
-      int type, count;
+      rpm_tagtype_t type;
+      rpm_count_t count;
       int res;
       char **strings = NULL;
       
@@ -436,7 +442,7 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
 	    Type = pkgCache::Dep::Depends;
       }
 
-#if RPM_VERSION >= 0x040404
+#if RPM_VERSION >= 0x040404 && 0
       if (namel[i][0] == 'g' && strncmp(namel[i], "getconf", 7) == 0)
       {
         rpmds getconfProv = NULL;
@@ -522,7 +528,9 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
    char **namel = NULL;
    char **verl = NULL;
    int *flagl = NULL;
-   int res, type, count;
+   int res;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    
    switch (Type) 
    {
@@ -558,7 +566,7 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
       res = headerGetEntry(header, RPMTAG_CONFLICTFLAGS, &type,
 			   (void **)&flagl, &count);
       break;
-#if RPM_VERSION >= 0x040403
+#if RPM_VERSION >= 0x040403 && 0
    case pkgCache::Dep::Suggests:
       res = headerGetEntry(header, RPMTAG_SUGGESTSNAME, &type, 
 			   (void **)&namel, &count);
@@ -596,7 +604,7 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
 bool rpmListParser::ProcessFileProvides(pkgCache::VerIterator Ver)
 {
    const char **names = NULL;    
-   int count = 0;
+   rpm_count_t count = 0;
 
    rpmHeaderGetEntry(header, RPMTAG_OLDFILENAMES, NULL, &names, &count);
 
@@ -616,14 +624,17 @@ bool rpmListParser::ProcessFileProvides(pkgCache::VerIterator Ver)
 bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 					pkgCache::VerIterator Ver)
 {
-   const char **names = NULL;
-   int_32 count = 0;
    bool ret = true;
-   rpmHeaderGetEntry(header, RPMTAG_OLDFILENAMES,
-		     NULL, (void **) &names, &count);
-   while (count--) 
-   {
-      const char *FileName = names[count];
+   const char *FileName;
+   int count = 0;
+   rpmtd fileNames = rpmtdNew();
+
+   if (headerGet(header, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) != 1 &&
+       headerGet(header, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) != 1) {
+      rpmtdFree(fileNames);
+      return false;
+   }
+   while ((FileName = rpmtdNextString(fileNames)) != NULL) {
       pkgCache::Package *P = Cache.FindPackage(FileName);
       if (P != NULL) {
 	 // Check if this is already provided.
@@ -641,7 +652,8 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 	 }
       }
    }
-   free(names);
+   rpmtdFreeData(fileNames);
+   rpmtdFree(fileNames);
    return ret;
 }
 
@@ -650,7 +662,8 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
 /* */
 bool rpmListParser::ParseProvides(pkgCache::VerIterator Ver)
 {
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    char **namel = NULL;
    char **verl = NULL;
    int res;
@@ -775,7 +788,8 @@ bool rpmListParser::LoadReleaseInfo(pkgCache::PkgFileIterator FileI,
 unsigned long rpmListParser::Size() 
 {
    uint_32 *size;
-   int type, count;
+   rpm_tagtype_t type;
+   rpm_count_t count;
    if (headerGetEntry(header, RPMTAG_SIZE, &type, (void **)&size, &count)!=1)
        return 1;
    return (size[0]+512)/1024;

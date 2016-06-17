@@ -32,6 +32,7 @@
 #if RPM_VERSION >= 0x040100
 #include <rpm/rpmts.h>
 #endif
+#include <rpm/rpmio.h>
 
 #define CRPMTAG_TIMESTAMP   1012345
 
@@ -180,11 +181,11 @@ int usefulFile(const char *dir, const char *basename)
 static
 void copyStrippedFileList(Header h1, Header h2)
 {
-   int_32 bnt = 0, dnt = 0, dit = 0;
+   rpm_tagtype_t bnt = 0, dnt = 0, dit = 0;
    struct {
       const char **bn, **dn;
       int_32 *di;
-      int_32 bnc, dnc, dic;
+      rpm_count_t bnc, dnc, dic;
    } l1 = {0}, l2 = {0};
 
    if (!headerGetEntry(h1, RPMTAG_BASENAMES, &bnt, (void**)&l1.bn, &l1.bnc))
@@ -312,8 +313,8 @@ bool copyFields(Header h, Header newHeader,
    }
  
    if (fullFileList) {
-      int type1, type2, type3;
-      int count1, count2, count3;
+      rpm_tagtype_t type1, type2, type3;
+      rpm_count_t count1, count2, count3;
       char **dnames, **bnames, **dindexes;
       int res;
    
@@ -335,7 +336,8 @@ bool copyFields(Header h, Header newHeader,
    
    // update index of srpms
    if (idxfile) {
-      int_32 type, count;
+      rpm_tagtype_t type;
+      rpm_count_t count;
       char *srpm;
       char *name;
       int res;
@@ -639,10 +641,10 @@ int main(int argc, char ** argv)
    
    
    if (pkgListAppend == true && FileExists(pkglist_path)) {
-      outfd = fdOpen(pkglist_path.c_str(), O_WRONLY|O_APPEND, 0644);
+      outfd = Fopen(pkglist_path.c_str(), "a");
    } else {
       unlink(pkglist_path.c_str());
-      outfd = fdOpen(pkglist_path.c_str(), O_WRONLY|O_TRUNC|O_CREAT, 0644);
+      outfd = Fopen(pkglist_path.c_str(), "w");
    }
    if (!outfd) {
       cerr << "genpkglist: error creating file" << pkglist_path << ":"
@@ -672,7 +674,7 @@ int main(int argc, char ** argv)
             fflush(stdout);
          }
 
-         fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
+         fd = Fopen(dirEntries[entry_cur]->d_name, "r");
          if (!fd)
             continue;
          int rc;
@@ -685,9 +687,9 @@ int main(int argc, char ** argv)
          if (rc == 0) {
 #endif
             // path-like Requires
-            int_32 reqtype = 0;
+            rpm_tagtype_t reqtype = 0;
+            rpm_count_t nreq = 0;
             const char **requires = NULL;
-            int_32 nreq = 0;
             rc = headerGetEntry(h, RPMTAG_REQUIRENAME, &reqtype, (void**)&requires, &nreq);
             if (rc == 1) {
                if (reqtype == RPM_STRING_ARRAY_TYPE) {
@@ -704,12 +706,12 @@ int main(int argc, char ** argv)
             headerFreeTag(h, requires, (rpmTagType)reqtype);
 
             // path ownership
-            const char *pkg = NULL;
-            int_32 pkgt = 0;
+            char *pkg = NULL;
+            rpm_tagtype_t pkgt = 0;
             const char **bn = NULL, **dn = NULL;
             int_32 *di = NULL;
-            int_32 bnt = 0, dnt = 0, dit = 0;
-            int_32 bnc = 0;
+            rpm_tagtype_t bnt = 0, dnt = 0, dit = 0;
+            rpm_count_t bnc = 0;
             rc = headerGetEntry(h, RPMTAG_NAME, &pkgt, (void**)&pkg, NULL)
               && headerGetEntry(h, RPMTAG_BASENAMES, &bnt, (void**)&bn, &bnc)
               && headerGetEntry(h, RPMTAG_DIRNAMES, &dnt, (void**)&dn, NULL)
@@ -720,10 +722,10 @@ int main(int argc, char ** argv)
                for (i = 0; i < bnc; i++)
                   addPathOwner(dn[di[i]], bn[i], pkg);
             }
-            headerFreeTag(h, pkg, (rpmTagType)pkgt);
-            headerFreeTag(h, bn, (rpmTagType)bnt);
-            headerFreeTag(h, dn, (rpmTagType)dnt);
-            headerFreeTag(h, di, (rpmTagType)dit);
+            headerFreeTag(h, pkg, pkgt);
+            headerFreeTag(h, bn, bnt);
+            headerFreeTag(h, dn, dnt);
+            headerFreeTag(h, di, dit);
             
             headerFree(h);
          }
@@ -750,7 +752,7 @@ int main(int argc, char ** argv)
 	 Header h;
 	 int rc;
 	 
-	 fd = fdOpen(dirEntries[entry_cur]->d_name, O_RDONLY, 0666);
+	 fd = Fopen(dirEntries[entry_cur]->d_name, "r");
 
 	 if (!fd) {
 	    cerr << "\nWarning: " << strerror(errno) << ": " << 

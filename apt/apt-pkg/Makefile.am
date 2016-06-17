@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libapt-pkg.la
 libapt_pkg_la_LIBADD = @RPMLIBS@
 libapt_pkg_la_LDFLAGS = -version-info 6:0:1 -release @GLIBC_VER@-@LIBSTDCPP_VER@@FILE_OFFSET_BITS_SUFFIX@
 
-AM_CPPFLAGS = -DLIBDIR=\"$(libdir)\"
+AM_CPPFLAGS = -DLIBDIR=\"$(libdir)\" -D_RPM_4_4_COMPAT
 
 if WITH_LUA
 libapt_pkg_la_LIBADD += -llua

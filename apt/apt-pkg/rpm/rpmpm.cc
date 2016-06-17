@@ -37,7 +37,7 @@
 
 #if RPM_VERSION >= 0x040100
 #include <rpm/rpmdb.h>
-#define packagesTotal rpmcliPackagesTotal 
+#include <rpm/rpmlog.h>
 #else
 #define rpmpsPrint(a,b) rpmProblemSetPrint(a,b)
 #define rpmpsFree(a) rpmProblemSetFree(a)
@@ -816,7 +816,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
    TS = rpmtransCreateSet(DB, Dir.c_str());
 #endif
 
-#if RPM_VERSION >= 0x040300
+#if RPM_VERSION >= 0x040300 && 0
    /* Initialize security context patterns for SELinux */
    if (!(tsFlags & RPMTRANS_FLAG_NOCONTEXTS)) {
       rpmsx sx = rpmtsREContext(TS);
@@ -849,8 +849,8 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
 	if (Interactive == true)
 	{
 	    notifyFlags |= INSTALL_HASH;
-	    extern int fancyPercents;
-	    fancyPercents = (quiet <= 0) ? 1 : 0;
+//	    extern int fancyPercents;
+//	    fancyPercents = (quiet <= 0) ? 1 : 0;
 	} else
 	{
 		notifyFlags |= INSTALL_PERCENT;
@@ -865,13 +865,13 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
        AddToTransaction(Item::RPMUpgrade, upgrade);
 
    // Setup the gauge used by rpmShowProgress.
-   packagesTotal = install.size()+upgrade.size();
+   //packagesTotal = install.size()+upgrade.size();
 
 #if RPM_VERSION >= 0x040100
    if (_config->FindB("RPM::NoDeps", false) == false) {
       rc = rpmtsCheck(TS);
       probs = rpmtsProblems(TS);
-      if (rc || probs->numProblems > 0) {
+      if (rc || rpmpsNumProblems(probs) > 0) {
 	 rpmpsPrint(NULL, probs);
 	 rpmpsFree(probs);
 	 _error->Error(_("Transaction set check failed"));
@@ -929,7 +929,7 @@ bool pkgRPMLibPM::Process(vector<const char*> &install,
 
    if (rc > 0) {
       _error->Error(_("Error while running transaction"));
-      if (probs->numProblems > 0)
+      if (rpmpsNumProblems(probs) > 0)
 	 rpmpsPrint(stderr, probs);
    } else if (rc < 0) {
       _error->Error(_("Some errors occurred while running transaction"));
@@ -985,7 +985,7 @@ bool pkgRPMLibPM::ParseRpmOpts(const char *Cnf, int *tsFlags, int *probFilter)
 	          Opts->Value == "--excludeconfigs")
 	    *tsFlags |= RPMTRANS_FLAG_NOCONFIGS;
 #endif
-#if RPM_VERSION >= 0x040300
+#if RPM_VERSION >= 0x040300 && 0
 	 else if (Opts->Value == "--nocontexts")
             *tsFlags |= RPMTRANS_FLAG_NOCONTEXTS;
 #endif

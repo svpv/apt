@@ -103,45 +103,76 @@ void RPMFileHandler::Rewind()
 
 string RPMFileHandler::FileName()
 {
-   char *str;
-   int_32 count, type;
    assert(HeaderP != NULL);
-   int rc = headerGetEntry(HeaderP, CRPMTAG_FILENAME,
-			   &type, (void**)&str, &count);
+
+   string res("");
+   rpmtd td = rpmtdNew();
+
+   int rc = headerGet(HeaderP, CRPMTAG_FILENAME, td, HEADERGET_DEFAULT);
    assert(rc != 0);
-   return str;
+
+   res = string(rpmtdGetString(td));
+
+   rpmtdFreeData(td);
+   rpmtdFree(td);
+
+   return res;
 }
 
 string RPMFileHandler::Directory()
 {
-   char *str;
-   int_32 count, type;
    assert(HeaderP != NULL);
-   int rc = headerGetEntry(HeaderP, CRPMTAG_DIRECTORY,
-			   &type, (void**)&str, &count);
-   return (rc?str:"");
-}
+
+   string res("");
+   rpmtd td = rpmtdNew();
+
+   if (headerGet(HeaderP, CRPMTAG_DIRECTORY, td, HEADERGET_DEFAULT) != 0) {
+      res = string(rpmtdGetString(td));
+   }
+
+   rpmtdFreeData(td);
+   rpmtdFree(td);
+   
+   return res;
+} 
 
 unsigned long RPMFileHandler::FileSize()
 {
-   int_32 count, type;
-   int_32 *num;
-   int rc = headerGetEntry(HeaderP, CRPMTAG_FILESIZE,
-			   &type, (void**)&num, &count);
-   assert(rc != 0);
-   return (unsigned long)num[0];
+   assert(HeaderP != NULL);
+
+   uint32_t *i;
+   uint64_t res = 0;
+   rpmtd td = rpmtdNew();
+
+   if (headerGet(HeaderP, CRPMTAG_FILESIZE, td, HEADERGET_DEFAULT) != 0) {
+      i = rpmtdGetUint32(td);
+      assert(i != NULL);
+      res = (uint64_t) *i;
+   }
+
+   rpmtdFreeData(td);
+   rpmtdFree(td);
+   
+   return res;
 }
+
 
 string RPMFileHandler::MD5Sum()
 {
-   char *str;
-   int_32 count, type;
    assert(HeaderP != NULL);
-   int rc = headerGetEntry(HeaderP, CRPMTAG_MD5,
-			   &type, (void**)&str, &count);
-   assert(rc != 0);
-   return str;
-}
+
+   string res("");
+   rpmtd td = rpmtdNew();
+
+   if (headerGet(HeaderP, CRPMTAG_MD5, td, HEADERGET_DEFAULT) != 0) {
+      res = string(rpmtdGetString(td));
+   }
+
+   rpmtdFreeData(td);
+   rpmtdFree(td);
+   
+   return res;
+} 
 
 bool RPMSingleFileHandler::Skip()
 {
