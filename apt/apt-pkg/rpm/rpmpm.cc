@@ -408,6 +408,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
    const char *operation;
    unsigned int n = 0;
    bool Interactive = _config->FindB("RPM::Interactive",true);
+   bool FancyPercent = _config->FindB("RPM::FancyPercent", false);
    int quiet = _config->FindI("quiet",0);
 
    string rpmbinary = _config->Find("Dir::Bin::rpm","rpm");
@@ -443,7 +444,7 @@ bool pkgRPMExtPM::ExecRPM(Item::RPMOps op, vector<const char*> &files)
 			if (Interactive)
 			{
 				Args[n++] = "-h";
-				if (quiet <= 0)
+				if (quiet <= 0 && FancyPercent)
 					Args[n++] = "--fancypercent";
 			} else
 			{
