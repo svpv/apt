@@ -632,7 +632,7 @@ bool rpmListParser::CollectFileProvides(pkgCache &Cache,
    if (headerGet(header, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) != 1 &&
        headerGet(header, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) != 1) {
       rpmtdFree(fileNames);
-      return false;
+      return true;
    }
    while ((FileName = rpmtdNextString(fileNames)) != NULL) {
       pkgCache::Package *P = Cache.FindPackage(FileName);
