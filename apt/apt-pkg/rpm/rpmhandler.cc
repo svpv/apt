@@ -478,15 +478,11 @@ RPMDBHandler::~RPMDBHandler()
 
 string RPMDBHandler::DataPath(bool DirectoryOnly)
 {
-   string File = "packages.rpm";
+   string File = "Packages";
    char *tmp = (char *) rpmExpand("%{_dbpath}", NULL);
    string DBPath(_config->Find("RPM::RootDir")+tmp);
    free(tmp);
 
-#if RPM_VERSION >= 0x040000
-   if (rpmExpandNumeric("%{_dbapi}") >= 3)
-      File = "Packages";       
-#endif
    if (DirectoryOnly == true)
        return DBPath;
    else
