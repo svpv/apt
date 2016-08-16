@@ -197,17 +197,19 @@ bool rpmSystem::Initialize(Configuration &Cnf)
       "RPM::Erase-Options",
       NULL,
    };
-   int NoPromote = 1;
+   int NoPromote = _rpmds_nopromote;
    const char **Opt = RPMOptions;
-   while (*Opt && NoPromote)
+   while (*Opt)
    {
       Top = _config->Tree(*Opt);
       if (Top != 0)
       {
 	 for (Top = Top->Child; Top != 0; Top = Top->Next)
-	    if (Top->Value == "--promoteepoch") {
+	    if (Top->Value == "--nopromoteepoch") {
+	       NoPromote = 1;
+	    }
+	    else if (Top->Value == "--promoteepoch") {
 	       NoPromote = 0;
-	       break;
 	    }
       }
       Opt++;
