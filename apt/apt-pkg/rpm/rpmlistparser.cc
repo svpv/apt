@@ -19,6 +19,7 @@
 #include <apt-pkg/rpmhandler.h>
 #include <apt-pkg/rpmpackagedata.h>
 #include <apt-pkg/rpmsystem.h>
+#include <apt-pkg/rpmstrPool.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/strutl.h>
@@ -460,9 +461,9 @@ bool rpmListParser::ParseDepends(pkgCache::VerIterator Ver,
       {
 #if RPM_VERSION >= 0x040404
         rpmds rpmlibProv = NULL;
-        rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
-                               namel[i], verl?verl[i]:NULL, flagl[i]);
-        rpmdsRpmlib(&rpmlibProv, NULL);
+        rpmds ds = dsSingleGlobal(RPMTAG_PROVIDENAME,
+                                   namel[i], verl?verl[i]:NULL, flagl[i]);
+        dsRpmlibGlobal(&rpmlibProv, NULL);
         int res = rpmdsSearch(rpmlibProv, ds) >= 0;
         rpmdsFree(ds);
         rpmdsFree(rpmlibProv);

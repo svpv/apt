@@ -23,6 +23,7 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/rpmhandler.h>
+#include <apt-pkg/rpmstrPool.h>
 #include <apt-pkg/pkgcache.h>
 
 #include <apti18n.h>
@@ -514,9 +515,9 @@ bool rpmSrcRecordParser::BuildDepends(vector<pkgSrcRecords::Parser::BuildDepRec>
 	 {
 #if RPM_VERSION >= 0x040404
 	    rpmds rpmlibProv = NULL;
-	    rpmds ds = rpmdsSingle(RPMTAG_PROVIDENAME,
-				   namel[i], verl?verl[i]:NULL, flagl[i]);
-	    rpmdsRpmlib(&rpmlibProv, NULL);
+	    rpmds ds = dsSingleGlobal(RPMTAG_PROVIDENAME,
+				       namel[i], verl?verl[i]:NULL, flagl[i]);
+	    dsRpmlibGlobal(&rpmlibProv, NULL);
 	    int res = (rpmdsSearch(rpmlibProv, ds) != -1);
 	    rpmdsFree(ds);
 	    rpmdsFree(rpmlibProv);

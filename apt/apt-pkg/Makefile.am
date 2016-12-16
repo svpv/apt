@@ -53,6 +53,8 @@ libapt_pkg_la_SOURCES = \
 	rpm/rpmrecords.h \
 	rpm/rpmsrcrecords.cc \
 	rpm/rpmsrcrecords.h \
+	rpm/rpmstrPool.cc \
+	rpm/rpmstrPool.h \
 	rpm/rpmsystem.cc \
 	rpm/rpmsystem.h \
 	rpm/rpmversion.cc \

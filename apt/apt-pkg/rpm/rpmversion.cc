@@ -20,6 +20,7 @@
 #ifdef HAVE_RPM
 
 #include <apt-pkg/rpmversion.h>
+#include <apt-pkg/rpmstrPool.h>
 #include <apt-pkg/pkgcache.h>
 
 #include <rpm/rpmlib.h>
@@ -207,8 +208,8 @@ bool rpmVersioningSystem::CheckDep(const char *PkgVer,
 	    return invert ? false : true;
 
 #if RPM_VERSION >= 0x040100
-   rpmds pds = rpmdsSingle(RPMTAG_PROVIDENAME, "", PkgVer, PkgFlags);
-   rpmds dds = rpmdsSingle(RPMTAG_REQUIRENAME, "", DepVer, DepFlags);
+   rpmds pds = dsSingleGlobal(RPMTAG_PROVIDENAME, "", PkgVer, PkgFlags);
+   rpmds dds = dsSingleGlobal(RPMTAG_REQUIRENAME, "", DepVer, DepFlags);
 #if RPM_VERSION >= 0x040201
    rpmdsSetNoPromote(pds, _rpmds_nopromote);
    rpmdsSetNoPromote(dds, _rpmds_nopromote);
