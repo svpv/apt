@@ -43,6 +43,14 @@ extern "C" {
 #include <sys/types.h>
 #include <assert.h>
 
+#ifndef lua_pushglobaltable
+#define lua_pushglobaltable(L) lua_pushvalue(L, LUA_GLOBALSINDEX)
+#endif
+
+#ifndef lua_rawlen
+#define lua_rawlen(L,i)        lua_strlen(L, (i))
+#endif
+
 #define pushudata(ctype, value) \
    do { \
       ctype *_tmp = (ctype *) lua_newuserdata(L, sizeof(ctype)); \
@@ -75,7 +83,7 @@ Lua::Lua()
 {
    _config->CndSet("Dir::Bin::scripts", "/usr/share/apt/scripts");
 
-   L = lua_open();
+   L = luaL_newstate();
    luaL_openlibs(L);
 
    lua_pushcfunction(L, luaopen_apt);
@@ -134,14 +142,14 @@ bool Lua::RunScripts(const char *ConfListKey, bool CacheChunks)
 	    continue;
 	 if (Value == "interactive") {
 	    lua_pushstring(L, "script_slot");
-	    lua_pushstring(L, ConfListKey);
-	    lua_rawset(L, LUA_GLOBALSINDEX);
+	    lua_setglobal(L, ConfListKey);
 
 	    RunInteractive(ConfListKey);
 
 	    lua_pushstring(L, "script_slot");
 	    lua_pushnil(L);
-	    lua_rawset(L, LUA_GLOBALSINDEX);
+	    lua_setglobal(L, "script_slot");
+
 	    continue;
 	 }
 	 if (Value[0] == '.' || Value[0] == '/') {
@@ -173,14 +181,13 @@ bool Lua::RunScripts(const char *ConfListKey, bool CacheChunks)
    }
 
    lua_pushstring(L, "script_slot");
-   lua_pushstring(L, ConfListKey);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, ConfListKey);
 
    InternalRunScript();
 
    lua_pushstring(L, "script_slot");
    lua_pushnil(L);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, "script_slot");
 
    lua_settop(L, 0);
 
@@ -286,7 +293,7 @@ void Lua::RunInteractive(const char *PlaceHint)
       int rc = 0;
       for (;;) {
 	 rc = luaL_loadbuffer(L, lua_tostring(L, -1),
-			      lua_strlen(L, -1), "<lua>");
+			      lua_rawlen(L, -1), "<lua>");
 	 if (rc == LUA_ERRSYNTAX &&
 	     strstr(lua_tostring(L, -1), "near `<eof>'") != NULL) {
 	    if (AptAux_readline(L, ">> ") == 0)
@@ -319,7 +326,7 @@ void Lua::SetGlobal(const char *Name)
 {
    lua_pushstring(L, Name);
    lua_pushnil(L);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -328,7 +335,7 @@ void Lua::SetGlobal(const char *Name, const char *Value)
    if (Value != NULL) {
       lua_pushstring(L, Name);
       lua_pushstring(L, Value);
-      lua_rawset(L, LUA_GLOBALSINDEX);
+      lua_setglobal(L, Name);
    }
    Globals.push_back(Name);
 }
@@ -338,7 +345,7 @@ void Lua::SetGlobal(const char *Name, pkgCache::Package *Value)
    if (Value != NULL) {
       lua_pushstring(L, Name);
       pushudata(pkgCache::Package*, Value);
-      lua_rawset(L, LUA_GLOBALSINDEX);
+      lua_setglobal(L, Name);
    }
    Globals.push_back(Name);
 }
@@ -353,7 +360,7 @@ void Lua::SetGlobal(const char *Name, const char **Value, int Total)
       lua_pushstring(L, Value[i]);
       lua_rawseti(L, -2, i+1);
    }
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -368,7 +375,7 @@ void Lua::SetGlobal(const char *Name, vector<const char *> &Value,
       lua_pushstring(L, Value[i]);
       lua_rawseti(L, -2, i+1);
    }
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -383,7 +390,7 @@ void Lua::SetGlobal(const char *Name, vector<string> &Value,
       lua_pushstring(L, Value[i].c_str());
       lua_rawseti(L, -2, i+1);
    }
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -398,7 +405,7 @@ void Lua::SetGlobal(const char *Name, vector<pkgCache::Package*> &Value,
       pushudata(pkgCache::Package*, Value[i]);
       lua_rawseti(L, -2, i+1);
    }
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -406,7 +413,7 @@ void Lua::SetGlobal(const char *Name, bool Value)
 {
    lua_pushstring(L, Name);
    lua_pushboolean(L, Value);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -414,7 +421,7 @@ void Lua::SetGlobal(const char *Name, double Value)
 {
    lua_pushstring(L, Name);
    lua_pushnumber(L, Value);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -423,7 +430,7 @@ void Lua::SetGlobal(const char *Name, void *Value)
    if (Value != NULL) {
       lua_pushstring(L, Name);
       lua_pushlightuserdata(L, Value);
-      lua_rawset(L, LUA_GLOBALSINDEX);
+      lua_setglobal(L, Name);
    }
    Globals.push_back(Name);
 }
@@ -432,7 +439,7 @@ void Lua::SetGlobal(const char *Name, lua_CFunction Value)
 {
    lua_pushstring(L, Name);
    lua_pushcfunction(L, Value);
-   lua_rawset(L, LUA_GLOBALSINDEX);
+   lua_setglobal(L, Name);
    Globals.push_back(Name);
 }
 
@@ -443,7 +450,7 @@ void Lua::ResetGlobals()
 	   I != Globals.end(); I++) {
 	 lua_pushstring(L, I->c_str());
 	 lua_pushnil(L);
-	 lua_rawset(L, LUA_GLOBALSINDEX);
+	 lua_setglobal(L, I->c_str());
       }
       Globals.clear();
    }
@@ -452,7 +459,7 @@ void Lua::ResetGlobals()
 const char *Lua::GetGlobalStr(const char *Name)
 {
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    const char *Ret = NULL;
    if (lua_isstring(L, -1))
       Ret = lua_tostring(L, -1);
@@ -464,7 +471,7 @@ vector<string> Lua::GetGlobalStrList(const char *Name)
 {
    vector<string> Ret;
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    int t = lua_gettop(L);
    if (lua_istable(L, t)) {
       lua_pushnil(L);
@@ -480,8 +487,9 @@ vector<string> Lua::GetGlobalStrList(const char *Name)
 
 double Lua::GetGlobalNum(const char *Name)
 {
+
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    double Ret = 0;
    if (lua_isnumber(L, -1))
       Ret = lua_tonumber(L, -1);
@@ -492,7 +500,7 @@ double Lua::GetGlobalNum(const char *Name)
 bool Lua::GetGlobalBool(const char *Name)
 {
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    bool Ret = lua_toboolean(L, -1);
    lua_remove(L, -1);
    return Ret;
@@ -501,7 +509,7 @@ bool Lua::GetGlobalBool(const char *Name)
 void *Lua::GetGlobalPtr(const char *Name)
 {
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    void *Ret = NULL;
    if (lua_isuserdata(L, -1))
       Ret = lua_touserdata(L, -1);
@@ -512,7 +520,7 @@ void *Lua::GetGlobalPtr(const char *Name)
 pkgCache::Package *Lua::GetGlobalPkg(const char *Name)
 {
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    pkgCache::Package *Ret;
    checkudata(pkgCache::Package*, Ret, -1);
    lua_remove(L, -1);
@@ -523,7 +531,7 @@ vector<pkgCache::Package*> Lua::GetGlobalPkgList(const char *Name)
 {
    vector<pkgCache::Package*> Ret;
    lua_pushstring(L, Name);
-   lua_rawget(L, LUA_GLOBALSINDEX);
+   lua_getglobal(L, Name);
    int t = lua_gettop(L);
    if (lua_istable(L, t)) {
       lua_pushnil(L);
@@ -1371,7 +1379,7 @@ static int AptLua_gettext(lua_State *L)
    const char *str = luaL_checkstring(L, 1);
    if (str != NULL) {
       lua_pushliteral(L, "TEXTDOMAIN");
-      lua_rawget(L, LUA_GLOBALSINDEX);
+      lua_getglobal(L, "TEXTDOMAIN");
       if (lua_isstring(L, -1))
 	 lua_pushstring(L, dgettext(lua_tostring(L, -1), str));
       else
@@ -1394,7 +1402,7 @@ static int AptLua_restorestate(lua_State *L)
    return 0;
 }
 
-static const luaL_reg aptlib[] = {
+static const luaL_Reg aptlib[] = {
    {"confget",		AptLua_confget},
    {"confgetlist",	AptLua_confgetlist},
    {"confset",		AptLua_confset},
@@ -1468,7 +1476,7 @@ static int AptLua_pkgcomp(lua_State *L)
 
 static int luaopen_apt(lua_State *L)
 {
-   lua_pushvalue(L, LUA_GLOBALSINDEX);
+   lua_pushglobaltable(L);
    luaL_openlib(L, NULL, aptlib, 0);
    return 0;
 }
