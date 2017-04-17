@@ -88,7 +88,7 @@ bool pkgInitConfig(Configuration &Cnf)
    Cnf.CndSet("Dir::Etc::preferences","preferences");
    Cnf.CndSet("Dir::Etc::preferencesparts","preferences.d");
    Cnf.CndSet("Dir::Bin::methods",LIBDIR "/apt/methods");
-   Cnf.CndSet("Acquire::ComprExtension", ".bz2");
+   Cnf.CndSet("Acquire::ComprExtension", ".xz");
 	      
    bool Res = true;
    

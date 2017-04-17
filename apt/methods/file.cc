@@ -60,7 +60,7 @@ bool FileMethod::Fetch(FetchItem *Itm)
    
    // CNC:2003-11-04
    // See if we can compute a file without a .gz/.bz2/etc extension
-   string ComprExtension = _config->Find("Acquire::ComprExtension", ".bz2");
+   string ComprExtension = _config->Find("Acquire::ComprExtension", ".xz");
    string::size_type Pos = File.rfind(ComprExtension);
    if (Pos + ComprExtension.length() == File.length())
    {
