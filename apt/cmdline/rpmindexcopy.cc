@@ -67,6 +67,8 @@ bool RPMIndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
    // Keep track of global release processing
    map<string,bool> GlobalReleases;
 
+   string zext = _config->Find("Acquire::ComprExtension", ".xz");
+
    for (vector<string>::iterator I = List.begin(); I != List.end(); I++)
    {      
       string OrigPath = string(*I,CDROM.length());
@@ -76,7 +78,7 @@ bool RPMIndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List)
       FileFd Pkg;
       string File = *I;
       
-      if (strcmp(File.c_str()+File.length()-4, ".bz2") == 0)
+      if (strcmp(File.c_str()+File.length()-zext.length(), zext.c_str()) == 0)
 	 File = string(File, 0, File.length()-4);
       
       if (FileExists(File) == true)
