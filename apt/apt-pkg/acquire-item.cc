@@ -441,6 +441,7 @@ void pkgAcqIndex::Done(string Message,unsigned long Size,string MD5,
    Erase = false;
    Complete = true;
    
+#if 0
    // Handle the unzipd case
    string FileName = LookupTag(Message,"Alt-Filename");
    if (FileName.empty() == false)
@@ -457,8 +458,9 @@ void pkgAcqIndex::Done(string Message,unsigned long Size,string MD5,
       Mode = "copy";
       return;
    }
+#endif
 
-   FileName = LookupTag(Message,"Filename");
+   string FileName = LookupTag(Message,"Filename");
    if (FileName.empty() == true)
    {
       Status = StatError;

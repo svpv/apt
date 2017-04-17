@@ -201,6 +201,7 @@ void pkgAcqMethod::URIDone(FetchResult &Res, FetchResult *Alt)
       
    if (Alt != 0)
    {
+#if 0
       if (Alt->Filename.empty() == false)
 	 s << "Alt-Filename: " << Alt->Filename << "\n";
       
@@ -217,6 +218,7 @@ void pkgAcqMethod::URIDone(FetchResult &Res, FetchResult *Alt)
       
       if (Alt->IMSHit == true)
 	 s << "Alt-IMS-Hit: true\n";
+#endif
    }
    
    s << "\n";

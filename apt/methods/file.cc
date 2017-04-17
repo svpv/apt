@@ -58,6 +58,7 @@ bool FileMethod::Fetch(FetchItem *Itm)
 	 Res.IMSHit = true;
    }
    
+#if 0
    // CNC:2003-11-04
    // See if we can compute a file without a .gz/.bz2/etc extension
    string ComprExtension = _config->Find("Acquire::ComprExtension", ".xz");
@@ -79,6 +80,7 @@ bool FileMethod::Fetch(FetchItem *Itm)
 	 return true;
       }      
    }
+#endif
    
    if (Res.Filename.empty() == true)
       return _error->Error(_("File not found"));
