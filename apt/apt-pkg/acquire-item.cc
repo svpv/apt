@@ -42,6 +42,8 @@ using namespace std;
 #include <string>
 #include <sstream>
 #include <stdio.h>
+#include <fcntl.h>
+#include <endian.h>
 									/*}}}*/
 
 using std::string;
@@ -51,14 +53,10 @@ using std::string;
 // ---------------------------------------------------------------------
 /* Returns false only if the checksums fail (the file not existing is not
    a checksum mismatch) */
-static bool VerifyChecksums(string File, unsigned long Size, string MD5)
+static bool VerifyChecksums(string const& File, FileFd& Fd, unsigned long Size, string const& MD5)
 {
-   struct stat Buf;
-   
-   if (stat(File.c_str(),&Buf) != 0) 
-      return true;
-
-   if (Buf.st_size != Size)
+   unsigned long FdSize = Fd.Size();
+   if (FdSize != Size)
    {
       if (_config->FindB("Acquire::Verbose", false) == true)
 	 cout << "Size of "<<File<<" did not match what's in the checksum list and was redownloaded."<<endl;
@@ -70,7 +68,7 @@ static bool VerifyChecksums(string File, unsigned long Size, string MD5)
       MD5Summation md5sum = MD5Summation();
       FileFd F(File, FileFd::ReadOnly);
       
-      md5sum.AddFD(F.Fd(), F.Size());
+      md5sum.AddFD(Fd.Fd(), FdSize);
       if (md5sum.Result().Value() != MD5)
       {
          if (_config->FindB("Acquire::Verbose", false) == true)
@@ -79,6 +77,84 @@ static bool VerifyChecksums(string File, unsigned long Size, string MD5)
       }
    }
    
+   return true;
+}
+
+static bool VerifyChecksums(string const& File, unsigned long Size, string const& MD5)
+{
+   int fd = open(File.c_str(), O_RDONLY);
+   if (fd < 0) {
+      if (errno == ENOENT)
+        return true;
+      return _error->WarningE("open", _("Could not open file %s"), File.c_str());
+   }
+
+   FileFd Fd(fd);
+   return VerifyChecksums(File, Fd, Size, MD5);
+}
+
+static unsigned long PeekLZ4Size(FileFd& Fd)
+{
+   // See methods/gzip.cc
+   unsigned char buf[14];
+   if (!Fd.Read(buf, 14))
+	return -1;
+   unsigned magic = htole32(0x184D2204);
+   if (memcmp(buf, &magic, 4))
+	return -1;
+   if (!(buf[4] & 8))
+	return -1;
+   unsigned size;
+   memcpy(&size, buf + 10, 4);
+   if (size != 0)
+	return -1;
+   memcpy(&size, buf + 6, 4);
+   return le32toh(size);
+}
+
+static bool VerifyLZ4Checksums(string const& File, FileFd& Fd, unsigned long Size, string const& MD5)
+{
+   unsigned long lz4size = PeekLZ4Size(Fd);
+   if (lz4size != Size) {
+      if (lz4size == (unsigned long) -1)
+	 return _error->Warning(_("Could not peek LZ4 size for %s"), File.c_str());
+      if (_config->FindB("Acquire::Verbose", false))
+	 cout << "Size of " << File << " did not match what's in the checksum list and was redownloaded." << endl;
+      return false;
+   }
+   Fd.Seek(0);
+
+   int lz4pipe[2];
+   if (pipe(lz4pipe) < 0)
+      return _error->WarningE("pipe", _("Couldn't open pipe for %s"), "lz4");
+
+   int lz4pid = ExecFork();
+   if (lz4pid == 0) {
+      dup2(Fd.Fd(), 0);
+      dup2(lz4pipe[1], 1);
+      SetCloseExec(0, false);
+      SetCloseExec(1, false);
+
+      string lz4bin = _config->Find("Dir::bin::lz4", "lz4");
+      const char *args[] = { lz4bin.c_str(), "-d", NULL };
+      execvp(args[0], (char **) args);
+      _exit(100);
+   }
+   close(lz4pipe[1]);
+
+   MD5Summation md5sum = MD5Summation();
+   bool added = md5sum.AddFD(lz4pipe[0], Size);
+   close(lz4pipe[0]);
+   bool waited = ExecWait(lz4pid, "lz4");
+   if (!(added && waited))
+      return false;
+
+   if (md5sum.Result().Value() != MD5) {
+      if (_config->FindB("Acquire::Verbose", false))
+	 cout << "MD5Sum of " << File << " did not match what's in the checksum list and was redownloaded." << endl;
+      return false;
+   }
+
    return true;
 }
                                                                         /*}}}*/
@@ -189,12 +265,13 @@ pkgAcqIndex::pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,
    Decompression = false;
    Erase = false;
    
-   DestFile = _config->FindDir("Dir::State::lists") + "partial/";
-   DestFile += URItoFileName(URI);
+   string FinalFile = _config->FindDir("Dir::State::lists");
+   DestFile = FinalFile + "partial/";
 
    // Create the item
    // CNC:2002-07-03
-   Desc.URI = URI + ".bz2";
+   string zext = _config->Find("Acquire::ComprExtension", ".xz");
+   Desc.URI = URI + zext;
    Desc.Description = URIDesc;
    Desc.Owner = this;
    Desc.ShortDesc = ShortDesc;
@@ -205,41 +282,74 @@ pkgAcqIndex::pkgAcqIndex(pkgAcquire *Owner,pkgRepository *Repository,
    string MD5Hash;
    unsigned long Size;
 
-   if (Repository != NULL)
+   if (Repository && Repository->HasRelease())
    {
-      if (Repository->HasRelease() == true)
-      {
-	 if (Repository->FindChecksums(RealURI,Size,MD5Hash) == false)
-	 {
-	    if (Repository->IsAuthenticated() == true)
-	    {
-	       _error->Error(_("%s is not listed in the checksum list for its repository"),
-			     RealURI.c_str());
-	       return;
-	    }
-	    else
-	       _error->Warning("Release file did not contain checksum information for %s",
-			       RealURI.c_str());
-	 }
-
-	 string FinalFile = _config->FindDir("Dir::State::lists");
-	 FinalFile += URItoFileName(RealURI);
-
-	 if (VerifyChecksums(FinalFile,Size,MD5Hash) == false)
-	 {
-	    unlink(FinalFile.c_str());
-	    unlink(DestFile.c_str());
-	 }
-
-	 if (Repository->FindChecksums(RealURI + ".xz", Size, MD5Hash) == true)
-	    Desc.URI = URI + ".xz";
-      }
-      else if (Repository->IsAuthenticated() == true)
-      {
-	 _error->Error(_("Release information not available for %s"),
-		       URI.c_str());
+      if (Repository->FindChecksums(Desc.URI, Size, MD5Hash))
+	 (void) 0;
+      else if (Repository->FindChecksums(URI + ".xz", Size, MD5Hash))
+	 Desc.URI = URI + (zext = ".xz");
+      else if (Repository->FindChecksums(URI + ".zst", Size, MD5Hash))
+	 Desc.URI = URI + (zext = ".zst");
+      else if (Repository->FindChecksums(URI + ".bz2", Size, MD5Hash))
+	 Desc.URI = URI + (zext = ".bz2");
+      else {
+	 _error->Error("Release file did not contain checksum information for %s",
+		       Desc.URI.c_str());
 	 return;
       }
+
+      string URIFileName = URItoFileName(URI);
+      DestFile += URIFileName, FinalFile += URIFileName;
+      unlink(DestFile.c_str()), unlink(FinalFile.c_str());
+
+      if (zext == ".zst") {
+	 // No need to recompress .zst to .lz4.
+	 // Verify the compressed size and checksum.
+	 unlink((FinalFile + ".lz4").c_str());
+	 DestFile += ".zst", FinalFile += ".zst";
+      }
+      else {
+	 // Final file gets recompressed to .lz4.
+	 // Verify the uncompressed size and checksum.
+	 if (!Repository->FindChecksums(URI, Size, MD5Hash)) {
+	    _error->Error("Release file did not contain checksum information for %s",
+			  URI.c_str());
+	    return;
+	 }
+	 unlink((FinalFile + ".zst").c_str());
+	 DestFile += zext, FinalFile += ".lz4";
+      }
+
+      int fd = open(FinalFile.c_str(), O_RDONLY);
+      if (fd < 0 && errno != ENOENT) {
+	 _error->WarningE("open", _("Could not open file %s"), FinalFile.c_str());
+	 if (unlink(FinalFile.c_str()) == 0)
+	    _error->Warning(_("Unlinked file %s"), FinalFile.c_str());
+	 else if (errno != ENOENT) {
+	    _error->Errno("unlink", _("Cannot unlink file %s"), FinalFile.c_str());
+	    return;
+	 }
+      }
+      else if (fd >= 0) {
+	 FileFd Fd(fd);
+	 bool verified;
+	 if (zext == ".zst")
+	    verified = VerifyChecksums(FinalFile, Fd, Size, MD5Hash);
+	 else
+	    verified = VerifyLZ4Checksums(FinalFile, Fd, Size, MD5Hash);
+	 if (verified) {
+	    if (_config->FindB("Acquire::Verbose", false))
+	       cout << "File " << FinalFile << " is up to date" << endl;
+	    return;
+	 }
+	 unlink(DestFile.c_str()), unlink(FinalFile.c_str());
+      }
+   }
+   else if (Repository && Repository->IsAuthenticated())
+   {
+      _error->Error(_("Release information not available for %s"),
+		    URI.c_str());
+      return;
    }
 
    QueueURI(Desc);
