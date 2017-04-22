@@ -14,6 +14,9 @@ rsh_SOURCES = rsh.cc rsh.h
 ssh_SOURCES = $(rsh_SOURCES)
 rsync_SOURCES = rsync.cc rsync-method.h
 
+gzip_LDADD = $(LDADD) -lzpkglist -llz4
+bzip2_LDADD = $(LDADD) -lzpkglist -llz4
+
 http_SOURCES = \
 	       http.cc \
 	       http.h \

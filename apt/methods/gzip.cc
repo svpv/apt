@@ -22,6 +22,7 @@
 #include <utime.h>
 #include <stdio.h>
 #include <errno.h>
+#include <zpkglist.h>
 
 // CNC:2003-02-20 - Moved header to fix compilation error when
 // 		    --disable-nls is used.
@@ -39,6 +40,28 @@ class GzipMethod : public pkgAcqMethod
    GzipMethod() : pkgAcqMethod("1.1",SingleInstance | SendConfig) {};
 };
 
+
+struct zHashState {
+   Hashes *hash;
+   unsigned long total;
+};
+
+static void zHash(void *buf, unsigned size, void *arg)
+{
+   struct zHashState *z = (struct zHashState *) arg;
+   z->hash->Add((unsigned char *) buf, size);
+   z->total += size;
+}
+
+static bool endswith(const char *str, const char *suffix)
+{
+   size_t len1 = strlen(str);
+   size_t len2 = strlen(suffix);
+   if (len1 < len2)
+      return false;
+   str += (len1 - len2);
+   return memcmp(str, suffix, len2) == 0;
+}
 
 // GzipMethod::Fetch - Decompress the passed URI			/*{{{*/
 // ---------------------------------------------------------------------
@@ -93,6 +116,15 @@ bool GzipMethod::Fetch(FetchItem *Itm)
    // Read data from gzip, generate checksums and write
    Hashes Hash;
    bool Failed = false;
+
+   struct zHashState z = { &Hash, 0 };
+   bool Recompress = endswith(Res.Filename.c_str(), ".zpkglist");
+   if (Recompress) {
+      if (!zpkglistCompress(GzOut[0], To.Fd(), zHash, &z))
+	 Failed = true;
+      goto skipLoop;
+   }
+
    while (1) 
    {
       unsigned char Buffer[4*1024];
@@ -120,6 +152,7 @@ bool GzipMethod::Fetch(FetchItem *Itm)
       }      
    }
    
+skipLoop:
    // Wait for gzip to finish
    if (ExecWait(Process,_config->Find(GzPathOption,Prog).c_str(),false) == false)
    {
@@ -148,7 +181,7 @@ bool GzipMethod::Fetch(FetchItem *Itm)
    
    // Return a Done response
    Res.LastModified = Buf.st_mtime;
-   Res.Size = Buf.st_size;
+   Res.Size = Recompress ? z.total : Buf.st_size;
    Res.TakeHashes(Hash);
 
    URIDone(Res);
